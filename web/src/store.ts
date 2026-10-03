@@ -13,6 +13,7 @@ export type Modal =
 interface State {
   connected: boolean;
   unpaired: boolean;
+  serverDown: boolean;
   loaded: boolean;
   bots: Bot[];
   statuses: Record<string, BotStatus>;
@@ -29,6 +30,7 @@ interface State {
 export const useStore = create<State>(() => ({
   connected: false,
   unpaired: false,
+  serverDown: false,
   loaded: false,
   bots: [],
   statuses: {},
@@ -116,7 +118,12 @@ export async function connect() {
       set({ unpaired: true });
       return;
     }
+    // The server isn't answering (stopped, crashed, or only Vite is running).
+    set({ serverDown: true });
+    setTimeout(connect, Math.min(10_000, 500 * 2 ** retry++));
+    return;
   }
+  set({ serverDown: false });
   const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
   ws.onopen = () => {
     retry = 0;

@@ -23,7 +23,7 @@ tailscale serve --bg 4800
 
 With `tailscale serve`, your own devices sign in automatically through Tailscale identity headers.
 
-To develop with hot reload: `bun run dev:server` in one terminal and `bun run dev:web` in another, then open `:5173`.
+To develop with hot reload: `bun run dev` (server + Vite together), then open `http://127.0.0.1:5173` on this PC. The Vite dev server is loopback-only; use `bun run start` to reach the app from other devices.
 
 | env | default | |
 |---|---|---|

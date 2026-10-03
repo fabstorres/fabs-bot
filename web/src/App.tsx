@@ -14,6 +14,7 @@ import { ThreadSheet } from "./components/ThreadSheet";
 export function App() {
   const loaded = useStore((s) => s.loaded);
   const unpaired = useStore((s) => s.unpaired);
+  const serverDown = useStore((s) => s.serverDown);
   const bots = useStore((s) => s.bots);
   const openId = useStore((s) => s.openThreadId);
   const thread = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
@@ -34,6 +35,7 @@ export function App() {
   }, [openId]);
 
   if (unpaired) return <Unpaired />;
+  if (!loaded && serverDown) return <ServerDown />;
   if (!loaded) return <div className="boot"><BotAvatar shape="drop" color="#FF5A00" size={64} state="working" /></div>;
 
   return (
@@ -210,6 +212,21 @@ function Welcome() {
         <button className="link" onClick={() => openModal({ kind: "settings" })}>
           Pair a phone first
         </button>
+      </div>
+    </div>
+  );
+}
+
+function ServerDown() {
+  return (
+    <div className="welcome unpaired">
+      <div className="welcome-center">
+        <BotAvatar shape="drop" color="#FF5A00" size={120} state="error" />
+        <h1>Can't reach Fabs Bot</h1>
+        <p>
+          The Fabs Bot server on your PC isn't answering. Start it with <code>bun run dev</code> (or <code>bun run start</code>).
+          This page reconnects on its own.
+        </p>
       </div>
     </div>
   );

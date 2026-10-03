@@ -8,7 +8,10 @@ export default defineConfig({
   plugins: [react()],
   build: { outDir: "../dist/web", emptyOutDir: true },
   server: {
-    host: true,
+    // Loopback only: proxied requests reach the server from 127.0.0.1, which it
+    // trusts without pairing, so exposing Vite would bypass pairing.
+    host: "127.0.0.1",
+    strictPort: true,
     port: 5173,
     proxy: {
       "/api": target,
