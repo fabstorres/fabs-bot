@@ -1,0 +1,553 @@
+#!/usr/bin/env bun
+// control-fabs: launch, inspect, drive and tear down an isolated Fabs Bot instance for verification.
+// Run `control-fabs help` for usage. Everything it starts is recorded in the run's state.json and
+// killed by `control-fabs cleanup`; evidence lives in <repo>/.verify/artifacts/<run> and survives cleanup.
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+
+const REPO = resolve(import.meta.dir, "../../../..");
+const HOME = process.env.FABS_VERIFY_HOME ?? join(process.env.XDG_RUNTIME_DIR ?? tmpdir(), "fabs-verify");
+const ARTIFACTS_ROOT = join(REPO, ".verify/artifacts");
+mkdirSync(HOME, { recursive: true });
+
+type State = {
+  runId: string;
+  pid: number;
+  port: number;
+  url: string;
+  tailnet: boolean;
+  runDir: string;
+  dataDir: string;
+  workRoot: string;
+  artifacts: string;
+  rev: string;
+  startedAt: string;
+  browser?: { pid: number; cdpPort: number; viewport: string };
+};
+
+// ---------- tiny arg parser ----------
+const argv = process.argv.slice(2);
+const positional: string[] = [];
+const flags: Record<string, string | true> = {};
+for (let i = 0; i < argv.length; i++) {
+  const a = argv[i]!;
+  if (a === "--") {
+    positional.push(...argv.slice(i + 1));
+    break;
+  }
+  if (a.startsWith("--")) {
+    const key = a.slice(2);
+    const next = argv[i + 1];
+    if (next !== undefined && !next.startsWith("--")) {
+      flags[key] = next;
+      i++;
+    } else flags[key] = true;
+  } else positional.push(a);
+}
+const flag = (k: string) => (typeof flags[k] === "string" ? (flags[k] as string) : undefined);
+
+function die(msg: string, code = 1): never {
+  console.error(`control-fabs: ${msg}`);
+  process.exit(code);
+}
+
+// ---------- privacy: never echo tailnet identity or pairing secrets ----------
+function redact(s: string): string {
+  return s
+    .replace(/token=[\w-]+/g, "token=<redacted>")
+    .replace(/\b[\w-]+\.[\w-]+\.ts\.net\b/g, "<pc>.<tailnet>.ts.net")
+    .replace(/\b100\.(\d{1,3}\.){2}\d{1,3}\b/g, "<tailnet-ip>")
+    .replace(/fd7a:115c:a1e0:[0-9a-f:]+/gi, "<tailnet-ip6>");
+}
+
+// ---------- run state ----------
+function currentRunId(): string | null {
+  const explicit = flag("run") ?? process.env.FABS_VERIFY_RUN;
+  if (explicit) return explicit;
+  const p = join(HOME, "current");
+  return existsSync(p) ? readFileSync(p, "utf8").trim() : null;
+}
+function loadState(required = true): State | null {
+  const id = currentRunId();
+  const p = id ? join(HOME, id, "state.json") : null;
+  if (!p || !existsSync(p)) {
+    if (required) die("no verification instance; run `control-fabs launch` first");
+    return null;
+  }
+  return JSON.parse(readFileSync(p, "utf8"));
+}
+function saveState(s: State) {
+  writeFileSync(join(s.runDir, "state.json"), JSON.stringify(s, null, 2));
+}
+const alive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+const cmdline = (pid: number) => {
+  try {
+    return readFileSync(`/proc/${pid}/cmdline`, "utf8").replace(/\0/g, " ");
+  } catch {
+    return "";
+  }
+};
+function freePort(start: number): Promise<number> {
+  return new Promise((res) => {
+    const srv = createServer();
+    srv.once("error", () => res(freePort(start + 1)));
+    srv.listen(start, "127.0.0.1", () => srv.close(() => res(start)));
+  });
+}
+async function sh(cmd: string[], cwd = REPO) {
+  const p = Bun.spawn(cmd, { cwd, stdout: "pipe", stderr: "pipe" });
+  const [out, err] = [await new Response(p.stdout).text(), await new Response(p.stderr).text()];
+  return { code: await p.exited, out: out.trim(), err: err.trim() };
+}
+function artifactPath(s: State, p: string) {
+  const full = isAbsolute(p) ? p : join(s.artifacts, p);
+  mkdirSync(dirname(full), { recursive: true });
+  return full;
+}
+
+// ---------- HTTP against the instance (loopback is trusted by the app) ----------
+async function api(s: State, method: string, path: string, body?: unknown) {
+  const res = await fetch(s.url + path, {
+    method,
+    headers: body !== undefined ? { "content-type": "application/json" } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let data: any = text;
+  try {
+    data = JSON.parse(text);
+  } catch {}
+  return { status: res.status, data };
+}
+
+// ---------- commands ----------
+const commands: Record<string, () => Promise<void>> = {
+  async launch() {
+    const existing = loadState(false);
+    if (existing && alive(existing.pid)) die(`run ${existing.runId} is still up at ${existing.url}; cleanup first or pass --run`);
+    const runId = flag("run-id") ?? `run-${new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14)}`;
+    const runDir = join(HOME, runId);
+    const port = Number(flag("port") ?? (await freePort(4870)));
+    if ((await freePort(port)) !== port) die(`port ${port} is in use`);
+    const tailnet = flags.tailnet === true;
+    mkdirSync(runDir, { recursive: true });
+
+    if (flags["no-build"] !== true) {
+      process.stdout.write("building web app… ");
+      const b = await sh(["bun", "run", "build"]);
+      if (b.code !== 0) die(`build failed:\n${b.err || b.out}`);
+      console.log("ok");
+    }
+    const rev = (await sh(["git", "rev-parse", "--short", "HEAD"])).out || "unknown";
+    const dirty = (await sh(["git", "status", "--porcelain"])).out ? "+dirty" : "";
+
+    const s: State = {
+      runId,
+      pid: 0,
+      port,
+      url: `http://127.0.0.1:${port}`,
+      tailnet,
+      runDir,
+      dataDir: join(runDir, "data"),
+      workRoot: join(runDir, "work"),
+      artifacts: join(ARTIFACTS_ROOT, runId),
+      rev: rev + dirty,
+      startedAt: new Date().toISOString(),
+    };
+    mkdirSync(s.artifacts, { recursive: true });
+    const env = [
+      `FABS_PORT=${port}`,
+      `FABS_DATA_DIR=${s.dataDir}`,
+      `FABS_WORK_ROOT=${s.workRoot}`,
+      ...(tailnet ? [] : ["FABS_HOST=127.0.0.1"]),
+    ];
+    // setsid gives the server its own process group, so cleanup can stop it and every bot CLI it spawned.
+    const start = await sh([
+      "sh",
+      "-c",
+      `env ${env.join(" ")} setsid bun server/index.ts > '${join(runDir, "server.log")}' 2>&1 < /dev/null & echo $!`,
+    ]);
+    s.pid = Number(start.out);
+    saveState(s);
+    writeFileSync(join(HOME, "current"), runId);
+
+    const deadline = Date.now() + 30_000;
+    while (Date.now() < deadline) {
+      if (!alive(s.pid)) die(`server exited; log:\n${redact(readFileSync(join(runDir, "server.log"), "utf8"))}`);
+      const ok = await fetch(s.url + "/api/host").then((r) => r.ok).catch(() => false);
+      if (ok) {
+        console.log(`ready  run=${runId}  url=${s.url}  pid=${s.pid}  rev=${s.rev}${tailnet ? "  (+tailnet bind)" : ""}`);
+        console.log(`artifacts → ${s.artifacts}`);
+        return;
+      }
+      await Bun.sleep(300);
+    }
+    die("server did not answer /api/host within 30s; see `control-fabs logs`");
+  },
+
+  async doctor() {
+    const s = loadState()!;
+    let failed = false;
+    const line = (level: "ok" | "warn" | "FAIL", msg: string) => {
+      if (level === "FAIL") failed = true;
+      console.log(`${level.padEnd(4)}  ${msg}`);
+    };
+    line(alive(s.pid) ? "ok" : "FAIL", `server pid ${s.pid} ${alive(s.pid) ? "running" : "not running"}`);
+    if (alive(s.pid) && !cmdline(s.pid).includes("server/index.ts")) line("FAIL", `pid ${s.pid} is not a fabs-bot server`);
+    const owners = (await sh(["lsof", "-ti", `tcp:${s.port}`, "-sTCP:LISTEN"])).out.split("\n").filter(Boolean).map(Number);
+    line(owners.includes(s.pid) ? "ok" : "FAIL", `port ${s.port} ${owners.includes(s.pid) ? "owned by our server" : `owned by ${owners.join(",") || "nobody"}`}`);
+    const host = await api(s, "GET", "/api/host").catch(() => null);
+    if (!host || host.status !== 200) line("FAIL", `/api/host → ${host?.status ?? "no answer"}`);
+    else {
+      line(host.data.workRoot === s.workRoot ? "ok" : "FAIL", `isolated work root ${host.data.workRoot === s.workRoot ? "confirmed" : "MISMATCH: this is not our instance"}`);
+      line("ok", `tailscale ${host.data.tailscale.running ? "running" : "not running"}${s.tailnet ? ", instance also bound to tailnet" : ", instance is loopback-only"}`);
+    }
+    const index = join(REPO, "dist/web/index.html");
+    if (!existsSync(index)) line("FAIL", "web build missing (dist/web)");
+    else {
+      const newest = (dir: string): number =>
+        readdirSync(dir, { withFileTypes: true }).reduce((m, e) => {
+          const p = join(dir, e.name);
+          return Math.max(m, e.isDirectory() ? newest(p) : statSync(p).mtimeMs);
+        }, 0);
+      const stale = Math.max(newest(join(REPO, "web/src")), newest(join(REPO, "shared"))) > statSync(index).mtimeMs;
+      line(stale ? "warn" : "ok", stale ? "web build is older than web/src; relaunch to rebuild" : "web build is fresh");
+    }
+    const serverSrc = Math.max(...readdirSync(join(REPO, "server"), { recursive: true }).map((f) => statSync(join(REPO, "server", String(f))).mtimeMs));
+    if (serverSrc > Date.parse(s.startedAt)) line("warn", "server source changed since launch; relaunch to pick it up");
+    const prov = await api(s, "GET", "/api/providers").catch(() => null);
+    if (prov?.status === 200) {
+      const have = prov.data.filter((p: any) => p.installed).map((p: any) => p.id);
+      line(have.includes("claude") ? "ok" : "warn", `agent CLIs installed: ${have.join(", ") || "none"}`);
+    }
+    if (s.browser) {
+      const up = await fetch(`http://127.0.0.1:${s.browser.cdpPort}/json/version`).then((r) => r.ok).catch(() => false);
+      line(up ? "ok" : "FAIL", `browser ${up ? `up (viewport ${s.browser.viewport})` : "not answering on CDP; run `browser start` again"}`);
+    }
+    console.log(`run=${s.runId} url=${s.url} rev=${s.rev}`);
+    if (failed) process.exit(1);
+  },
+
+  async api() {
+    const s = loadState()!;
+    const [method, path, body] = positional.slice(1);
+    if (!method || !path) die("usage: control-fabs api <METHOD> <path> [json]");
+    const r = await api(s, method.toUpperCase(), path, body ? JSON.parse(body) : undefined);
+    console.log(redact(typeof r.data === "string" ? r.data : JSON.stringify(r.data, null, 2)));
+    if (r.status >= 400) process.exit(1);
+  },
+
+  async seed() {
+    const s = loadState()!;
+    const prov = (await api(s, "GET", "/api/providers")).data as { id: string; installed: boolean }[];
+    const has = (id: string) => prov.some((p) => p.id === id && p.installed);
+    const existing = (await api(s, "GET", "/api/bots")).data as { id: string; name: string }[];
+    const fixtures = [
+      { name: "Chief", role: "Coordinates the team", shape: "drop", color: "#FF5A00", provider: "claude", model: "haiku" },
+      { name: "Design", role: "Proposes UI and copy", shape: "blob", color: "#111111", provider: "claude", model: "haiku" },
+      { name: "Careful", role: "Asks before acting", shape: "egg", color: "#7B3FF2", provider: "claude", model: "haiku", autonomy: "ask" },
+      { name: "Engineer", role: "Builds code", shape: "hex", color: "#1478FF", provider: "codex", model: "" },
+    ].filter((f) => has(f.provider));
+    const out: Record<string, string> = {};
+    for (const f of fixtures) {
+      const found = existing.find((b) => b.name === f.name);
+      out[f.name] = found ? found.id : (await api(s, "POST", "/api/bots", f)).data.id;
+    }
+    console.log(JSON.stringify(out, null, 2));
+  },
+
+  async threads() {
+    const s = loadState()!;
+    for (const t of (await api(s, "GET", "/api/threads")).data)
+      console.log(`${t.id}  ${t.kind.padEnd(11)} ${JSON.stringify(t.title)} topic=${JSON.stringify(t.topic)} unread=${t.unread}  ${redact(t.preview).slice(0, 80)}`);
+  },
+
+  async thread() {
+    const s = loadState()!;
+    const id = positional[1] ?? die("usage: control-fabs thread <threadId>");
+    const bots = Object.fromEntries(((await api(s, "GET", "/api/bots")).data as any[]).map((b) => [b.id, b.name]));
+    for (const m of (await api(s, "GET", `/api/threads/${id}/messages`)).data) {
+      const who = m.author === "bot" ? bots[m.botId] ?? "bot" : m.author;
+      const parts = m.parts
+        .map((p: any) =>
+          p.type === "text"
+            ? JSON.stringify(p.text.slice(0, 160))
+            : p.type === "tool"
+              ? `[tool ${p.name} ${p.status}]`
+              : p.type === "file"
+                ? `[file ${p.name} ${p.size}B id=${p.fileId}]`
+                : p.type === "question"
+                  ? `[question ${JSON.stringify(p.question)} options=${p.options.length} answered=${p.answered ?? "-"}]`
+                  : `[approval ${p.tool} ${p.decision ?? "pending"} id=${p.requestId}]`,
+        )
+        .join(" ");
+      console.log(redact(`#${m.seq} ${who} (${m.status}): ${parts}`));
+    }
+  },
+
+  async wait() {
+    const s = loadState()!;
+    const id = positional[1] ?? die("usage: control-fabs wait <threadId> --for idle|question|approval|file|text:<substring>");
+    const want = flag("for") ?? "idle";
+    const timeout = Number(flag("timeout") ?? 180) * 1000;
+    const deadline = Date.now() + timeout;
+    let stableSince = 0;
+    while (Date.now() < deadline) {
+      const msgs = (await api(s, "GET", `/api/threads/${id}/messages`)).data as any[];
+      const parts = msgs.flatMap((m) => m.parts);
+      const streaming = msgs.some((m) => m.status === "streaming");
+      const last = msgs[msgs.length - 1];
+      let hit = false;
+      if (want === "idle") {
+        const idleNow = !streaming && last?.author === "bot";
+        stableSince = idleNow ? stableSince || Date.now() : 0;
+        hit = idleNow && Date.now() - stableSince > 2500; // let follow-up turns or @mention hand-offs start
+      } else if (want === "question") hit = parts.some((p) => p.type === "question" && p.answered === undefined);
+      else if (want === "approval") hit = parts.some((p) => p.type === "approval" && !p.decision);
+      else if (want === "file") hit = parts.some((p) => p.type === "file");
+      else if (want.startsWith("text:")) hit = parts.some((p) => p.type === "text" && p.text.toLowerCase().includes(want.slice(5).toLowerCase()));
+      else die(`unknown --for ${want}`);
+      if (hit) {
+        console.log(`ok  ${want} after ${Math.round((timeout - (deadline - Date.now())) / 1000)}s`);
+        return;
+      }
+      await Bun.sleep(1000);
+    }
+    die(`timed out after ${timeout / 1000}s waiting for ${want} in ${id}`, 2);
+  },
+
+  async paths() {
+    const s = loadState()!;
+    console.log(JSON.stringify({ runDir: s.runDir, dataDir: s.dataDir, workRoot: s.workRoot, artifacts: s.artifacts }, null, 2));
+  },
+
+  async logs() {
+    const s = loadState()!;
+    const lines = readFileSync(join(s.runDir, "server.log"), "utf8").split("\n");
+    console.log(redact(lines.slice(-Number(flag("n") ?? 60)).join("\n")));
+  },
+
+  async "pair-check"() {
+    // Proves remote-device auth without printing the tailnet URL or token.
+    const s = loadState()!;
+    if (!s.tailnet) die("launch with --tailnet to check remote pairing");
+    const host = (await api(s, "GET", "/api/host")).data;
+    const base = host.tailscale.ip ? `http://${host.tailscale.ip}:${s.port}` : die("tailscale has no IPv4 address");
+    const token = readFileSync(join(s.dataDir, "access-token"), "utf8").trim();
+    const unpaired = await fetch(base + "/api/bots");
+    const bad = await fetch(base + "/pair?token=wrong", { redirect: "manual" });
+    const pair = await fetch(base + `/pair?token=${token}`, { redirect: "manual" });
+    const cookie = pair.headers.get("set-cookie")?.split(";")[0] ?? "";
+    const paired = await fetch(base + "/api/bots", { headers: { cookie } });
+    const mcp = await fetch(base + "/mcp/anything", { method: "POST", body: "{}" });
+    const rows = [
+      ["unpaired API call is refused", unpaired.status === 401, unpaired.status],
+      ["wrong pairing token is refused", bad.status === 403, bad.status],
+      ["pairing link sets a cookie and redirects", pair.status === 302 && cookie.startsWith("fabs_token="), pair.status],
+      ["paired cookie can call the API", paired.status === 200, paired.status],
+      ["bot MCP endpoint is loopback-only", mcp.status === 403, mcp.status],
+    ] as const;
+    let ok = true;
+    for (const [label, pass, status] of rows) {
+      ok &&= pass;
+      console.log(`${pass ? "ok  " : "FAIL"}  ${label} (HTTP ${status})`);
+    }
+    const out = artifactPath(s, flag("path") ?? "pairing/pair-check.txt");
+    writeFileSync(out, rows.map(([l, p, st]) => `${p ? "ok" : "FAIL"}  ${l} (HTTP ${st})`).join("\n") + "\n");
+    console.log(`→ ${out}`);
+    if (!ok) process.exit(1);
+  },
+
+  async browser() {
+    const s = loadState()!;
+    const action = positional[1] ?? die("usage: control-fabs browser <start|open|click|fill|press|wait|snapshot|screenshot|eval|stop> …");
+    if (action === "start") return browserStart(s);
+    if (action === "stop") return browserStop(s, true);
+    if (!s.browser) die("browser not started; run `control-fabs browser start`");
+    const job: Record<string, unknown> = {
+      repo: REPO,
+      action,
+      flags,
+      positional: positional.slice(2),
+      cdpPort: s.browser.cdpPort,
+      viewport: s.browser.viewport,
+      url: s.url,
+      artifacts: s.artifacts,
+    };
+    if (s.tailnet && (action === "pair" || flag("via") === "tailnet")) {
+      // Resolved here and handed over in the environment so it never appears in commands or output.
+      const host = (await api(s, "GET", "/api/host")).data;
+      if (host.tailscale.ip) {
+        job.tailnetBase = `http://${host.tailscale.ip}:${s.port}`;
+        job.pairUrl = `${job.tailnetBase}/pair?token=${readFileSync(join(s.dataDir, "access-token"), "utf8").trim()}`;
+      }
+    }
+    const node = Bun.which("node") ?? die("node is required for browser actions (Playwright's CDP client hangs under Bun)");
+    const p = Bun.spawn([node, join(import.meta.dir, "browser-driver.mjs")], {
+      env: { ...process.env, FABS_BROWSER_JOB: JSON.stringify(job) },
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+    const code = await p.exited;
+    if (code !== 0) process.exit(code);
+  },
+
+  async "privacy-check"() {
+    const s = loadState(false);
+    const dir = positional[1] ?? s?.artifacts ?? die("usage: control-fabs privacy-check [dir]");
+    const risky = /\.ts\.net\b|\b100\.(\d{1,3}\.){2}\d{1,3}\b|token=(?!<redacted>)[\w-]{8,}|\bfabs_token=/;
+    let problems = 0;
+    const walk = (d: string): string[] =>
+      readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)]));
+    for (const f of walk(dir)) {
+      if (f.endsWith(".png")) {
+        // Images can't be grepped: require an ARIA twin of the same state that is clean.
+        const twin = f.replace(/\.png$/, ".aria.txt");
+        if (!existsSync(twin)) {
+          problems++;
+          console.log(`UNCHECKED  ${f}  (no ${twin.split("/").pop()} twin; inspect by eye before sharing)`);
+        } else if (risky.test(readFileSync(twin, "utf8"))) {
+          problems++;
+          console.log(`RISKY      ${f}  (its ARIA twin mentions tailnet identity)`);
+        }
+      } else if (risky.test(readFileSync(f, "utf8"))) {
+        problems++;
+        console.log(`RISKY      ${f}`);
+      }
+    }
+    console.log(problems ? `${problems} artifact(s) need attention before sharing` : "ok  nothing tailnet-identifying found");
+    if (problems) process.exit(1);
+  },
+
+  async cleanup() {
+    const s = loadState(false);
+    if (!s) {
+      console.log("nothing to clean up");
+      return;
+    }
+    await browserStop(s, false);
+    if (alive(s.pid) && cmdline(s.pid).includes("server/index.ts")) {
+      try {
+        process.kill(-s.pid, "SIGTERM"); // the server's process group: server + any bot CLIs mid-turn
+      } catch {
+        process.kill(s.pid, "SIGTERM");
+      }
+      for (let i = 0; i < 20 && alive(s.pid); i++) await Bun.sleep(150);
+      if (alive(s.pid)) process.kill(-s.pid, "SIGKILL");
+      console.log(`stopped server ${s.pid}`);
+    }
+    rmSync(s.runDir, { recursive: true, force: true });
+    if (currentRunId() === s.runId) rmSync(join(HOME, "current"), { force: true });
+    const kept = existsSync(s.artifacts) ? readdirSync(s.artifacts, { recursive: true }).length : 0;
+    console.log(`removed ${s.runDir}`);
+    console.log(`evidence kept: ${s.artifacts} (${kept} entries)`);
+  },
+
+  async help() {
+    console.log(`control-fabs: drive an isolated Fabs Bot instance
+
+  launch [--port N] [--tailnet] [--no-build] [--run-id ID]   build + start; prints url, pid, artifacts dir
+  doctor                                                       read-only health check (exit 1 on FAIL)
+  seed                                                         create fixture bots (Claude haiku; Codex if installed)
+  api <METHOD> <path> [json]                                   call the instance's HTTP API
+  threads | thread <id>                                        list threads / dump one thread compactly
+  wait <threadId> --for idle|question|approval|file|text:<s> [--timeout 180]
+  paths                                                        print run, data, work-root and artifacts dirs (for side-effect checks)
+  logs [--n 60]                                                tail the server log (redacted)
+  pair-check [--path pairing/pair-check.txt]                   remote-device auth checks over the tailnet (needs --tailnet)
+  browser start [--viewport 1440x900|430x932]                  headless Chromium on CDP (restart to change viewport)
+  browser open [/path] [--via tailnet] | browser pair
+  browser click|fill|press|wait|count|text  --role R --name N | --label L | --text T | --selector S [--nth i] [--exact]
+          fill: --value V   press: --key K   wait: --state visible|hidden [--timeout s]
+          click --accept-dialog [--dialog-text T]   accept the confirm()/prompt() the click opens
+  browser snapshot --path rel.aria.txt [target] | screenshot --path rel.png [--full-page] [--no-mask] | eval '<js>'
+  browser stop
+  privacy-check [dir]                                          scan evidence for tailnet hostnames/IPs/tokens
+  cleanup                                                      stop what this run started, delete scratch, keep evidence
+
+  Global: --run <id> (or FABS_VERIFY_RUN) targets a specific run. State: ${HOME}`);
+  },
+};
+
+async function chromePath(): Promise<string> {
+  if (process.env.FABS_VERIFY_CHROME) return process.env.FABS_VERIFY_CHROME;
+  const cache = join(process.env.HOME ?? "", ".cache/ms-playwright");
+  if (existsSync(cache)) {
+    const dirs = readdirSync(cache).filter((d) => /^chromium-\d+$/.test(d)).sort((a, b) => Number(b.split("-")[1]) - Number(a.split("-")[1]));
+    for (const d of dirs) {
+      for (const sub of ["chrome-linux64/chrome", "chrome-linux/chrome", "chrome-mac/Chromium.app/Contents/MacOS/Chromium"]) {
+        if (existsSync(join(cache, d, sub))) return join(cache, d, sub);
+      }
+    }
+  }
+  for (const bin of ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser"]) {
+    const p = Bun.which(bin);
+    if (p) return p;
+  }
+  die("no Chromium found: set FABS_VERIFY_CHROME or run `bunx playwright-core install chromium`");
+}
+
+async function browserStart(s: State) {
+  await browserStop(s, false);
+  const viewport = flag("viewport") ?? "1440x900";
+  const [w, h] = viewport.split("x").map(Number);
+  if (!w || !h) die("--viewport WxH");
+  const cdpPort = await freePort(9330);
+  const profile = join(s.runDir, "browser-profile");
+  mkdirSync(profile, { recursive: true });
+  const chrome = await chromePath();
+  const args = [
+    "--headless=new",
+    `--remote-debugging-port=${cdpPort}`,
+    `--user-data-dir=${profile}`,
+    `--window-size=${w},${h}`,
+    "--hide-scrollbars",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-gpu",
+    ...(w < 820 ? ["--force-device-scale-factor=2"] : []),
+    "about:blank",
+  ];
+  const start = await sh(["sh", "-c", `setsid '${chrome}' ${args.map((a) => `'${a}'`).join(" ")} > '${join(s.runDir, "browser.log")}' 2>&1 < /dev/null & echo $!`]);
+  const pid = Number(start.out);
+  for (let i = 0; i < 50; i++) {
+    if (await fetch(`http://127.0.0.1:${cdpPort}/json/version`).then((r) => r.ok).catch(() => false)) {
+      s.browser = { pid, cdpPort, viewport };
+      saveState(s);
+      console.log(`browser up  viewport=${viewport}  pid=${pid}`);
+      return;
+    }
+    await Bun.sleep(200);
+  }
+  die("Chromium did not open its CDP port; see browser.log in the run dir");
+}
+
+async function browserStop(s: State, say: boolean) {
+  if (!s.browser) {
+    if (say) console.log("browser not running");
+    return;
+  }
+  if (alive(s.browser.pid)) {
+    try {
+      process.kill(-s.browser.pid, "SIGTERM");
+    } catch {
+      process.kill(s.browser.pid, "SIGTERM");
+    }
+  }
+  delete s.browser;
+  saveState(s);
+  if (say) console.log("browser stopped");
+}
+
+const cmd = positional[0] ?? "help";
+const run = commands[cmd] ?? (() => die(`unknown command ${cmd}; try \`control-fabs help\``));
+await run();

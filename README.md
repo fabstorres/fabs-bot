@@ -75,6 +75,17 @@ Fabs Bot never writes to `~/.claude.json`, `~/.codex/config.toml`, Cursor or Ope
 | OpenCode | ✓ | ✓ | – | skip-permissions or nothing |
 | Gemini CLI | plain text | – | – | `-y` or nothing |
 
+## Verify
+
+`.claude/skills/verify-fabs-bot/` is a project skill that lets agents (Claude Code, and Cursor via the `.cursor/skills` symlink) prove the app works the way a user experiences it. It launches an isolated instance with its own port and data, drives it through headless Chromium plus real bot turns, keeps evidence in `.verify/artifacts/` (gitignored), and cleans up after itself.
+
+```sh
+C=.claude/skills/verify-fabs-bot/scripts/control-fabs
+$C launch && $C doctor && $C seed && $C browser start && $C browser open /
+# …drive a recipe from .claude/skills/verify-fabs-bot/features/…
+$C privacy-check && $C cleanup
+```
+
 ## Layout
 
 ```
