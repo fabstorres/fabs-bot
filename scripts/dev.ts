@@ -1,6 +1,8 @@
-// Runs the Bun server (watch mode) and the Vite dev server together.
-// Vite only serves the UI and proxies /api, /files and /ws to the server,
-// so running it alone fails every request with ECONNREFUSED.
+/**
+ * Runs the Bun server (watch mode) and the Vite dev server together.
+ * Vite only serves the UI and proxies /api, /files and /ws to the server,
+ * so running it alone fails every request with ECONNREFUSED.
+ */
 const procs = [
   Bun.spawn(["bun", "run", "dev:server"], { stdio: ["inherit", "inherit", "inherit"] }),
   Bun.spawn(["bun", "run", "dev:web"], { stdio: ["inherit", "inherit", "inherit"] }),
