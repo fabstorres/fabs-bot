@@ -111,6 +111,8 @@ Proof standards:
 - `pair-check` and `browser pair` resolve the tailnet URL internally.
 - Don't screenshot the "This PC" panel unmasked.
 - Before anything leaves the machine, run `$C privacy-check`. It scans text artifacts and flags any PNG that lacks a clean `.aria.txt` twin.
+- A clean ARIA twin can't prove every pixel is private, especially when the snapshot covers less than the screenshot. Look at each screenshot yourself before sharing it.
+- Redaction and scanning share one rule set in `scripts/privacy.mjs`. After changing it, run `bun test ./.claude/skills/verify-fabs-bot/scripts/privacy.test.ts`.
 
 ## Cleanup
 

@@ -1,11 +1,14 @@
 #!/usr/bin/env bun
-// control-fabs: launch, inspect, drive and tear down an isolated Fabs Bot instance for verification.
-// Run `control-fabs help` for usage. Everything it starts is recorded in the run's state.json and
-// killed by `control-fabs cleanup`; evidence lives in <repo>/.verify/artifacts/<run> and survives cleanup.
+/**
+ * control-fabs: launch, inspect, drive and tear down an isolated Fabs Bot instance for verification.
+ * Run `control-fabs help` for usage. Everything it starts is recorded in the run's state.json and
+ * killed by `control-fabs cleanup`; evidence lives in <repo>/.verify/artifacts/<run> and survives cleanup.
+ */
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import { redact, risky } from "./privacy.mjs";
 
 const REPO = resolve(import.meta.dir, "../../../..");
 const HOME = process.env.FABS_VERIFY_HOME ?? join(process.env.XDG_RUNTIME_DIR ?? tmpdir(), "fabs-verify");
@@ -27,7 +30,6 @@ type State = {
   browser?: { pid: number; cdpPort: number; viewport: string };
 };
 
-// ---------- tiny arg parser ----------
 const argv = process.argv.slice(2);
 const positional: string[] = [];
 const flags: Record<string, string | true> = {};
@@ -53,16 +55,6 @@ function die(msg: string, code = 1): never {
   process.exit(code);
 }
 
-// ---------- privacy: never echo tailnet identity or pairing secrets ----------
-function redact(s: string): string {
-  return s
-    .replace(/token=[\w-]+/g, "token=<redacted>")
-    .replace(/\b[\w-]+\.[\w-]+\.ts\.net\b/g, "<pc>.<tailnet>.ts.net")
-    .replace(/\b100\.(\d{1,3}\.){2}\d{1,3}\b/g, "<tailnet-ip>")
-    .replace(/fd7a:115c:a1e0:[0-9a-f:]+/gi, "<tailnet-ip6>");
-}
-
-// ---------- run state ----------
 function currentRunId(): string | null {
   const explicit = flag("run") ?? process.env.FABS_VERIFY_RUN;
   if (explicit) return explicit;
@@ -114,7 +106,6 @@ function artifactPath(s: State, p: string) {
   return full;
 }
 
-// ---------- HTTP against the instance (loopback is trusted by the app) ----------
 async function api(s: State, method: string, path: string, body?: unknown) {
   const res = await fetch(s.url + path, {
     method,
@@ -129,7 +120,6 @@ async function api(s: State, method: string, path: string, body?: unknown) {
   return { status: res.status, data };
 }
 
-// ---------- commands ----------
 const commands: Record<string, () => Promise<void>> = {
   async launch() {
     const existing = loadState(false);
@@ -310,7 +300,7 @@ const commands: Record<string, () => Promise<void>> = {
       if (want === "idle") {
         const idleNow = !streaming && last?.author === "bot";
         stableSince = idleNow ? stableSince || Date.now() : 0;
-        hit = idleNow && Date.now() - stableSince > 2500; // let follow-up turns or @mention hand-offs start
+        hit = idleNow && Date.now() - stableSince > 2500;
       } else if (want === "question") hit = parts.some((p) => p.type === "question" && p.answered === undefined);
       else if (want === "approval") hit = parts.some((p) => p.type === "approval" && !p.decision);
       else if (want === "file") hit = parts.some((p) => p.type === "file");
@@ -337,7 +327,6 @@ const commands: Record<string, () => Promise<void>> = {
   },
 
   async "pair-check"() {
-    // Proves remote-device auth without printing the tailnet URL or token.
     const s = loadState()!;
     if (!s.tailnet) die("launch with --tailnet to check remote pairing");
     const host = (await api(s, "GET", "/api/host")).data;
@@ -349,12 +338,19 @@ const commands: Record<string, () => Promise<void>> = {
     const cookie = pair.headers.get("set-cookie")?.split(";")[0] ?? "";
     const paired = await fetch(base + "/api/bots", { headers: { cookie } });
     const mcp = await fetch(base + "/mcp/anything", { method: "POST", body: "{}" });
+    const foreign = { origin: "https://unrelated.example" };
+    const crossWs = await fetch(s.url + "/ws", { headers: { ...foreign, connection: "Upgrade", upgrade: "websocket" } });
+    const crossPost = await fetch(s.url + "/api/bots", { method: "POST", headers: { ...foreign, "content-type": "text/plain" }, body: '{"name":"Probe"}' });
+    const plainPost = await fetch(s.url + "/api/bots", { method: "POST", headers: { "content-type": "text/plain" }, body: '{"name":"Probe"}' });
     const rows = [
       ["unpaired API call is refused", unpaired.status === 401, unpaired.status],
       ["wrong pairing token is refused", bad.status === 403, bad.status],
       ["pairing link sets a cookie and redirects", pair.status === 302 && cookie.startsWith("fabs_token="), pair.status],
       ["paired cookie can call the API", paired.status === 200, paired.status],
       ["bot MCP endpoint is loopback-only", mcp.status === 403, mcp.status],
+      ["cross-origin WebSocket upgrade is refused", crossWs.status === 403, crossWs.status],
+      ["cross-origin text/plain write is refused", crossPost.status === 403, crossPost.status],
+      ["non-JSON write is refused", plainPost.status === 415, plainPost.status],
     ] as const;
     let ok = true;
     for (const [label, pass, status] of rows) {
@@ -404,7 +400,6 @@ const commands: Record<string, () => Promise<void>> = {
   async "privacy-check"() {
     const s = loadState(false);
     const dir = positional[1] ?? s?.artifacts ?? die("usage: control-fabs privacy-check [dir]");
-    const risky = /\.ts\.net\b|\b100\.(\d{1,3}\.){2}\d{1,3}\b|token=(?!<redacted>)[\w-]{8,}|\bfabs_token=/;
     let problems = 0;
     const walk = (d: string): string[] =>
       readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)]));
@@ -415,11 +410,11 @@ const commands: Record<string, () => Promise<void>> = {
         if (!existsSync(twin)) {
           problems++;
           console.log(`UNCHECKED  ${f}  (no ${twin.split("/").pop()} twin; inspect by eye before sharing)`);
-        } else if (risky.test(readFileSync(twin, "utf8"))) {
+        } else if (risky(readFileSync(twin, "utf8"))) {
           problems++;
           console.log(`RISKY      ${f}  (its ARIA twin mentions tailnet identity)`);
         }
-      } else if (risky.test(readFileSync(f, "utf8"))) {
+      } else if (risky(readFileSync(f, "utf8"))) {
         problems++;
         console.log(`RISKY      ${f}`);
       }

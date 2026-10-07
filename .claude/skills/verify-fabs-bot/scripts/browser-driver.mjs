@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-// Browser half of control-fabs. Runs under Node because Playwright's CDP websocket hangs under Bun.
-// Invoked by `control-fabs browser <action>`; not meant to be called directly.
+/**
+ * Browser half of control-fabs, invoked by `control-fabs browser <action>`.
+ * Runs under Node because Playwright's CDP websocket hangs under Bun.
+ */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import { createRequire } from "node:module";
+import { redact } from "./privacy.mjs";
 
 const job = JSON.parse(process.env.FABS_BROWSER_JOB ?? "{}");
 const require = createRequire(join(job.repo, "package.json"));
@@ -15,11 +18,6 @@ const die = (msg) => {
   console.error(`control-fabs browser: ${msg}`);
   process.exit(1);
 };
-const redact = (s) =>
-  String(s)
-    .replace(/token=[\w-]+/g, "token=<redacted>")
-    .replace(/\b[\w-]+\.[\w-]+\.ts\.net\b/g, "<pc>.<tailnet>.ts.net")
-    .replace(/\b100\.(\d{1,3}\.){2}\d{1,3}\b/g, "<tailnet-ip>");
 const artifactPath = (p) => {
   const full = isAbsolute(p) ? p : join(job.artifacts, p);
   mkdirSync(dirname(full), { recursive: true });
@@ -35,7 +33,6 @@ try {
   // Headless window size != viewport, so pin the viewport on every connection.
   const [vw, vh] = job.viewport.split("x").map(Number);
   await page.setViewportSize({ width: vw, height: vh });
-  // window.confirm/prompt: dismissed unless --accept-dialog (optionally with --dialog-text for prompts).
   page.on("dialog", (d) => (flags["accept-dialog"] === true ? d.accept(flag("dialog-text")) : d.dismiss()).catch(() => {}));
   const hasTarget = () => flag("role") || flag("label") || flag("text") || flag("selector");
   const target = () => {
@@ -98,9 +95,8 @@ try {
     }
     case "screenshot": {
       await page.evaluate(() => document.fonts.ready);
-      await sleep(Number(flag("settle") ?? 700)); // let entrance animations finish
+      await sleep(Number(flag("settle") ?? 700));
       const out = artifactPath(flag("path") ?? die("--path required (relative to the run's artifacts)"));
-      // Mask machine identity by default: host chip (PC name), pairing QR and pairing link.
       const mask = flags["no-mask"] === true ? [] : [page.getByRole("button", { name: "This PC" }), page.locator(".pair-qr, .mono-box, .host-line")];
       await page.screenshot({ path: out, fullPage: flags["full-page"] === true, mask, maskColor: "#d9d9d4" });
       console.log(`→ ${out}`);
@@ -113,7 +109,6 @@ try {
       die(`unknown browser action ${action}`);
   }
 } catch (err) {
-  // One readable line instead of a stack: what was attempted and why it failed.
   console.error(`control-fabs browser ${action}: ${redact(String(err?.message ?? err).split("\n")[0])}`);
   process.exitCode = 1;
 } finally {
