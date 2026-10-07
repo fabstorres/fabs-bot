@@ -1,10 +1,10 @@
 import type { Bot, Connector } from "../../shared/types";
 
-/** Normalized events every CLI adapter emits. */
+/** Normalized events every CLI adapter emits. `text` appends to the current text part; `text.break` starts a new bubble. */
 export type ProviderEvent =
   | { type: "session"; id: string }
-  | { type: "text"; text: string } // appended to the current text part
-  | { type: "text.break" } // the next text starts a new bubble
+  | { type: "text"; text: string }
+  | { type: "text.break" }
   | { type: "tool.start"; id: string; name: string; summary: string }
   | { type: "tool.end"; id: string; error?: boolean; summary?: string }
   | { type: "error"; message: string }

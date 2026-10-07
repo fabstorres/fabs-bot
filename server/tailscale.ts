@@ -1,4 +1,4 @@
-// Read-only view of Tailscale. We never change Tailscale settings; we only suggest commands.
+/** Read-only view of Tailscale. We never change Tailscale settings; we only suggest commands. */
 import { childEnv, which } from "./providers/spawn";
 
 export interface TailscaleState {
@@ -48,7 +48,6 @@ export async function tailscaleState(port: number): Promise<TailscaleState> {
     ip: (p.TailscaleIPs ?? [])[0] ?? "",
   }));
 
-  // Detect an existing `tailscale serve` that points at us (set up by the user).
   let serveUrl: string | null = null;
   const serve = await run(["serve", "status", "--json"]);
   if (serve && dnsName) {

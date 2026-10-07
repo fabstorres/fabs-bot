@@ -17,8 +17,6 @@ export function subscribe(l: Listener) {
   return () => listeners.delete(l);
 }
 
-// ---------- live state (not persisted) ----------
-
 const statuses = new Map<string, BotStatus>();
 
 export function getStatuses(): BotStatus[] {

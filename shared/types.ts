@@ -1,4 +1,3 @@
-// Types shared between the server and the web client.
 
 export type ProviderId = "claude" | "codex" | "cursor" | "opencode" | "gemini";
 
@@ -54,6 +53,8 @@ export interface Thread {
   updatedAt: number;
   preview: string;
   unread: number;
+  /** An unanswered question or approval is waiting on the user. */
+  needsYou: boolean;
 }
 
 export type MessagePart =

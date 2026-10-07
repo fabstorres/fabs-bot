@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const home = homedir();
-// Make CLIs installed in user-local dirs reachable even when we run as a service with a bare PATH.
+/** Make CLIs installed in user-local dirs reachable even when we run as a service with a bare PATH. */
 const extraPath = [
   join(home, ".local/bin"),
   join(home, ".bun/bin"),
@@ -41,7 +41,11 @@ export async function spawnLines(o: SpawnLinesOptions): Promise<{ code: number; 
     stdout: "pipe",
     stderr: "pipe",
   });
-  const kill = () => proc.kill("SIGTERM");
+  let force: ReturnType<typeof setTimeout> | undefined;
+  const kill = () => {
+    proc.kill("SIGTERM");
+    force = setTimeout(() => proc.kill("SIGKILL"), 3000);
+  };
   o.signal.addEventListener("abort", kill, { once: true });
 
   if (o.stdin !== undefined && proc.stdin) {
@@ -69,6 +73,7 @@ export async function spawnLines(o: SpawnLinesOptions): Promise<{ code: number; 
   }
   if (buf.trim()) o.onLine(buf.trim());
   const code = await proc.exited;
+  clearTimeout(force);
   await errPump;
   o.signal.removeEventListener("abort", kill);
   return { code, stderr };

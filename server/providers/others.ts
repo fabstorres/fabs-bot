@@ -1,5 +1,7 @@
-// Best-effort adapters for CLIs that can't take our MCP tools per-run.
-// These bots still chat, work in their workspace, and join group threads via @mentions.
+/**
+ * Best-effort adapters for CLIs that can't take our MCP tools per-run.
+ * These bots still chat, work in their workspace, and join group threads via @mentions.
+ */
 import { clip, parseJson, spawnLines, summarizeToolInput } from "./spawn";
 import type { Provider, RunOptions } from "./types";
 

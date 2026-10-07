@@ -14,6 +14,7 @@ export interface TurnContext {
   botId: string;
   threadId: string;
   depth: number;
+  signal: AbortSignal;
   addPart(part: MessagePart): number;
   updatePart(index: number, part: MessagePart): void;
 }
@@ -21,9 +22,13 @@ export const turnsByToken = new Map<string, TurnContext>();
 
 const queues = new Map<string, Promise<unknown>>();
 const aborts = new Map<string, AbortController>();
-const activeTurns = new Map<string, number>(); // botId -> running turn count
+/** Running turn count per bot. */
+const activeTurns = new Map<string, number>();
+
+const stops = new Map<string, number>();
 
 const key = (threadId: string, botId: string) => `${threadId}:${botId}`;
+const stopCount = (threadId: string) => stops.get(threadId) ?? 0;
 
 export interface TurnOptions {
   /** How many bot-to-bot hops led here; stops runaway conversations. */
@@ -35,8 +40,9 @@ export interface TurnOptions {
 /** Queue a turn for `botId` in `threadId`. Resolves with the bot's reply message (or null if it had nothing to answer). */
 export function runTurn(threadId: string, botId: string, opts: TurnOptions = {}): Promise<Message | null> {
   const k = key(threadId, botId);
+  const queuedAt = stopCount(threadId);
   const prev = queues.get(k) ?? Promise.resolve();
-  const next = prev.catch(() => {}).then(() => executeTurn(threadId, botId, opts));
+  const next = prev.catch(() => {}).then(() => (stopCount(threadId) === queuedAt ? executeTurn(threadId, botId, opts) : null));
   queues.set(k, next);
   next.finally(() => {
     if (queues.get(k) === next) queues.delete(k);
@@ -44,15 +50,15 @@ export function runTurn(threadId: string, botId: string, opts: TurnOptions = {})
   return next;
 }
 
+/** Abort running turns in a thread and drop the ones queued before the stop. */
 export function stopTurns(threadId: string) {
+  stops.set(threadId, stopCount(threadId) + 1);
   for (const [k, ctrl] of aborts) if (k.startsWith(threadId + ":")) ctrl.abort();
 }
 
 export function isBusy(threadId: string, botId: string) {
   return queues.has(key(threadId, botId));
 }
-
-// ---------- prompts ----------
 
 export function systemPrompt(bot: Bot, thread: Thread): string {
   const team = db
@@ -140,8 +146,6 @@ function buildPrompt(thread: Thread, bot: Bot, msgs: Message[], fresh: boolean):
     : `New in this thread since your last reply:\n\n${transcript}\n\nReply as ${bot.name}.`;
 }
 
-// ---------- turn execution ----------
-
 async function executeTurn(threadId: string, botId: string, opts: TurnOptions): Promise<Message | null> {
   const bot = db.getBot(botId);
   const thread = db.getThread(threadId);
@@ -182,6 +186,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
     botId,
     threadId,
     depth: opts.depth ?? 0,
+    signal: ctrl.signal,
     addPart(part) {
       parts.push(part);
       touch();
@@ -281,7 +286,6 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
 
   const remaining = (activeTurns.get(botId) ?? 1) - 1;
   activeTurns.set(botId, remaining);
-  // An unanswered question keeps the bot "waiting" on you (field bubble + Needs you) until you reply.
   const asked = parts.some((p) => p.type === "question" && p.answered === undefined);
   if (remaining <= 0) {
     if (error) setStatus(botId, { state: "error", text: clip(error, 60), threadId: null });
@@ -289,12 +293,10 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
     else setStatus(botId, { state: "idle", text: "", threadId: null });
   }
 
-  // Messages that landed while we were working get a follow-up turn.
   const later = db.listMessages(threadId, snapshotSeq).filter((m) => m.author === "user");
   if (later.length && !ctrl.signal.aborted) void runTurn(threadId, botId, opts);
 
-  // In group threads, @mentions hand the floor to teammates.
-  if (thread.kind === "group" && !error) {
+  if (thread.kind === "group" && !error && !ctrl.signal.aborted) {
     const hops = (opts.hops ?? 0) + 1;
     if (hops <= MAX_HOPS) {
       for (const target of mentioned(replyText, thread, botId)) void runTurn(threadId, target, { hops });
@@ -342,12 +344,11 @@ export function mentioned(text: string, thread: Thread, selfId: string | null): 
   });
 }
 
-// ---------- entry points ----------
-
 /** The user posts in a thread; decide who answers. */
 export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   const thread = db.getThread(threadId);
   if (!thread) throw new Error("thread not found");
+  for (const q of db.closeOpenQuestions(threadId)) publish({ type: "message", message: q });
   const m = db.addMessage({ threadId, author: "user", parts });
   publish({ type: "message", message: m });
   const text = textOf(m);
@@ -357,9 +358,9 @@ export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   const named = mentioned(text, thread, null);
   const targets = named.length ? named : thread.kind === "direct" ? thread.memberIds : thread.memberIds;
   if (thread.kind === "group" && !named.length) {
-    // Everyone answers in order, each seeing the others' replies.
+    const queuedAt = stopCount(threadId);
     void (async () => {
-      for (const id of targets) await runTurn(threadId, id);
+      for (const id of targets) if (stopCount(threadId) === queuedAt) await runTurn(threadId, id);
     })();
   } else {
     for (const id of targets) void runTurn(threadId, id);

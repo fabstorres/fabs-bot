@@ -96,8 +96,6 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 export const newId = () => crypto.randomUUID();
 const now = () => Date.now();
 
-// ---------- settings ----------
-
 export function getSetting(key: string): string | null {
   const row = db.query("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | null;
   return row?.value ?? null;
@@ -105,8 +103,6 @@ export function getSetting(key: string): string | null {
 export function setSetting(key: string, value: string) {
   db.query("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(key, value);
 }
-
-// ---------- bots ----------
 
 type BotRow = {
   id: string; name: string; role: string; instructions: string; shape: string; color: string;
@@ -166,8 +162,6 @@ export function deleteBot(id: string) {
 
 export const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-// ---------- threads ----------
-
 type ThreadRow = {
   id: string; title: string; topic: string; kind: string; created_at: number; updated_at: number;
   preview: string; unread: number;
@@ -186,6 +180,15 @@ function toThread(r: ThreadRow): Thread {
     updatedAt: r.updated_at,
     preview: r.preview,
     unread: r.unread,
+    needsYou: !!db
+      .query(
+        `SELECT 1 FROM messages m, json_each(m.parts) p
+         WHERE m.thread_id = ?
+           AND ((json_extract(p.value, '$.type') = 'question' AND json_extract(p.value, '$.answered') IS NULL)
+             OR (json_extract(p.value, '$.type') = 'approval' AND json_extract(p.value, '$.decision') IS NULL))
+         LIMIT 1`,
+      )
+      .get(r.id),
   };
 }
 
@@ -258,8 +261,6 @@ export function resetSessionsForBot(botId: string) {
   db.query("UPDATE thread_members SET session_id = NULL, last_seen_seq = 0 WHERE bot_id = ?").run(botId);
 }
 
-// ---------- messages ----------
-
 type MessageRow = {
   id: string; thread_id: string; seq: number; author: string; bot_id: string | null; from_bot_id: string | null;
   parts: string; status: string; created_at: number;
@@ -306,12 +307,21 @@ export function updateMessage(id: string, parts: MessagePart[], status?: Message
   else db.query("UPDATE messages SET parts = ? WHERE id = ?").run(JSON.stringify(parts), id);
   return getMessage(id)!;
 }
-/** Messages left "streaming" by a crash or restart. */
+/** Messages left "streaming" by a crash or restart. Their approval prompts died with the turn. */
 export function closeDanglingMessages() {
-  db.query("UPDATE messages SET status = 'error' WHERE status = 'streaming'").run();
+  const rows = db.query("SELECT * FROM messages WHERE status = 'streaming'").all() as MessageRow[];
+  for (const m of rows.map(toMessage)) {
+    const parts = m.parts.map((p) => (p.type === "approval" && !p.decision ? { ...p, decision: "deny" as const } : p));
+    updateMessage(m.id, parts, "error");
+  }
 }
 
-// ---------- routines ----------
+/** A typed reply answers any open question in the thread; `answered: -1` means no option was tapped. */
+export function closeOpenQuestions(threadId: string): Message[] {
+  return listMessages(threadId)
+    .filter((m) => m.parts.some((p) => p.type === "question" && p.answered === undefined))
+    .map((m) => updateMessage(m.id, m.parts.map((p) => (p.type === "question" && p.answered === undefined ? { ...p, answered: -1 } : p))));
+}
 
 type RoutineRow = {
   id: string; bot_id: string; name: string; cron: string; prompt: string; thread_id: string | null;
@@ -362,8 +372,6 @@ export function deleteRoutine(id: string) {
   db.query("DELETE FROM routines WHERE id = ?").run(id);
 }
 
-// ---------- connectors ----------
-
 type ConnectorRow = {
   id: string; name: string; preset: string; kind: string; command: string; args: string; env: string;
   url: string; headers: string; created_at: number;
@@ -406,8 +414,6 @@ export function saveConnector(c: Omit<Connector, "createdAt">): Connector {
 export function deleteConnector(id: string) {
   db.query("DELETE FROM connectors WHERE id = ?").run(id);
 }
-
-// ---------- files ----------
 
 export type FileRow = {
   id: string; thread_id: string | null; bot_id: string | null; path: string; name: string; size: number; created_at: number;

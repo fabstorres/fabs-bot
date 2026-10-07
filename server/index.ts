@@ -6,7 +6,7 @@ import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
 import { CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SHARED_DIR, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
-import { ACCESS_TOKEN, authorized, isLoopback, pairCookie } from "./auth";
+import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { directThread, postUserMessage, stopTurns } from "./orchestrator";
@@ -25,12 +25,20 @@ async function refreshTailscale() {
   return ts;
 }
 
-// ---------- helpers ----------
-
 const json = (data: unknown, status = 200) => Response.json(data, { status });
 const bad = (message: string, status = 400) => json({ error: message }, status);
 
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 async function body<T = any>(req: Request): Promise<T> {
+  if (!req.headers.get("content-type")?.startsWith("application/json")) throw new HttpError(415, "expected application/json");
   try {
     return (await req.json()) as T;
   } catch {
@@ -74,8 +82,6 @@ async function hostInfo(): Promise<HostInfo> {
   };
 }
 
-// ---------- routes ----------
-
 type Handler = (req: Request, params: Record<string, string>, url: URL) => Response | Promise<Response>;
 const routes: [string, RegExp, string[], Handler][] = [];
 function route(method: string, path: string, h: Handler) {
@@ -87,7 +93,6 @@ function route(method: string, path: string, h: Handler) {
 route("GET", "/api/host", () => hostInfo().then(json));
 route("GET", "/api/providers", (_r, _p, url) => providerInfo(url.searchParams.has("refresh")).then(json));
 
-// bots
 route("GET", "/api/bots", () => json(db.listBots()));
 route("POST", "/api/bots", async (req) => {
   const bot = db.saveBot(sanitizeBot(await body(req)));
@@ -99,7 +104,6 @@ route("PUT", "/api/bots/:id", async (req, p) => {
   const existing = db.getBot(p.id!);
   if (!existing) return bad("not found", 404);
   const next = sanitizeBot(await body(req), existing);
-  // Switching CLI or folder invalidates the CLI's saved sessions.
   if (next.provider !== existing.provider || next.cwd !== existing.cwd) db.resetSessionsForBot(existing.id);
   const bot = db.saveBot({ ...next, createdAt: existing.createdAt });
   mkdirSync(bot.cwd, { recursive: true });
@@ -146,7 +150,6 @@ route("GET", "/api/bots/:id/file", (_r, p, url) => {
   return new Response(Bun.file(full), { headers: { "Content-Disposition": `inline; filename="${encodeURIComponent(basename(full))}"` } });
 });
 
-// threads
 route("GET", "/api/threads", () => json(db.listThreads()));
 route("POST", "/api/threads", async (req) => {
   const b = await body<{ botIds: string[]; text?: string; title?: string; fileIds?: string[] }>(req);
@@ -199,7 +202,6 @@ route("POST", "/api/threads/:id/members", async (req, p) => {
   return json(t);
 });
 
-// interactive cards
 route("POST", "/api/messages/:id/answer", async (req, p) => {
   const { partIndex, option } = await body<{ partIndex: number; option: number }>(req);
   const m = db.getMessage(p.id!);
@@ -216,7 +218,6 @@ route("POST", "/api/approvals/:id", async (req, p) => {
   return decideApproval(p.id!, decision === "allow" ? "allow" : "deny") ? json({ ok: true }) : bad("already decided", 409);
 });
 
-// files
 route("POST", "/api/upload", async (req) => {
   const form = await req.formData();
   const out = [];
@@ -233,7 +234,6 @@ route("POST", "/api/upload", async (req) => {
   return json(out);
 });
 
-// routines
 route("GET", "/api/routines", () => json(db.listRoutines().map(withNextRun)));
 route("POST", "/api/routines", async (req) => {
   const b = await body(req);
@@ -260,7 +260,6 @@ route("POST", "/api/routines/:id/run", (_r, p) => {
   return json({ ok: true });
 });
 
-// connectors
 route("GET", "/api/connectors", () => json(db.listConnectors()));
 route("GET", "/api/connectors/presets", () => json(CONNECTOR_PRESETS));
 route("POST", "/api/connectors", async (req) => {
@@ -301,8 +300,6 @@ function messageParts(text?: string, fileIds?: string[]): MessagePart[] {
   return parts;
 }
 
-// ---------- server ----------
-
 type WsData = { unsubscribe?: () => void };
 
 function serveStatic(url: URL): Response {
@@ -334,6 +331,7 @@ async function fetchHandler(req: Request, server: Server<WsData>): Promise<Respo
 
   const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws";
   if (isApi && !authorized(req, ip, ownerLogin)) return json({ error: "unpaired" }, 401);
+  if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
 
   if (url.pathname === "/ws") {
     return server.upgrade(req, { data: {} }) ? undefined : new Response("expected websocket", { status: 400 });
@@ -357,6 +355,7 @@ async function fetchHandler(req: Request, server: Server<WsData>): Promise<Respo
       try {
         return await h(req, params, url);
       } catch (e) {
+        if (e instanceof HttpError) return bad(e.message, e.status);
         console.error(e);
         return bad((e as Error).message, 500);
       }

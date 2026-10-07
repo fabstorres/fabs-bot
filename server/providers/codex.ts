@@ -70,7 +70,7 @@ export const codex: Provider = {
             if (!tool) break;
             if (ev.type === "item.started") emit({ type: "tool.start", id: it.id, ...tool });
             else if (done) {
-              emit({ type: "tool.start", id: it.id, ...tool }); // no-op if already started
+              emit({ type: "tool.start", id: it.id, ...tool });
               const error = it.status === "failed" || (typeof it.exit_code === "number" && it.exit_code !== 0);
               emit({ type: "tool.end", id: it.id, error });
             }

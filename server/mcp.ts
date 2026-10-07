@@ -1,5 +1,7 @@
-// A minimal MCP server (streamable HTTP, JSON responses) that every bot gets for each turn.
-// The URL token identifies the bot, thread and turn, so tools act in the right place.
+/**
+ * A minimal MCP server (streamable HTTP, JSON responses) that every bot gets for each turn.
+ * The URL token identifies the bot, thread and turn, so tools act in the right place.
+ */
 import { copyFileSync, existsSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { Cron } from "croner";
@@ -21,6 +23,11 @@ type ToolDef = {
 const str = (description: string) => ({ type: "string", description });
 
 const pendingApprovals = new Map<string, { resolve: (d: "allow" | "deny") => void; ctx: TurnContext; index: number }>();
+
+function publishThread(threadId: string) {
+  const t = db.getThread(threadId);
+  if (t) publish({ type: "thread", thread: t });
+}
 
 export function decideApproval(requestId: string, decision: "allow" | "deny"): boolean {
   const p = pendingApprovals.get(requestId);
@@ -82,6 +89,7 @@ const tools: ToolDef[] = [
       const options = (Array.isArray(args.options) ? args.options : []).map(String).slice(0, 6);
       if (options.length < 2) return "Give at least two options.";
       ctx.addPart({ type: "question", question: String(args.question), options });
+      publishThread(ctx.threadId);
       setStatus(ctx.botId, { state: "waiting", text: "Waiting for your answer", threadId: ctx.threadId });
       return "Question posted. End your turn now; the user's choice will arrive as a new message.";
     },
@@ -206,10 +214,16 @@ const tools: ToolDef[] = [
       const summary = clip(String(input.command ?? input.file_path ?? input.url ?? JSON.stringify(input)), 300);
       const part: MessagePart = { type: "approval", requestId, tool: String(args.tool_name), summary };
       const index = ctx.addPart(part);
+      publishThread(ctx.threadId);
       const prev = getStatus(ctx.botId);
       setStatus(ctx.botId, { state: "waiting", text: `Needs your OK: ${args.tool_name}`, threadId: ctx.threadId });
-      const decision = await new Promise<"allow" | "deny">((res) => pendingApprovals.set(requestId, { resolve: res, ctx, index }));
+      const decision = await new Promise<"allow" | "deny">((res) => {
+        pendingApprovals.set(requestId, { resolve: res, ctx, index });
+        if (ctx.signal.aborted) decideApproval(requestId, "deny");
+        else ctx.signal.addEventListener("abort", () => decideApproval(requestId, "deny"), { once: true });
+      });
       ctx.updatePart(index, { ...part, decision });
+      publishThread(ctx.threadId);
       setStatus(ctx.botId, { state: "working", text: prev.text, threadId: ctx.threadId });
       return JSON.stringify(
         decision === "allow" ? { behavior: "allow", updatedInput: input } : { behavior: "deny", message: "The user declined this action." },
@@ -236,7 +250,7 @@ export async function handleMcp(req: Request, token: string): Promise<Response> 
 }
 
 async function handleRpc(r: RpcRequest, ctx: TurnContext) {
-  if (r.id === undefined) return null; // notification
+  if (r.id === undefined) return null;
   const ok = (result: unknown) => ({ jsonrpc: "2.0", id: r.id, result });
   const fail = (code: number, message: string) => ({ jsonrpc: "2.0", id: r.id, error: { code, message } });
   switch (r.method) {

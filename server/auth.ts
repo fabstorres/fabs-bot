@@ -40,6 +40,22 @@ export function authorized(req: Request, ip: string | undefined, ownerLogin: str
   return [cookieToken(req), bearer, query].some((t) => t && timingSafeEqual(t, ACCESS_TOKEN));
 }
 
+/**
+ * Browsers send Origin on cross-site writes and WebSocket upgrades; CLIs and proxies send none.
+ * `tailscale serve` may rewrite Host, so its X-Forwarded-Host counts as our own host too.
+ */
+export function sameOrigin(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true;
+  let host: string;
+  try {
+    host = new URL(origin).host;
+  } catch {
+    return false;
+  }
+  return [req.headers.get("host"), req.headers.get("x-forwarded-host")].includes(host);
+}
+
 export function pairCookie(): string {
   return `${COOKIE}=${encodeURIComponent(ACCESS_TOKEN)}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`;
 }
