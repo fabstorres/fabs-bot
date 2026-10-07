@@ -316,13 +316,6 @@ export function closeDanglingMessages() {
   }
 }
 
-/** A typed reply answers any open question in the thread; `answered: -1` means no option was tapped. */
-export function closeOpenQuestions(threadId: string): Message[] {
-  return listMessages(threadId)
-    .filter((m) => m.parts.some((p) => p.type === "question" && p.answered === undefined))
-    .map((m) => updateMessage(m.id, m.parts.map((p) => (p.type === "question" && p.answered === undefined ? { ...p, answered: -1 } : p))));
-}
-
 type RoutineRow = {
   id: string; bot_id: string; name: string; cron: string; prompt: string; thread_id: string | null;
   enabled: number; last_run_at: number | null;

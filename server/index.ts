@@ -9,7 +9,7 @@ import * as db from "./db";
 import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
-import { directThread, postUserMessage, stopTurns } from "./orchestrator";
+import { directThread, editMessageParts, postUserMessage, stopTurns } from "./orchestrator";
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
@@ -207,8 +207,10 @@ route("POST", "/api/messages/:id/answer", async (req, p) => {
   const m = db.getMessage(p.id!);
   const part = m?.parts[partIndex];
   if (!m || part?.type !== "question" || part.answered !== undefined) return bad("can't answer that");
-  part.answered = option;
-  publish({ type: "message", message: db.updateMessage(m.id, m.parts) });
+  editMessageParts(m.id, (parts) => {
+    const live = parts[partIndex];
+    if (live?.type === "question") live.answered = option;
+  });
   const letter = String.fromCharCode(65 + option);
   await postUserMessage(m.threadId, [{ type: "text", text: `${letter}. ${part.options[option]}` }]);
   return json({ ok: true });

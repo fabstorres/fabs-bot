@@ -61,7 +61,13 @@ export type MessagePart =
   | { type: "text"; text: string }
   | { type: "tool"; id: string; name: string; summary: string; status: "running" | "done" | "error" }
   | { type: "file"; fileId: string; name: string; size: number }
-  | { type: "question"; question: string; options: string[]; answered?: number }
+  | {
+      type: "question";
+      question: string;
+      options: string[];
+      /** Index of the tapped option, or -1 when the user answered by typing. */
+      answered?: number;
+    }
   | {
       type: "approval";
       requestId: string;

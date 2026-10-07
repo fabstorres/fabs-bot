@@ -15,6 +15,8 @@ export interface TurnContext {
   threadId: string;
   depth: number;
   signal: AbortSignal;
+  messageId: string;
+  editParts(edit: (parts: MessagePart[]) => void): void;
   addPart(part: MessagePart): number;
   updatePart(index: number, part: MessagePart): void;
 }
@@ -55,6 +57,20 @@ export function stopTurns(threadId: string) {
   stops.set(threadId, stopCount(threadId) + 1);
   for (const [k, ctrl] of aborts) if (k.startsWith(threadId + ":")) ctrl.abort();
 }
+
+/** Edit a message's parts through its running turn when it is still streaming, so the turn's next flush keeps the edit. */
+export function editMessageParts(messageId: string, edit: (parts: MessagePart[]) => void) {
+  const live = [...turnsByToken.values()].find((t) => t.messageId === messageId);
+  if (live) return live.editParts(edit);
+  const m = db.getMessage(messageId);
+  if (!m) return;
+  edit(m.parts);
+  publish({ type: "message", message: db.updateMessage(m.id, m.parts) });
+}
+
+const closeQuestions = (parts: MessagePart[]) => {
+  for (const p of parts) if (p.type === "question" && p.answered === undefined) p.answered = -1;
+};
 
 export function isBusy(threadId: string, botId: string) {
   return queues.has(key(threadId, botId));
@@ -187,6 +203,12 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
     threadId,
     depth: opts.depth ?? 0,
     signal: ctrl.signal,
+    messageId: msg.id,
+    editParts(edit) {
+      edit(parts);
+      touch();
+      flush();
+    },
     addPart(part) {
       parts.push(part);
       touch();
@@ -348,7 +370,9 @@ export function mentioned(text: string, thread: Thread, selfId: string | null): 
 export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   const thread = db.getThread(threadId);
   if (!thread) throw new Error("thread not found");
-  for (const q of db.closeOpenQuestions(threadId)) publish({ type: "message", message: q });
+  for (const open of db.listMessages(threadId).filter((m) => m.parts.some((p) => p.type === "question" && p.answered === undefined))) {
+    editMessageParts(open.id, closeQuestions);
+  }
   const m = db.addMessage({ threadId, author: "user", parts });
   publish({ type: "message", message: m });
   const text = textOf(m);
