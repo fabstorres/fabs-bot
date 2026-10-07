@@ -141,7 +141,8 @@ type Attachment = { fileId: string; name: string; size: number };
 
 function Composer({ thread, members, working }: { thread: Thread; members: Bot[]; working: boolean }) {
   const bots = useStore((s) => s.bots);
-  const [text, setText] = useState(() => sessionStorage.getItem(`draft:${thread.id}`) ?? "");
+  const draftKey = `draft:${thread.id}`;
+  const [text, setText] = useState(() => sessionStorage.getItem(draftKey) ?? "");
   const [files, setFiles] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [listening, setListening] = useState(false);
@@ -149,7 +150,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
 
   function draft(next: string) {
     setText(next);
-    sessionStorage.setItem(`draft:${thread.id}`, next);
+    sessionStorage.setItem(draftKey, next);
   }
 
   async function attach(list: FileList | File[]) {
@@ -181,7 +182,10 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     if (!SpeechRecognition) return;
     const rec = new SpeechRecognition();
     rec.interimResults = false;
-    rec.onresult = (e: any) => draft((text ? text + " " : "") + e.results[0][0].transcript);
+    rec.onresult = (e: any) => {
+      const current = sessionStorage.getItem(draftKey) ?? "";
+      draft((current ? current + " " : "") + e.results[0][0].transcript);
+    };
     rec.onend = () => setListening(false);
     setListening(true);
     rec.start();
