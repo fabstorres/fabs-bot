@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Bot, Routine } from "../../../shared/types";
 import { api, formatTime } from "../api";
+import { useElementSize, useLoad } from "../hooks";
 import { openDirect, openModal, openThread, selectBot, threadTitle, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Icon } from "./Icon";
@@ -20,9 +21,11 @@ const SLOTS: [number, number][] = [
   [0.44, 0.14],
   [0.54, 0.48],
 ];
+const GOLDEN_ANGLE = 2.39996;
+
 function defaultSlot(i: number): [number, number] {
   if (i < SLOTS.length) return SLOTS[i]!;
-  const a = i * 2.39996; // golden angle spiral for big teams
+  const a = i * GOLDEN_ANGLE;
   const r = 0.08 + 0.035 * Math.sqrt(i);
   return [0.5 + Math.cos(a) * r * 1.4, 0.5 + Math.sin(a) * r * 2];
 }
@@ -49,16 +52,9 @@ export function Field() {
   const links = useStore((s) => s.links);
   const selected = useStore((s) => s.selectedBotId);
   const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: 1, h: 1 });
+  const size = useElementSize(ref);
   const [positions, setPositions] = useState<Positions>(loadPositions);
   const drag = useRef<{ id: string; dx: number; dy: number; moved: boolean; x0: number; y0: number } | null>(null);
-
-  useLayoutEffect(() => {
-    const el = ref.current!;
-    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   const pos = (b: Bot, i: number): [number, number] => positions[b.id] ?? defaultSlot(i);
   const px = (b: Bot, i: number) => {
@@ -167,10 +163,7 @@ function BotCard({ bot, anchor, field }: { bot: Bot; anchor: { x: number; y: num
   const threads = useStore((s) => s.threads);
   const bots = useStore((s) => s.bots);
   const status = useStore((s) => s.statuses[bot.id]);
-  const [routines, setRoutines] = useState<Routine[]>([]);
-  useEffect(() => {
-    api.get<Routine[]>("/api/routines").then((rs) => setRoutines(rs.filter((r) => r.botId === bot.id))).catch(() => {});
-  }, [bot.id]);
+  const routines = useLoad(() => api.get<Routine[]>("/api/routines"), [bot.id]).data?.filter((r) => r.botId === bot.id) ?? [];
   const mine = threads.filter((t) => t.memberIds.includes(bot.id)).slice(0, 4);
   const right = anchor.x < field.w * 0.62;
   const style = {

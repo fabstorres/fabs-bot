@@ -65,7 +65,6 @@ function apply(e: ServerEvent) {
         links: e.links,
         loaded: true,
       });
-      // Re-sync an open thread after reconnecting.
       if (get().openThreadId) void loadMessages(get().openThreadId!);
       break;
     case "bot":
@@ -118,7 +117,6 @@ export async function connect() {
       set({ unpaired: true });
       return;
     }
-    // The server isn't answering (stopped, crashed, or only Vite is running).
     set({ serverDown: true });
     setTimeout(connect, Math.min(10_000, 500 * 2 ** retry++));
     return;
@@ -141,9 +139,12 @@ export async function loadMessages(threadId: string) {
   set({ messages: { ...get().messages, [threadId]: msgs } });
 }
 
+/** Opening a thread adds one history entry, so the phone's back button closes it. */
 export function openThread(threadId: string | null) {
   set({ openThreadId: threadId, selectedBotId: null });
   if (threadId) {
+    if (history.state?.thread) history.replaceState({ thread: threadId }, "");
+    else history.pushState({ thread: threadId }, "");
     void loadMessages(threadId);
     void api.post(`/api/threads/${threadId}/read`).catch(() => {});
   }
@@ -151,7 +152,7 @@ export function openThread(threadId: string | null) {
 
 /** Close the open thread, consuming its history entry so the phone's back button stays meaningful. */
 export function closeThread() {
-  if (history.state?.thread) history.back(); // popstate → openThread(null)
+  if (history.state?.thread) history.back();
   else openThread(null);
 }
 
@@ -167,11 +168,6 @@ export const selectBot = (id: string | null) => set({ selectedBotId: id });
 
 export function botById(id: string | null | undefined): Bot | undefined {
   return id ? get().bots.find((b) => b.id === id) : undefined;
-}
-
-/** A thread "needs you" when a bot is waiting on you in it, or it has an unanswered question / approval. */
-export function threadNeedsYou(t: Thread, statuses: Record<string, BotStatus>) {
-  return t.memberIds.some((id) => statuses[id]?.state === "waiting" && statuses[id]?.threadId === t.id);
 }
 
 export function threadTitle(t: Thread, bots: Bot[]) {

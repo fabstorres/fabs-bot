@@ -38,7 +38,6 @@ body {
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
-/* Paper grain. */
 body::after {
   content: "";
   position: fixed;
@@ -87,8 +86,6 @@ a {
 .error {
   color: var(--red);
 }
-
-/* ---------- buttons & bits ---------- */
 
 .round {
   width: 52px;
@@ -290,8 +287,6 @@ a {
   }
 }
 
-/* ---------- bot avatar ---------- */
-
 .bot-avatar {
   position: relative;
   display: inline-block;
@@ -414,8 +409,6 @@ a {
   flex: none;
 }
 
-/* ---------- boot / welcome ---------- */
-
 .boot {
   height: 100%;
   display: grid;
@@ -492,8 +485,6 @@ a {
   font-size: 48px !important;
   margin-top: 24px !important;
 }
-
-/* ---------- top bar ---------- */
 
 .topbar {
   position: fixed;
@@ -602,8 +593,6 @@ a {
   flex: 1;
 }
 
-/* ---------- stage layout ---------- */
-
 .app {
   height: 100%;
 }
@@ -615,8 +604,6 @@ a {
   position: absolute;
   inset: 0 calc(var(--inbox-w) + 24px) 0 0;
 }
-
-/* ---------- field ---------- */
 
 .field {
   position: absolute;
@@ -852,8 +839,6 @@ a {
   flex: none;
 }
 
-/* ---------- dock ---------- */
-
 .dock {
   position: absolute;
   left: 50%;
@@ -937,16 +922,30 @@ a {
   min-width: 0;
   display: flex;
 }
-.mention-input textarea {
+.mention-grow {
   flex: 1;
-  border: 0;
-  outline: 0;
-  resize: none;
-  background: none;
+  min-width: 0;
+  display: grid;
+}
+.mention-grow::after {
+  content: attr(data-value) " ";
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  visibility: hidden;
+}
+.mention-grow::after,
+.mention-input textarea {
+  grid-area: 1 / 1;
   font-size: 16.5px;
   line-height: 1.4;
   padding: 9px 4px;
   max-height: 180px;
+}
+.mention-input textarea {
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: none;
 }
 .mention-input textarea::placeholder {
   color: var(--ink-3);
@@ -986,8 +985,6 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* ---------- inbox ---------- */
 
 .inbox {
   position: absolute;
@@ -1109,8 +1106,6 @@ a {
   border-radius: 50%;
 }
 
-/* ---------- conversation sheet ---------- */
-
 .sheet {
   position: absolute;
   z-index: 30;
@@ -1173,6 +1168,11 @@ a {
   overflow-y: auto;
   padding: 96px 22px 20px;
   display: flex;
+  flex-direction: column-reverse;
+}
+.sheet-flow {
+  flex: 1 0 auto;
+  display: flex;
   flex-direction: column;
   gap: 8px;
 }
@@ -1233,8 +1233,6 @@ a {
 .menu .danger {
   color: var(--red);
 }
-
-/* messages */
 
 .msg {
   display: flex;
@@ -1615,8 +1613,6 @@ a {
   margin: 0 0 8px 64px;
 }
 
-/* ---------- modals ---------- */
-
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1691,8 +1687,6 @@ a {
   font-size: 15px;
   margin: 22px 0 10px;
 }
-
-/* meet */
 
 .meet {
   display: flex;
@@ -1770,8 +1764,6 @@ a {
   margin-top: 16px;
   color: var(--ink-3);
 }
-
-/* editor */
 
 .editor {
   display: grid;
@@ -2021,8 +2013,6 @@ a {
   padding-top: 18px;
   margin-top: 6px;
 }
-
-/* settings, connectors, desk */
 
 .settings {
   display: flex;
@@ -2346,8 +2336,6 @@ textarea.mono {
   border-radius: 5px;
 }
 
-/* ---------- phones & narrow windows ---------- */
-
 .bot-strip {
   display: none;
 }
@@ -2556,7 +2544,6 @@ textarea.mono {
   }
 }
 
-/* The conversation sheet owns the top-right corner while open. */
 .app.has-sheet .topbar-actions {
   opacity: 0;
   pointer-events: none;

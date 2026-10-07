@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import type { Connector, HostInfo, ProviderInfo } from "../../../shared/types";
 import type { ConnectorPreset } from "../../../shared/templates";
 import { api, formatSize, formatTime } from "../api";
+import { useLoad } from "../hooks";
 import { openModal, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Icon } from "./Icon";
@@ -27,19 +28,15 @@ function Copy({ text, label = "Copy" }: { text: string; label?: string }) {
   );
 }
 
-// ---------- devices & settings ----------
+async function loadHost() {
+  const host = await api.get<HostInfo>("/api/host");
+  const qr = host.pairUrl ? await QRCode.toString(host.pairUrl, { type: "svg", margin: 1, color: { dark: "#111111", light: "#00000000" } }) : "";
+  return { host, qr };
+}
 
 export function SettingsPanel() {
-  const [host, setHost] = useState<HostInfo | null>(null);
-  const [providers, setProviders] = useState<ProviderInfo[]>([]);
-  const [qr, setQr] = useState("");
-  useEffect(() => {
-    api.get<HostInfo>("/api/host").then((h) => {
-      setHost(h);
-      if (h.pairUrl) QRCode.toString(h.pairUrl, { type: "svg", margin: 1, color: { dark: "#111111", light: "#00000000" } }).then(setQr);
-    });
-    api.get<ProviderInfo[]>("/api/providers?refresh").then(setProviders);
-  }, []);
+  const { host, qr = "" } = useLoad(loadHost, []).data ?? {};
+  const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []).data ?? [];
   const ts = host?.tailscale;
 
   return (
@@ -128,20 +125,13 @@ export function SettingsPanel() {
   );
 }
 
-// ---------- connectors ----------
-
 export function ConnectorsPanel() {
-  const [list, setList] = useState<Connector[]>([]);
-  const [presets, setPresets] = useState<ConnectorPreset[]>([]);
+  const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []);
+  const list = connectors.data ?? [];
+  const presets = useLoad(() => api.get<ConnectorPreset[]>("/api/connectors/presets"), []).data ?? [];
   const [inherited, setInherited] = useState<{ scannedAt: number; servers: { name: string; status: string }[] } | null>(null);
   const [scanning, setScanning] = useState(false);
   const [form, setForm] = useState<(ConnectorPreset & { id?: string }) | null>(null);
-  const load = () => api.get<Connector[]>("/api/connectors").then(setList);
-
-  useEffect(() => {
-    load();
-    api.get<ConnectorPreset[]>("/api/connectors/presets").then(setPresets);
-  }, []);
   const scan = async (refresh: boolean) => {
     setScanning(true);
     try {
@@ -151,7 +141,7 @@ export function ConnectorsPanel() {
     }
   };
 
-  if (form) return <ConnectorForm initial={form} onDone={() => (setForm(null), load())} />;
+  if (form) return <ConnectorForm initial={form} onDone={() => (setForm(null), connectors.reload())} />;
 
   return (
     <Modal wide title="Connectors">
@@ -193,7 +183,7 @@ export function ConnectorsPanel() {
             <button className="btn-soft small" onClick={() => setForm({ ...c, blurb: "", secretKeys: [] })}>
               Edit
             </button>
-            <button className="icon-btn" onClick={() => api.del(`/api/connectors/${c.id}`).then(load)} aria-label="Remove">
+            <button className="icon-btn" onClick={() => api.del(`/api/connectors/${c.id}`).then(connectors.reload)} aria-label="Remove">
               <Icon name="trash" size={16} />
             </button>
           </div>
@@ -308,22 +298,15 @@ function ConnectorForm({ initial, onDone }: { initial: ConnectorPreset & { id?: 
   );
 }
 
-// ---------- a bot's desk (workspace) ----------
-
 type Entry = { name: string; dir: boolean; size: number; mtime: number; path: string };
 
 export function WorkspacePanel({ botId }: { botId: string }) {
   const bot = useStore((s) => s.bots.find((b) => b.id === botId));
   const [path, setPath] = useState("");
-  const [data, setData] = useState<{ root: string; path: string; entries: Entry[] } | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    setError("");
-    api
-      .get<{ root: string; path: string; entries: Entry[] }>(`/api/bots/${botId}/files?path=${encodeURIComponent(path)}`)
-      .then(setData)
-      .catch((e) => setError(e.message));
-  }, [botId, path]);
+  const { data, error } = useLoad(
+    () => api.get<{ root: string; path: string; entries: Entry[] }>(`/api/bots/${botId}/files?path=${encodeURIComponent(path)}`),
+    [botId, path],
+  );
   if (!bot) return null;
   const crumbs = path ? path.split("/") : [];
 
@@ -371,29 +354,22 @@ export function WorkspacePanel({ botId }: { botId: string }) {
   );
 }
 
-// ---------- file viewer ----------
+type Preview = { kind: "image" | "text" | "md" | "other"; content: string };
+
+async function loadPreview(url: string, name: string): Promise<Preview> {
+  const blob = await (await fetch(url, { credentials: "same-origin" })).blob();
+  const type = blob.type;
+  if (type.startsWith("image/")) return { kind: "image", content: url };
+  if (/\.(md|markdown)$/i.test(name)) return { kind: "md", content: await blob.text() };
+  if (type.startsWith("text/") || /json|xml|javascript|yaml|toml/.test(type) || blob.size < 512 * 1024) {
+    const text = await blob.text();
+    return text.includes("\uFFFD") ? { kind: "other", content: "" } : { kind: "text", content: text };
+  }
+  return { kind: "other", content: "" };
+}
 
 export function FileViewer({ url, name }: { url: string; name: string }) {
-  const [state, setState] = useState<{ kind: "image" | "text" | "md" | "other"; content: string } | null>(null);
-  useEffect(() => {
-    let revoke = "";
-    fetch(url, { credentials: "same-origin" }).then(async (res) => {
-      const blob = await res.blob();
-      const type = blob.type;
-      if (type.startsWith("image/")) {
-        revoke = URL.createObjectURL(blob);
-        setState({ kind: "image", content: revoke });
-      } else if (/\.(md|markdown)$/i.test(name)) setState({ kind: "md", content: await blob.text() });
-      else if (type.startsWith("text/") || /json|xml|javascript|yaml|toml/.test(type) || blob.size < 512 * 1024) {
-        const text = await blob.text();
-        // Binary files decode with replacement chars; don't show those.
-        setState(text.includes("�") ? { kind: "other", content: "" } : { kind: "text", content: text });
-      } else setState({ kind: "other", content: "" });
-    });
-    return () => {
-      if (revoke) URL.revokeObjectURL(revoke);
-    };
-  }, [url, name]);
+  const state = useLoad(() => loadPreview(url, name), [url, name]).data;
 
   return (
     <Modal wide title={name}>

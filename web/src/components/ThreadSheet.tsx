@@ -1,41 +1,28 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api } from "../api";
+import { useWindowEvent } from "../hooks";
 import { closeThread, openModal, openThread, threadTitle, useStore } from "../store";
 import { AvatarStack, BotAvatar } from "./BotAvatar";
 import { Icon } from "./Icon";
-import { MentionInput, mentionedBots, type MentionInputHandle } from "./MentionInput";
+import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
 
 export function ThreadSheet({ thread }: { thread: Thread }) {
   const bots = useStore((s) => s.bots);
   const messages = useStore((s) => s.messages[thread.id]);
   const members = thread.memberIds.map((id) => bots.find((b) => b.id === id)).filter(Boolean) as Bot[];
-  const scroller = useRef<HTMLDivElement>(null);
-  const pinned = useRef(true);
+  const actions = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState(false);
 
-  useLayoutEffect(() => {
-    const el = scroller.current;
-    if (el && pinned.current) el.scrollTop = el.scrollHeight;
-  }, [messages]);
-  useEffect(() => {
-    pinned.current = true;
-  }, [thread.id]);
+  useWindowEvent("keydown", (e) => e.key === "Escape" && !useStore.getState().modal && closeThread());
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !useStore.getState().modal && closeThread();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  // Stop only makes sense while a turn is actually running (not while a bot waits on your answer).
   const working = !!messages?.some((m) => m.status === "streaming");
   const multi = members.length > 1 || thread.kind === "backchannel";
   const title = threadTitle(thread, bots);
 
   return (
-    <section className="sheet" key={thread.id} role="region" aria-label={`Thread with ${title}`} data-thread-id={thread.id}>
+    <section className="sheet" role="region" aria-label={`Thread with ${title}`} data-thread-id={thread.id}>
       <header className="sheet-head">
         <button className="round" onClick={closeThread} aria-label="Back">
           <Icon name="back" />
@@ -45,7 +32,7 @@ export function ThreadSheet({ thread }: { thread: Thread }) {
           <span className="sheet-title-text">{title}</span>
           {thread.topic && <span className="topic">{thread.topic}</span>}
         </div>
-        <div className="sheet-actions">
+        <div className="sheet-actions" ref={actions}>
           {members[0] && (
             <button className="round" title="Open the bot's desk (workspace)" aria-label="Open desk" onClick={() => openModal({ kind: "workspace", botId: members[0]!.id })}>
               <Icon name="monitor" />
@@ -54,26 +41,19 @@ export function ThreadSheet({ thread }: { thread: Thread }) {
           <button className="round" onClick={() => setMenu(!menu)} aria-label="More">
             <Icon name="more" />
           </button>
-          {menu && <ThreadMenu thread={thread} members={members} onClose={() => setMenu(false)} />}
+          {menu && <ThreadMenu thread={thread} members={members} within={actions} onClose={() => setMenu(false)} />}
         </div>
       </header>
 
-      <div
-        className="sheet-scroll"
-        role="log"
-        aria-label="Conversation"
-        ref={scroller}
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-        }}
-      >
-        {thread.kind === "backchannel" && (
-          <div className="msg-system">Private channel between {members.map((m) => m.name).join(" and ")}. You can read along or step in.</div>
-        )}
-        {!messages && <div className="sheet-loading"><span className="typing"><i /><i /><i /></span></div>}
-        {messages && messages.length === 0 && members[0] && <Hello bot={members[0]} />}
-        {messages && <MessageList messages={messages} bots={bots} multi={multi} />}
+      <div className="sheet-scroll" role="log" aria-label="Conversation">
+        <div className="sheet-flow">
+          {thread.kind === "backchannel" && (
+            <div className="msg-system">Private channel between {members.map((m) => m.name).join(" and ")}. You can read along or step in.</div>
+          )}
+          {!messages && <div className="sheet-loading"><span className="typing"><i /><i /><i /></span></div>}
+          {messages && messages.length === 0 && members[0] && <Hello bot={members[0]} />}
+          {messages && <MessageList messages={messages} bots={bots} multi={multi} />}
+        </div>
       </div>
 
       <Composer thread={thread} members={members} working={working} />
@@ -91,17 +71,23 @@ function Hello({ bot }: { bot: Bot }) {
   );
 }
 
-function ThreadMenu({ thread, members, onClose }: { thread: Thread; members: Bot[]; onClose(): void }) {
+function ThreadMenu({
+  thread,
+  members,
+  within,
+  onClose,
+}: {
+  thread: Thread;
+  members: Bot[];
+  within: RefObject<HTMLElement | null>;
+  onClose(): void;
+}) {
   const bots = useStore((s) => s.bots);
   const others = bots.filter((b) => !thread.memberIds.includes(b.id));
   const [adding, setAdding] = useState(false);
-  useEffect(() => {
-    const close = () => onClose();
-    setTimeout(() => window.addEventListener("click", close), 0);
-    return () => window.removeEventListener("click", close);
-  }, [onClose]);
+  useWindowEvent("pointerdown", (e) => !within.current?.contains(e.target as Node) && onClose());
   return (
-    <div className="menu pop-in" role="menu" aria-label="Thread menu" onClick={(e) => e.stopPropagation()}>
+    <div className="menu pop-in" role="menu" aria-label="Thread menu">
       {!adding ? (
         <>
           <button
@@ -159,15 +145,12 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
   const [files, setFiles] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [listening, setListening] = useState(false);
-  const input = useRef<MentionInputHandle>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    sessionStorage.setItem(`draft:${thread.id}`, text);
-  }, [text, thread.id]);
-  useEffect(() => {
-    if (window.matchMedia("(pointer: fine)").matches) input.current?.focus();
-  }, [thread.id]);
+  function draft(next: string) {
+    setText(next);
+    sessionStorage.setItem(`draft:${thread.id}`, next);
+  }
 
   async function attach(list: FileList | File[]) {
     if (!list.length) return;
@@ -183,13 +166,12 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
   async function send() {
     const body = text.trim();
     if (!body && !files.length) return;
-    // @mentioning a bot that isn't here pulls it into the thread.
     if (thread.kind !== "backchannel") {
       for (const b of mentionedBots(body, bots)) {
         if (!thread.memberIds.includes(b.id)) await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
       }
     }
-    setText("");
+    draft("");
     setFiles([]);
     await api.post(`/api/threads/${thread.id}/messages`, { text: body, fileIds: files.map((f) => f.fileId) });
   }
@@ -199,7 +181,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     if (!SpeechRecognition) return;
     const rec = new SpeechRecognition();
     rec.interimResults = false;
-    rec.onresult = (e: any) => setText((t) => (t ? t + " " : "") + e.results[0][0].transcript);
+    rec.onresult = (e: any) => draft((text ? text + " " : "") + e.results[0][0].transcript);
     rec.onend = () => setListening(false);
     setListening(true);
     rec.start();
@@ -227,9 +209,9 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
         <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && attach(e.target.files)} />
         <div className="composer-pill">
           <MentionInput
-            ref={input}
             value={text}
-            onChange={setText}
+            onChange={draft}
+            autoFocus={window.matchMedia("(pointer: fine)").matches}
             onSubmit={send}
             bots={bots}
             ariaLabel="Message"

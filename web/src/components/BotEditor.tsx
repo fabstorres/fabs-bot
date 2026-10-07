@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Bot, Connector, ProviderInfo, Routine } from "../../../shared/types";
 import { BOT_TEMPLATES, COLORS, SHAPES, type BotTemplate } from "../../../shared/templates";
 import { api, formatTime } from "../api";
+import { useLoad, useWindowEvent } from "../hooks";
 import { closeModal, openDirect, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Icon } from "./Icon";
@@ -58,11 +59,7 @@ function Meet({ onStart, onCustomize }: { onStart(t: BotTemplate): void; onCusto
   const [busy, setBusy] = useState(false);
   const t = BOT_TEMPLATES[i]!;
   const go = (d: number) => setI((i + d + BOT_TEMPLATES.length) % BOT_TEMPLATES.length);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => (e.key === "ArrowRight" ? go(1) : e.key === "ArrowLeft" ? go(-1) : null);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
+  useWindowEvent("keydown", (e) => (e.key === "ArrowRight" ? go(1) : e.key === "ArrowLeft" ? go(-1) : null));
   return (
     <div className="meet">
       <h1>Meet your first bot</h1>
@@ -111,14 +108,10 @@ function Meet({ onStart, onCustomize }: { onStart(t: BotTemplate): void; onCusto
 }
 
 function Editor({ draft, setDraft, existing }: { draft: Draft; setDraft(d: Draft): void; existing?: Bot }) {
-  const [providers, setProviders] = useState<ProviderInfo[]>([]);
-  const [connectors, setConnectors] = useState<Connector[]>([]);
+  const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers"), []).data ?? [];
+  const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []).data ?? [];
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
-    api.get<ProviderInfo[]>("/api/providers").then(setProviders);
-    api.get<Connector[]>("/api/connectors").then(setConnectors);
-  }, []);
   const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
   const provider = providers.find((p) => p.id === draft.provider);
 
@@ -309,11 +302,10 @@ const SCHEDULES: [string, string][] = [
 ];
 
 function Routines({ bot }: { bot: Bot }) {
-  const [list, setList] = useState<Routine[]>([]);
+  const routines = useLoad(() => api.get<Routine[]>("/api/routines"), [bot.id]);
+  const list = routines.data?.filter((r) => r.botId === bot.id) ?? [];
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", cron: SCHEDULES[0]![1], prompt: "" });
-  const load = () => api.get<Routine[]>("/api/routines").then((rs) => setList(rs.filter((r) => r.botId === bot.id)));
-  useEffect(() => void load(), [bot.id]);
   const label = (cron: string) => SCHEDULES.find((s) => s[1] === cron)?.[0] ?? cron;
 
   return (
@@ -333,7 +325,7 @@ function Routines({ bot }: { bot: Bot }) {
             <button className="btn-soft small" onClick={() => api.post(`/api/routines/${r.id}/run`)}>
               Run now
             </button>
-            <button className="icon-btn" onClick={() => api.del(`/api/routines/${r.id}`).then(load)} aria-label="Delete">
+            <button className="icon-btn" onClick={() => api.del(`/api/routines/${r.id}`).then(routines.reload)} aria-label="Delete">
               <Icon name="trash" size={16} />
             </button>
           </div>
@@ -368,7 +360,7 @@ function Routines({ bot }: { bot: Bot }) {
                   await api.post("/api/routines", { ...form, botId: bot.id });
                   setAdding(false);
                   setForm({ name: "", cron: SCHEDULES[0]![1], prompt: "" });
-                  load();
+                  routines.reload();
                 }}
               >
                 Add routine

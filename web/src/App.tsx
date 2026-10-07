@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Thread } from "../../shared/types";
 import { api } from "./api";
-import { connect, openDirect, openModal, openThread, selectBot, useStore } from "./store";
+import { useLoad, useWindowEvent } from "./hooks";
+import { openDirect, openModal, openThread, selectBot, useStore } from "./store";
 import { BotAvatar } from "./components/BotAvatar";
 import { BotEditor } from "./components/BotEditor";
 import { Field } from "./components/Field";
@@ -20,19 +21,7 @@ export function App() {
   const thread = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
   const modal = useStore((s) => s.modal);
 
-  useEffect(() => void connect(), []);
-
-  // Keep the back button meaningful on phones: an open thread is a history entry.
-  useEffect(() => {
-    const onPop = () => openThread(null);
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-  useEffect(() => {
-    if (!openId) return;
-    if (history.state?.thread) history.replaceState({ thread: openId }, "");
-    else history.pushState({ thread: openId }, "");
-  }, [openId]);
+  useWindowEvent("popstate", () => openThread(null));
 
   if (unpaired) return <Unpaired />;
   if (!loaded && serverDown) return <ServerDown />;
@@ -52,7 +41,7 @@ export function App() {
               <Dock />
             </div>
             <Inbox />
-            {thread && <ThreadSheet thread={thread} />}
+            {thread && <ThreadSheet key={thread.id} thread={thread} />}
           </main>
         </>
       )}
@@ -69,10 +58,7 @@ function TopBar() {
   const connected = useStore((s) => s.connected);
   const statuses = useStore((s) => s.statuses);
   const busy = Object.values(statuses).filter((s) => s.state === "working").length;
-  const [host, setHost] = useState("");
-  useEffect(() => {
-    api.get<{ hostname: string }>("/api/host").then((h) => setHost(h.hostname)).catch(() => {});
-  }, []);
+  const host = useLoad(() => api.get<{ hostname: string }>("/api/host"), []).data?.hostname ?? "";
 
   return (
     <header className="topbar">

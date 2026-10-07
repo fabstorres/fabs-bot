@@ -1,11 +1,6 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Bot } from "../../../shared/types";
 import { BotAvatar } from "./BotAvatar";
-
-export interface MentionInputHandle {
-  focus(): void;
-  insert(text: string): void;
-}
 
 interface Props {
   value: string;
@@ -20,28 +15,10 @@ interface Props {
 }
 
 /** Auto-growing textarea with @mention autocomplete for bots. Enter sends, Shift+Enter breaks. */
-export const MentionInput = forwardRef<MentionInputHandle, Props>(function MentionInput(
-  { value, onChange, onSubmit, bots, placeholder, ariaLabel, autoFocus, onPaste },
-  ref,
-) {
+export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ariaLabel, autoFocus, onPaste }: Props) {
   const el = useRef<HTMLTextAreaElement>(null);
   const [query, setQuery] = useState<string | null>(null);
   const [active, setActive] = useState(0);
-
-  useImperativeHandle(ref, () => ({
-    focus: () => el.current?.focus(),
-    insert(text) {
-      onChange(value + text);
-      requestAnimationFrame(() => el.current?.focus());
-    },
-  }));
-
-  useEffect(() => {
-    const t = el.current;
-    if (!t) return;
-    t.style.height = "0px";
-    t.style.height = Math.min(t.scrollHeight, 180) + "px";
-  }, [value]);
 
   const matches =
     query === null ? [] : bots.filter((b) => b.name.toLowerCase().replace(/\s+/g, "").startsWith(query.toLowerCase())).slice(0, 6);
@@ -89,34 +66,36 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(function Menti
           ))}
         </div>
       )}
-      <textarea
-        ref={el}
-        rows={1}
-        value={value}
-        placeholder={placeholder}
-        aria-label={ariaLabel}
-        autoFocus={autoFocus}
-        onPaste={onPaste}
-        onChange={(e) => {
-          onChange(e.target.value);
-          detect(e.target.value, e.target.selectionStart);
-        }}
-        onKeyDown={(e) => {
-          if (matches.length) {
-            if (e.key === "ArrowDown") return e.preventDefault(), setActive((active + 1) % matches.length);
-            if (e.key === "ArrowUp") return e.preventDefault(), setActive((active - 1 + matches.length) % matches.length);
-            if (e.key === "Enter" || e.key === "Tab") return e.preventDefault(), pick(matches[active]!);
-            if (e.key === "Escape") return setQuery(null);
-          }
-          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-            e.preventDefault();
-            onSubmit();
-          }
-        }}
-      />
+      <div className="mention-grow" data-value={value}>
+        <textarea
+          ref={el}
+          rows={1}
+          value={value}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          autoFocus={autoFocus}
+          onPaste={onPaste}
+          onChange={(e) => {
+            onChange(e.target.value);
+            detect(e.target.value, e.target.selectionStart);
+          }}
+          onKeyDown={(e) => {
+            if (matches.length) {
+              if (e.key === "ArrowDown") return e.preventDefault(), setActive((active + 1) % matches.length);
+              if (e.key === "ArrowUp") return e.preventDefault(), setActive((active - 1 + matches.length) % matches.length);
+              if (e.key === "Enter" || e.key === "Tab") return e.preventDefault(), pick(matches[active]!);
+              if (e.key === "Escape") return setQuery(null);
+            }
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
+        />
+      </div>
     </div>
   );
-});
+}
 
 /** Bots @mentioned in text, in order of first mention. */
 export function mentionedBots(text: string, bots: Bot[]): Bot[] {

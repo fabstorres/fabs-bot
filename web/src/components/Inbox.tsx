@@ -1,5 +1,5 @@
 import { formatTime } from "../api";
-import { openThread, threadNeedsYou, threadTitle, useStore } from "../store";
+import { openThread, threadTitle, useStore } from "../store";
 import { AvatarStack } from "./BotAvatar";
 import { Icon } from "./Icon";
 
@@ -11,10 +11,10 @@ export function Inbox() {
   const search = useStore((s) => s.search);
   const openId = useStore((s) => s.openThreadId);
 
-  const needs = threads.filter((t) => threadNeedsYou(t, statuses));
+  const needs = threads.filter((t) => t.needsYou);
   const q = search.trim().toLowerCase();
   const shown = threads
-    .filter((t) => (filter === "bots" ? t.kind === "backchannel" : filter === "needs" ? threadNeedsYou(t, statuses) : t.kind !== "backchannel"))
+    .filter((t) => (filter === "bots" ? t.kind === "backchannel" : filter === "needs" ? t.needsYou : t.kind !== "backchannel"))
     .filter((t) => !q || `${threadTitle(t, bots)} ${t.topic} ${t.preview}`.toLowerCase().includes(q));
 
   return (
@@ -44,7 +44,7 @@ export function Inbox() {
         {shown.map((t, i) => {
           const members = t.memberIds.map((id) => bots.find((b) => b.id === id)).filter(Boolean) as typeof bots;
           const working = t.memberIds.some((id) => statuses[id]?.state === "working" && statuses[id]?.threadId === t.id);
-          const waiting = threadNeedsYou(t, statuses);
+          const waiting = t.needsYou;
           return (
             <button
               key={t.id}
