@@ -1,56 +1,78 @@
-import { useRef, useState, type RefObject } from "react";
+import { useRef, useState } from "react";
+import { ArrowUp, ChevronLeft, Ellipsis, Mic, Monitor, Paperclip, Pencil, Plus, Square, Trash2, UserPlus, X } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api } from "../api";
-import { useWindowEvent } from "../hooks";
-import { closeThread, openModal, openThread, threadTitle, useStore } from "../store";
+import { goBack, openModal, threadTitle, togglePanel, useStore } from "../store";
 import { AvatarStack, BotAvatar } from "./BotAvatar";
-import { Icon } from "./Icon";
 import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-export function ThreadSheet({ thread }: { thread: Thread }) {
+export function Chat({ thread }: { thread: Thread }) {
   const bots = useStore((s) => s.bots);
   const messages = useStore((s) => s.messages[thread.id]);
-  const members = thread.memberIds.map((id) => bots.find((b) => b.id === id)).filter(Boolean) as Bot[];
-  const actions = useRef<HTMLDivElement>(null);
-  const [menu, setMenu] = useState(false);
-
-  useWindowEvent("keydown", (e) => e.key === "Escape" && !useStore.getState().modal && closeThread());
+  const panelOpen = useStore((s) => s.panelOpen);
+  const members = thread.memberIds.map((id) => bots.find((b) => b.id === id)).filter((b): b is Bot => !!b);
 
   const working = !!messages?.some((m) => m.status === "streaming");
   const multi = members.length > 1 || thread.kind === "backchannel";
   const title = threadTitle(thread, bots);
 
   return (
-    <section className="sheet" role="region" aria-label={`Thread with ${title}`} data-thread-id={thread.id}>
-      <header className="sheet-head">
-        <button className="round" onClick={closeThread} aria-label="Back">
-          <Icon name="back" />
-        </button>
-        <div className="sheet-title">
-          <AvatarStack bots={members} size={30} />
-          <span className="sheet-title-text">{title}</span>
-          {thread.topic && <span className="topic">{thread.topic}</span>}
+    <section className="flex h-full min-w-0 flex-1 flex-col bg-background" role="region" aria-label={`Thread with ${title}`} data-thread-id={thread.id}>
+      <header className="flex h-14 flex-none items-center gap-2 px-3 md:px-5">
+        <Button variant="ghost" size="icon" className={cn("rounded-full", thread.kind !== "backchannel" && "md:hidden")} onClick={goBack} aria-label="Back">
+          <ChevronLeft className="size-5" />
+        </Button>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <AvatarStack bots={members} size={28} />
+          <span className="truncate text-[17px] font-semibold">{title}</span>
+          {thread.topic && <Badge variant="secondary">{thread.topic}</Badge>}
         </div>
-        <div className="sheet-actions" ref={actions}>
-          {members[0] && (
-            <button className="round" title="Open the bot's desk (workspace)" aria-label="Open desk" onClick={() => openModal({ kind: "workspace", botId: members[0]!.id })}>
-              <Icon name="monitor" />
-            </button>
-          )}
-          <button className="round" onClick={() => setMenu(!menu)} aria-label="More">
-            <Icon name="more" />
-          </button>
-          {menu && <ThreadMenu thread={thread} members={members} within={actions} onClose={() => setMenu(false)} />}
-        </div>
+        {members.length > 0 && thread.kind !== "backchannel" && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("rounded-full", panelOpen && "bg-accent")}
+            title="Open the bot's desk and routines"
+            aria-label="Open desk"
+            aria-pressed={panelOpen}
+            onClick={togglePanel}
+          >
+            <Monitor className="size-5" />
+          </Button>
+        )}
+        <ThreadMenu thread={thread} members={members} />
       </header>
 
-      <div className="sheet-scroll" role="log" aria-label="Conversation">
-        <div className="sheet-flow">
+      <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 pt-4 pb-5" role="log" aria-label="Conversation">
+        <div className="mx-auto flex w-full max-w-3xl flex-[1_0_auto] flex-col gap-2">
           {thread.kind === "backchannel" && (
-            <div className="msg-system">Private channel between {members.map((m) => m.name).join(" and ")}. You can read along or step in.</div>
+            <p className="py-2 text-center text-[13px] text-muted-foreground">
+              Private channel between {members.map((m) => m.name).join(" and ")}. You can read along or step in.
+            </p>
           )}
-          {!messages && <div className="sheet-loading"><span className="typing"><i /><i /><i /></span></div>}
+          {!messages && (
+            <div className="m-auto text-muted-foreground">
+              <span className="typing">
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+          )}
           {messages && messages.length === 0 && members[0] && <Hello bot={members[0]} />}
           {messages && <MessageList messages={messages} bots={bots} multi={multi} />}
         </div>
@@ -63,77 +85,65 @@ export function ThreadSheet({ thread }: { thread: Thread }) {
 
 function Hello({ bot }: { bot: Bot }) {
   return (
-    <div className="hello">
-      <BotAvatar shape={bot.shape} color={bot.color} size={120} />
-      <h3>{bot.name}</h3>
-      <p>{bot.role || "Ready when you are."}</p>
+    <div className="m-auto flex flex-col items-center gap-2 py-10 text-center">
+      <BotAvatar shape={bot.shape} color={bot.color} size={112} />
+      <h3 className="mt-2 text-xl font-semibold">{bot.name}</h3>
+      <p className="max-w-sm text-muted-foreground">{bot.role || "Ready when you are."}</p>
     </div>
   );
 }
 
-function ThreadMenu({
-  thread,
-  members,
-  within,
-  onClose,
-}: {
-  thread: Thread;
-  members: Bot[];
-  within: RefObject<HTMLElement | null>;
-  onClose(): void;
-}) {
+function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
   const bots = useStore((s) => s.bots);
   const others = bots.filter((b) => !thread.memberIds.includes(b.id));
-  const [adding, setAdding] = useState(false);
-  useWindowEvent("pointerdown", (e) => !within.current?.contains(e.target as Node) && onClose());
   return (
-    <div className="menu pop-in" role="menu" aria-label="Thread menu">
-      {!adding ? (
-        <>
-          <button
-            onClick={async () => {
-              const title = prompt("Thread name", threadTitle(thread, bots));
-              if (title !== null) await api.patch(`/api/threads/${thread.id}`, { title });
-              onClose();
-            }}
-          >
-            <Icon name="edit" size={16} /> Rename
-          </button>
-          {others.length > 0 && thread.kind !== "backchannel" && (
-            <button onClick={() => setAdding(true)}>
-              <Icon name="users" size={16} /> Bring in a bot
-            </button>
-          )}
-          {members.map((m) => (
-            <button key={m.id} onClick={() => (openModal({ kind: "bot", botId: m.id }), onClose())}>
-              <BotAvatar shape={m.shape} color={m.color} size={16} /> Edit {m.name}
-            </button>
-          ))}
-          <button
-            className="danger"
-            onClick={async () => {
-              if (!confirm("Delete this thread? The bots' work on disk stays.")) return;
-              await api.del(`/api/threads/${thread.id}`);
-              closeThread();
-            }}
-          >
-            <Icon name="trash" size={16} /> Delete thread
-          </button>
-        </>
-      ) : (
-        others.map((b) => (
-          <button
-            key={b.id}
-            onClick={async () => {
-              await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
-              onClose();
-            }}
-          >
-            <BotAvatar shape={b.shape} color={b.color} size={18} /> {b.name}
-          </button>
-        ))
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="rounded-full" aria-label="More">
+          <Ellipsis className="size-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56" aria-label="Thread menu">
+        <DropdownMenuItem
+          onSelect={async () => {
+            const title = prompt("Thread name", threadTitle(thread, bots));
+            if (title !== null) await api.patch(`/api/threads/${thread.id}`, { title });
+          }}
+        >
+          <Pencil /> Rename
+        </DropdownMenuItem>
+        {others.length > 0 && thread.kind !== "backchannel" && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <UserPlus /> Bring in a bot
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {others.map((b) => (
+                <DropdownMenuItem key={b.id} onSelect={() => api.post(`/api/threads/${thread.id}/members`, { botId: b.id })}>
+                  <BotAvatar shape={b.shape} color={b.color} size={18} /> {b.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+        {members.map((m) => (
+          <DropdownMenuItem key={m.id} onSelect={() => openModal({ kind: "bot", botId: m.id })}>
+            <BotAvatar shape={m.shape} color={m.color} size={16} /> Edit {m.name}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={async () => {
+            if (!confirm("Delete this thread? The bots' work on disk stays.")) return;
+            await api.del(`/api/threads/${thread.id}`);
+            goBack();
+          }}
+        >
+          <Trash2 /> Delete thread
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -192,26 +202,31 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
   }
 
   const name = members.length === 1 ? members[0]!.name : thread.kind === "backchannel" ? "both bots" : "the group · @ to pick";
+  const ready = !!text.trim() || files.length > 0;
   return (
-    <footer className="composer" onDragOver={(e) => e.preventDefault()} onDrop={(e) => (e.preventDefault(), attach(e.dataTransfer.files))}>
-      {files.length > 0 && (
-        <div className="composer-files">
-          {files.map((f) => (
-            <span key={f.fileId} className="chip">
-              <Icon name="clip" size={12} /> {f.name}
-              <button onClick={() => setFiles(files.filter((x) => x.fileId !== f.fileId))} aria-label="Remove">
-                <Icon name="x" size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="composer-row">
-        <button className="round" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading}>
-          <Icon name={uploading ? "clock" : "plus"} />
-        </button>
-        <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && attach(e.target.files)} />
-        <div className="composer-pill">
+    <footer
+      className="flex-none px-3 pb-[max(12px,env(safe-area-inset-bottom))] md:px-5 md:pb-5"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => (e.preventDefault(), attach(e.dataTransfer.files))}
+    >
+      <div className="mx-auto max-w-3xl rounded-[26px] border bg-background p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)]">
+        {files.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-1">
+            {files.map((f) => (
+              <Badge key={f.fileId} variant="secondary" className="gap-1 py-1 pr-1">
+                <Paperclip /> {f.name}
+                <button className="rounded-full p-0.5 hover:bg-black/10" onClick={() => setFiles(files.filter((x) => x.fileId !== f.fileId))} aria-label="Remove">
+                  <X className="size-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+        <div className="flex items-end gap-1">
+          <Button variant="secondary" size="icon" className="rounded-full" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading}>
+            <Plus className="size-5" />
+          </Button>
+          <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && attach(e.target.files)} />
           <MentionInput
             value={text}
             onChange={draft}
@@ -219,22 +234,23 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
             onSubmit={send}
             bots={bots}
             ariaLabel="Message"
-            placeholder={`Ask ${name}`}
+            placeholder={`Message ${name}`}
             onPaste={(e) => e.clipboardData.files.length && (e.preventDefault(), attach(e.clipboardData.files))}
           />
-          {text.trim() || files.length ? (
-            <button className="send" onClick={send} aria-label="Send">
-              <Icon name="send" size={18} stroke={2.4} />
-            </button>
-          ) : working ? (
-            <button className="send stop" onClick={() => api.post(`/api/threads/${thread.id}/stop`)} aria-label="Stop">
-              <Icon name="stop" size={14} stroke={3} />
-            </button>
-          ) : SpeechRecognition ? (
-            <button className={`mic ${listening ? "on" : ""}`} onClick={dictate} aria-label="Dictate">
-              <Icon name="mic" size={18} />
-            </button>
-          ) : null}
+          {SpeechRecognition && (
+            <Button variant="ghost" size="icon" className={cn("rounded-full", listening && "bg-red-50 text-red-600")} onClick={dictate} aria-label="Dictate">
+              <Mic className="size-5" />
+            </Button>
+          )}
+          {working && !ready ? (
+            <Button size="icon" className="rounded-full" onClick={() => api.post(`/api/threads/${thread.id}/stop`)} aria-label="Stop">
+              <Square className="size-3.5 fill-current" />
+            </Button>
+          ) : (
+            <Button size="icon" className="rounded-full" onClick={send} disabled={!ready} aria-label="Send">
+              <ArrowUp className="size-5" strokeWidth={2.4} />
+            </Button>
+          )}
         </div>
       </div>
     </footer>

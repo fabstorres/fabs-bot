@@ -9,7 +9,8 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "types": ["bun"]
+    "types": ["bun"],
+    "paths": { "@/*": ["./web/src/*"] }
   },
   "include": ["server", "web/src", "shared"]
 }
