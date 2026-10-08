@@ -3,12 +3,14 @@ import type { Bot, BotStatus, Link, Message, ServerEvent, Thread } from "../../s
 import { api, Unpaired } from "./api";
 
 export type Modal =
-  | { kind: "bot"; botId?: string; onboarding?: boolean }
+  | { kind: "bot"; botId: string }
   | { kind: "connectors" }
   | { kind: "settings" }
-  | { kind: "workspace"; botId: string }
   | { kind: "file"; url: string; name: string }
   | null;
+
+/** What the main pane shows. Each one is a history entry, so the phone's back button walks back through them. */
+type View = { thread?: string; creating?: boolean };
 
 interface State {
   connected: boolean;
@@ -21,9 +23,9 @@ interface State {
   links: Link[];
   messages: Record<string, Message[]>;
   openThreadId: string | null;
-  selectedBotId: string | null;
+  creating: boolean;
+  panelOpen: boolean;
   modal: Modal;
-  inboxFilter: "all" | "needs" | "bots";
   search: string;
 }
 
@@ -38,9 +40,9 @@ export const useStore = create<State>(() => ({
   links: [],
   messages: {},
   openThreadId: null,
-  selectedBotId: null,
+  creating: false,
+  panelOpen: false,
   modal: null,
-  inboxFilter: "all",
   search: "",
 }));
 
@@ -139,21 +141,29 @@ export async function loadMessages(threadId: string) {
   set({ messages: { ...get().messages, [threadId]: msgs } });
 }
 
-/** Opening a thread adds one history entry, so the phone's back button closes it. */
-export function openThread(threadId: string | null) {
-  set({ openThreadId: threadId, selectedBotId: null });
-  if (threadId) {
-    if (history.state?.thread) history.replaceState({ thread: threadId }, "");
-    else history.pushState({ thread: threadId }, "");
-    void loadMessages(threadId);
-    void api.post(`/api/threads/${threadId}/read`).catch(() => {});
+function show(view: View) {
+  set({ openThreadId: view.thread ?? null, creating: !!view.creating });
+  if (view.thread) {
+    void loadMessages(view.thread);
+    void api.post(`/api/threads/${view.thread}/read`).catch(() => {});
   }
 }
 
-/** Close the open thread, consuming its history entry so the phone's back button stays meaningful. */
-export function closeThread() {
-  if (history.state?.thread) history.back();
-  else openThread(null);
+function go(view: View, stack: boolean) {
+  if (history.state?.view && !stack) history.replaceState({ view }, "");
+  else history.pushState({ view }, "");
+  show(view);
+}
+
+export const openThread = (threadId: string) => go({ thread: threadId }, false);
+/** Stacks on top of the current chat, so Back returns to it. */
+export const openNestedThread = (threadId: string) => go({ thread: threadId }, true);
+export const startCreating = () => go({ creating: true }, false);
+export const restoreView = () => show(history.state?.view ?? {});
+
+export function goBack() {
+  if (history.state?.view) history.back();
+  else show({});
 }
 
 export async function openDirect(botId: string) {
@@ -162,9 +172,10 @@ export async function openDirect(botId: string) {
   openThread(t.id);
 }
 
-export const openModal = (modal: Modal) => set({ modal, selectedBotId: null });
+export const openModal = (modal: Modal) => set({ modal });
 export const closeModal = () => set({ modal: null });
-export const selectBot = (id: string | null) => set({ selectedBotId: id });
+export const togglePanel = () => set({ panelOpen: !get().panelOpen });
+export const closePanel = () => set({ panelOpen: false });
 
 export function botById(id: string | null | undefined): Bot | undefined {
   return id ? get().bots.find((b) => b.id === id) : undefined;

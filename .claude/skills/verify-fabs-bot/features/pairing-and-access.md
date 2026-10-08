@@ -24,7 +24,7 @@ Preconditions:
 - This recipe never prints or screenshots the tailnet hostname, IP, or token. The harness resolves and redacts them.
 
 - **Auth matrix.** Run `$C pair-check`. All eight lines read `ok`: unpaired API 401, wrong token 403, pairing link 302 with a `fabs_token` cookie, paired API 200, MCP from the tailnet 403, a cross-origin WebSocket upgrade 403, a cross-origin `text/plain` write 403, and a non-JSON write 415. The matrix is saved to `pairing/pair-check.txt`.
-- **Loopback.** Run `$C browser open /` and `$C browser wait --role button --name "This PC"`. The field loads with no pairing.
+- **Loopback.** Run `$C browser open /` and `$C browser wait --role button --name "This PC"`. The sidebar loads with no pairing.
 - **Unpaired over the tailnet.** The browser has no cookie yet (loopback never sets one). Run `$C browser open / --via tailnet` and `$C browser wait --role heading --name "Not paired yet"`. Capture `pairing/unpaired.aria.txt` plus `.png`.
 - **Pair.** Run `$C browser pair`, then `$C browser wait --role button --name "This PC"`. The app loads over the tailnet. Run `$C browser open / --via tailnet` again; it still loads, so the cookie persisted. Capture `pairing/paired.aria.txt` plus `.png` (the host chip is masked).
 - **Panel.** Over loopback, run `$C browser click --role button --name "This PC"` and `$C browser snapshot --role dialog --name "This PC" --path pairing/panel.aria.txt`. The snapshot names `Pair your phone or laptop`, `Copy pairing link`, and `tailscale serve --bg <port>`, with the link redacted. If you screenshot it, keep the default mask.

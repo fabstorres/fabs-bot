@@ -1,4 +1,4 @@
-import { clip, parseJson, spawnLines } from "./spawn";
+import { clip, parseJson, spawnLines, summarizeToolInput } from "./spawn";
 import type { Provider } from "./types";
 
 /** Codex `-c key=value` values are parsed as TOML; JSON strings are valid TOML basic strings. */
@@ -112,7 +112,7 @@ function describeItem(it: any): { name: string; summary: string } | null {
         summary: clip((it.changes ?? []).map((c: any) => `${c.kind ?? ""} ${c.path}`).join(", ")),
       };
     case "mcp_tool_call":
-      return { name: `${it.server} · ${it.tool}`, summary: clip(JSON.stringify(it.arguments ?? {})) };
+      return { name: `${it.server} · ${it.tool}`, summary: summarizeToolInput(it.tool, it.arguments) };
     case "web_search":
       return { name: "Web search", summary: clip(String(it.query ?? "")) };
     case "todo_list":

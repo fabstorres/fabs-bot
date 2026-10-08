@@ -1,32 +1,42 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import QRCode from "qrcode";
+import { Check, Copy as CopyIcon, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
 import type { Connector, HostInfo, ProviderInfo } from "../../../shared/types";
 import type { ConnectorPreset } from "../../../shared/templates";
-import { api, formatSize, formatTime } from "../api";
+import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
-import { openModal, useStore } from "../store";
-import { BotAvatar } from "./BotAvatar";
-import { Icon } from "./Icon";
 import { Modal } from "./Modal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 function Copy({ text, label = "Copy" }: { text: string; label?: string }) {
   const [done, setDone] = useState(false);
   return (
-    <button
-      className="btn-soft small"
+    <Button
+      variant="secondary"
+      size="sm"
+      className="rounded-full"
       onClick={async () => {
         await navigator.clipboard?.writeText(text).catch(() => {});
         setDone(true);
         setTimeout(() => setDone(false), 1400);
       }}
     >
-      <Icon name={done ? "check" : "copy"} size={14} /> {done ? "Copied" : label}
-    </button>
+      {done ? <Check /> : <CopyIcon />} {done ? "Copied" : label}
+    </Button>
   );
 }
+
+function Card({ className, children }: { className?: string; children: ReactNode }) {
+  return <section className={cn("rounded-2xl border p-4", className)}>{children}</section>;
+}
+
+const Led = ({ on }: { on: boolean }) => <i className={cn("inline-block size-2 flex-none rounded-full", on ? "bg-working" : "bg-muted-foreground/40")} />;
 
 async function loadHost() {
   const host = await api.get<HostInfo>("/api/host");
@@ -41,83 +51,88 @@ export function SettingsPanel() {
 
   return (
     <Modal wide title="This PC">
-      <div className="settings">
-        <section className="card host-card">
-          <div className="host-line">
-            <span className={`led ${ts?.running ? "on" : ""}`} />
-            <div>
+      <div className="flex flex-col gap-4">
+        <Card>
+          <div className="host-line flex items-center gap-3">
+            <Led on={!!ts?.running} />
+            <div className="flex flex-col">
               <b>{host?.hostname ?? "…"}</b>
-              <span className="muted">
+              <span className="text-sm text-muted-foreground">
                 {ts?.running ? `Tailscale · ${ts.dnsName ?? ts.ip}` : "Tailscale not running: only this PC can connect"}
               </span>
             </div>
           </div>
           {ts && ts.peers.length > 0 && (
-            <div className="peers">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {ts.peers.map((p) => (
-                <span key={p.ip} className={`peer ${p.online ? "online" : ""}`}>
-                  <i /> {p.name} <small>{p.os}</small>
+                <span key={p.ip} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
+                  <Led on={p.online} /> {p.name} <small className="text-muted-foreground">{p.os}</small>
                 </span>
               ))}
             </div>
           )}
-        </section>
+        </Card>
 
-        <section className="card pair-card">
-          <div className="pair-qr" dangerouslySetInnerHTML={{ __html: qr }} />
-          <div className="pair-text">
-            <h3>Pair your phone or laptop</h3>
-            <p className="muted">
+        <Card className="flex flex-col gap-4 sm:flex-row">
+          <div className="pair-qr size-40 flex-none self-center [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: qr }} />
+          <div className="flex min-w-0 flex-col gap-2">
+            <h3 className="font-semibold">Pair your phone or laptop</h3>
+            <p className="text-sm text-muted-foreground">
               Scan with a device on your tailnet. The link carries this PC's access key; it's remembered on that device.
             </p>
             {host?.pairUrl ? (
               <>
-                <code className="mono-box">{host.pairUrl.replace(/token=.*/, "token=•••••")}</code>
-                <Copy text={host.pairUrl} label="Copy pairing link" />
+                <code className="mono-box block truncate rounded-lg bg-muted px-2 py-1.5 font-mono text-xs">{host.pairUrl.replace(/token=.*/, "token=•••••")}</code>
+                <div>
+                  <Copy text={host.pairUrl} label="Copy pairing link" />
+                </div>
               </>
             ) : (
-              <p className="muted">Start Tailscale on this PC to get a link.</p>
+              <p className="text-sm text-muted-foreground">Start Tailscale on this PC to get a link.</p>
             )}
-            <div className="https-tip">
-              {ts?.serveUrl ? (
-                <p>
-                  HTTPS is on: <a href={ts.serveUrl}>{ts.serveUrl}</a>. Your own devices sign in automatically.
+            {ts?.serveUrl ? (
+              <p className="text-sm">
+                HTTPS is on:{" "}
+                <a className="underline" href={ts.serveUrl}>
+                  {ts.serveUrl}
+                </a>
+                . Your own devices sign in automatically.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Optional: run this yourself for HTTPS (enables mic + install-to-home-screen). Fabs Bot never changes Tailscale settings.
                 </p>
-              ) : (
-                <>
-                  <p className="muted">
-                    Optional: run this yourself for HTTPS (enables mic + install-to-home-screen). Fabs Bot never changes Tailscale settings.
-                  </p>
-                  <div className="cmd">
-                    <code>tailscale serve --bg {host?.port ?? 4800}</code>
-                    <Copy text={`tailscale serve --bg ${host?.port ?? 4800}`} />
-                  </div>
-                </>
-              )}
-            </div>
+                <div className="flex items-center gap-2">
+                  <code className="rounded-lg bg-muted px-2 py-1.5 font-mono text-xs">tailscale serve --bg {host?.port ?? 4800}</code>
+                  <Copy text={`tailscale serve --bg ${host?.port ?? 4800}`} />
+                </div>
+              </>
+            )}
           </div>
-        </section>
+        </Card>
 
         <section>
-          <h3 className="section-title">Agent CLIs on this PC</h3>
-          <div className="provider-table">
+          <h3 className="mb-2 font-semibold">Agent CLIs on this PC</h3>
+          <div className="flex flex-col divide-y rounded-2xl border">
             {providers.map((p) => (
-              <div key={p.id} className={`provider-row ${p.installed ? "" : "missing"}`}>
-                <span className={`led ${p.installed ? "on" : ""}`} />
+              <div key={p.id} className={cn("grid grid-cols-[auto_8rem_1fr] items-center gap-x-3 px-4 py-2.5 text-sm", !p.installed && "opacity-55")}>
+                <Led on={p.installed} />
                 <b>{p.label}</b>
-                <span className="muted mono">{p.installed ? p.version : "not installed"}</span>
-                <span className="muted small">{p.note}</span>
+                <span className="truncate font-mono text-xs text-muted-foreground">{p.installed ? p.version : "not installed"}</span>
+                <span className="col-start-2 col-end-4 text-xs text-muted-foreground">{p.note}</span>
               </div>
             ))}
           </div>
-          <p className="muted small">
+          <p className="mt-2 text-xs text-muted-foreground">
             Bots run these CLIs with your existing logins. Fabs Bot passes everything per run (flags only) and never edits their configs.
           </p>
         </section>
         <section>
-          <h3 className="section-title">Where bots work</h3>
-          <p className="muted">
-            Desks live in <code>{host?.workRoot}</code>. <code>{host?.workRoot}/shared</code> is visible to every bot and holds your uploads.
+          <h3 className="mb-1 font-semibold">Where bots work</h3>
+          <p className="text-sm text-muted-foreground">
+            Desks live in <code className="font-mono">{host?.workRoot}</code>. <code className="font-mono">{host?.workRoot}/shared</code> is visible to every bot
+            and holds your uploads.
           </p>
         </section>
       </div>
@@ -144,61 +159,62 @@ export function ConnectorsPanel() {
   if (form) return <ConnectorForm initial={form} onDone={() => (setForm(null), connectors.reload())} />;
 
   return (
-    <Modal wide title="Connectors">
-      <p className="muted lead">Give bots hands: Notion, Google Drive, GitHub, a browser… Attach connectors per bot in its editor.</p>
+    <Modal wide title="Plugins">
+      <div className="flex flex-col gap-4">
+        <p className="text-muted-foreground">Give bots hands: Notion, Google Drive, GitHub, a browser… Turn plugins on per bot in its settings.</p>
 
-      <section className="card">
-        <div className="card-head">
-          <div>
-            <h3>Inherited by Claude bots</h3>
-            <p className="muted small">Your Claude Code MCP servers and claude.ai connectors come along automatically.</p>
+        <Card>
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <h3 className="font-semibold">Inherited by Claude bots</h3>
+              <p className="text-xs text-muted-foreground">Your Claude Code MCP servers and claude.ai connectors come along automatically.</p>
+            </div>
+            <Button variant="secondary" size="sm" className="rounded-full" onClick={() => scan(!!inherited)} disabled={scanning}>
+              <RefreshCw /> {scanning ? "Scanning…" : inherited ? "Rescan" : "Scan"}
+            </Button>
           </div>
-          <button className="btn-soft small" onClick={() => scan(!!inherited)} disabled={scanning}>
-            <Icon name="refresh" size={14} /> {scanning ? "Scanning…" : inherited ? "Rescan" : "Scan"}
-          </button>
-        </div>
-        {inherited && (
-          <div className="conn-grid">
-            {inherited.servers.length === 0 && <span className="muted">None found.</span>}
-            {inherited.servers.map((s) => (
-              <span key={s.name} className={`conn-pill ${s.status === "connected" ? "ok" : ""}`}>
-                <i /> {s.name.replace(/^claude\.ai /, "")}
-                <small>{s.status}</small>
-              </span>
-            ))}
-            <span className="muted small">scanned {formatTime(inherited.scannedAt)}</span>
-          </div>
-        )}
-      </section>
+          {inherited && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {inherited.servers.length === 0 && <span className="text-sm text-muted-foreground">None found.</span>}
+              {inherited.servers.map((s) => (
+                <span key={s.name} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
+                  <Led on={s.status === "connected"} /> {s.name.replace(/^claude\.ai /, "")}
+                  <small className="text-muted-foreground">{s.status}</small>
+                </span>
+              ))}
+              <span className="text-xs text-muted-foreground">scanned {formatTime(inherited.scannedAt)}</span>
+            </div>
+          )}
+        </Card>
 
-      <section className="card">
-        <h3>Added in Fabs Bot</h3>
-        <p className="muted small">Passed to the CLI on each run. Works for Claude and Codex bots.</p>
-        {list.length === 0 && <p className="muted">Nothing yet.</p>}
-        {list.map((c) => (
-          <div key={c.id} className="conn-row">
-            <b>{c.name}</b>
-            <span className="muted mono small">{c.kind === "http" ? c.url : `${c.command} ${c.args.join(" ")}`}</span>
-            <span className="spacer" />
-            <button className="btn-soft small" onClick={() => setForm({ ...c, blurb: "", secretKeys: [] })}>
-              Edit
-            </button>
-            <button className="icon-btn" onClick={() => api.del(`/api/connectors/${c.id}`).then(connectors.reload)} aria-label="Remove">
-              <Icon name="trash" size={16} />
-            </button>
-          </div>
-        ))}
-        <div className="preset-grid">
-          {presets.map((p) => (
-            <button key={p.preset} className="preset" onClick={() => setForm(p)}>
-              <b>
-                <Icon name="plus" size={14} /> {p.name}
-              </b>
-              <small>{p.blurb}</small>
-            </button>
+        <Card>
+          <h3 className="font-semibold">Added in Fabs Bot</h3>
+          <p className="text-xs text-muted-foreground">Passed to the CLI on each run. Works for Claude and Codex bots.</p>
+          {list.length === 0 && <p className="mt-2 text-sm text-muted-foreground">Nothing yet.</p>}
+          {list.map((c) => (
+            <div key={c.id} className="mt-2 flex items-center gap-3 border-b py-2 last:border-0">
+              <b className="text-sm">{c.name}</b>
+              <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">{c.kind === "http" ? c.url : `${c.command} ${c.args.join(" ")}`}</span>
+              <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setForm({ ...c, blurb: "", secretKeys: [] })}>
+                Edit
+              </Button>
+              <Button variant="ghost" size="icon-sm" onClick={() => api.del(`/api/connectors/${c.id}`).then(connectors.reload)} aria-label="Remove">
+                <Trash2 />
+              </Button>
+            </div>
           ))}
-        </div>
-      </section>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {presets.map((p) => (
+              <button key={p.preset} className="flex flex-col gap-1 rounded-xl border p-3 text-left hover:bg-muted/60" onClick={() => setForm(p)}>
+                <b className="flex items-center gap-1.5 text-sm">
+                  <Plus className="size-3.5" /> {p.name}
+                </b>
+                <small className="text-xs text-muted-foreground">{p.blurb}</small>
+              </button>
+            ))}
+          </div>
+        </Card>
+      </div>
     </Modal>
   );
 }
@@ -224,6 +240,17 @@ const parseHeaders = (s: string) =>
       .map((l) => [l.slice(0, l.indexOf(":")).trim(), l.slice(l.indexOf(":") + 1).trim()]),
   );
 
+function FormField({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5 text-sm font-medium">
+      <span>
+        {label} {hint && <span className="font-normal text-muted-foreground">· {hint}</span>}
+      </span>
+      {children}
+    </label>
+  );
+}
+
 function ConnectorForm({ initial, onDone }: { initial: ConnectorPreset & { id?: string }; onDone(): void }) {
   const [c, setC] = useState(initial);
   const [env, setEnv] = useState(kv(initial.env));
@@ -231,55 +258,53 @@ function ConnectorForm({ initial, onDone }: { initial: ConnectorPreset & { id?: 
   const [args, setArgs] = useState(initial.args.join(" "));
   return (
     <Modal title={initial.id ? `Edit ${initial.name}` : `Add ${initial.name}`} onClose={onDone}>
-      {initial.blurb && <p className="muted lead">{initial.blurb}</p>}
-      <div className="form">
-        <label className="field-label">
-          Name
-          <input value={c.name} onChange={(e) => setC({ ...c, name: e.target.value })} />
-        </label>
-        <div className="seg wide">
-          <button className={c.kind === "stdio" ? "on" : ""} onClick={() => setC({ ...c, kind: "stdio" })}>
-            Command
-          </button>
-          <button className={c.kind === "http" ? "on" : ""} onClick={() => setC({ ...c, kind: "http" })}>
-            HTTP URL
-          </button>
+      <div className="flex flex-col gap-4">
+        {initial.blurb && <p className="text-sm text-muted-foreground">{initial.blurb}</p>}
+        <FormField label="Name">
+          <Input value={c.name} onChange={(e) => setC({ ...c, name: e.target.value })} />
+        </FormField>
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+          {(
+            [
+              ["stdio", "Command"],
+              ["http", "HTTP URL"],
+            ] as const
+          ).map(([kind, text]) => (
+            <button key={kind} className={cn("rounded-lg px-3 py-1.5 text-sm", c.kind === kind && "bg-background font-medium shadow-sm")} onClick={() => setC({ ...c, kind })}>
+              {text}
+            </button>
+          ))}
         </div>
         {c.kind === "stdio" ? (
           <>
-            <div className="row2">
-              <label className="field-label">
-                Command
-                <input value={c.command} onChange={(e) => setC({ ...c, command: e.target.value })} placeholder="npx" />
-              </label>
-              <label className="field-label">
-                Arguments
-                <input value={args} onChange={(e) => setArgs(e.target.value)} placeholder="-y @scope/server" />
-              </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Command">
+                <Input value={c.command} onChange={(e) => setC({ ...c, command: e.target.value })} placeholder="npx" />
+              </FormField>
+              <FormField label="Arguments">
+                <Input value={args} onChange={(e) => setArgs(e.target.value)} placeholder="-y @scope/server" />
+              </FormField>
             </div>
-            <label className="field-label">
-              Environment <span className="hint">KEY=value per line; stored on this PC only</span>
-              <textarea rows={3} className="mono" value={env} onChange={(e) => setEnv(e.target.value)} />
-            </label>
+            <FormField label="Environment" hint="KEY=value per line; stored on this PC only">
+              <Textarea rows={3} className="font-mono" value={env} onChange={(e) => setEnv(e.target.value)} />
+            </FormField>
           </>
         ) : (
           <>
-            <label className="field-label">
-              URL
-              <input value={c.url} onChange={(e) => setC({ ...c, url: e.target.value })} placeholder="https://…/mcp" />
-            </label>
-            <label className="field-label">
-              Headers <span className="hint">Name: value per line</span>
-              <textarea rows={3} className="mono" value={headers} onChange={(e) => setHeaders(e.target.value)} />
-            </label>
+            <FormField label="URL">
+              <Input value={c.url} onChange={(e) => setC({ ...c, url: e.target.value })} placeholder="https://…/mcp" />
+            </FormField>
+            <FormField label="Headers" hint="Name: value per line">
+              <Textarea rows={3} className="font-mono" value={headers} onChange={(e) => setHeaders(e.target.value)} />
+            </FormField>
           </>
         )}
-        <div className="row-end">
-          <button className="btn-soft" onClick={onDone}>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onDone}>
             Cancel
-          </button>
-          <button
-            className="btn-black"
+          </Button>
+          <Button
+            className="rounded-full px-6"
             onClick={async () => {
               await api.post("/api/connectors", {
                 ...c,
@@ -291,64 +316,8 @@ function ConnectorForm({ initial, onDone }: { initial: ConnectorPreset & { id?: 
             }}
           >
             Save
-          </button>
+          </Button>
         </div>
-      </div>
-    </Modal>
-  );
-}
-
-type Entry = { name: string; dir: boolean; size: number; mtime: number; path: string };
-
-export function WorkspacePanel({ botId }: { botId: string }) {
-  const bot = useStore((s) => s.bots.find((b) => b.id === botId));
-  const [path, setPath] = useState("");
-  const { data, error } = useLoad(
-    () => api.get<{ root: string; path: string; entries: Entry[] }>(`/api/bots/${botId}/files?path=${encodeURIComponent(path)}`),
-    [botId, path],
-  );
-  if (!bot) return null;
-  const crumbs = path ? path.split("/") : [];
-
-  return (
-    <Modal
-      wide
-      label={`${bot.name}'s desk`}
-      title={
-        <span className="desk-title">
-          <BotAvatar shape={bot.shape} color={bot.color} size={30} /> {bot.name}'s desk
-        </span>
-      }
-    >
-      <div className="crumbs">
-        <button onClick={() => setPath("")}>{data?.root.replace(/^\/home\/[^/]+/, "~") ?? "…"}</button>
-        {crumbs.map((c, i) => (
-          <span key={i}>
-            <Icon name="chevron" size={12} />
-            <button onClick={() => setPath(crumbs.slice(0, i + 1).join("/"))}>{c}</button>
-          </span>
-        ))}
-      </div>
-      {error && <p className="error">{error}</p>}
-      <div className="desk" role="group" aria-label="Desk files">
-        {data?.entries.length === 0 && <p className="muted desk-empty">Empty desk. Files the bot makes will show up here.</p>}
-        {data?.entries.map((e) => (
-          <button
-            key={e.path}
-            className="desk-row"
-            aria-label={`${e.dir ? "Folder" : "File"} ${e.name}`}
-            onClick={() =>
-              e.dir
-                ? setPath(e.path)
-                : openModal({ kind: "file", url: `/api/bots/${botId}/file?path=${encodeURIComponent(e.path)}`, name: e.name })
-            }
-          >
-            <Icon name={e.dir ? "folder" : "file"} size={18} />
-            <span className="desk-name">{e.name}</span>
-            <span className="muted small">{e.dir ? "" : formatSize(e.size)}</span>
-            <span className="muted small">{formatTime(e.mtime)}</span>
-          </button>
-        ))}
       </div>
     </Modal>
   );
@@ -363,7 +332,7 @@ async function loadPreview(url: string, name: string): Promise<Preview> {
   if (/\.(md|markdown)$/i.test(name)) return { kind: "md", content: await blob.text() };
   if (type.startsWith("text/") || /json|xml|javascript|yaml|toml/.test(type) || blob.size < 512 * 1024) {
     const text = await blob.text();
-    return text.includes("\uFFFD") ? { kind: "other", content: "" } : { kind: "text", content: text };
+    return text.includes("�") ? { kind: "other", content: "" } : { kind: "text", content: text };
   }
   return { kind: "other", content: "" };
 }
@@ -373,24 +342,34 @@ export function FileViewer({ url, name }: { url: string; name: string }) {
 
   return (
     <Modal wide title={name}>
-      <div className="viewer" role="document" aria-label={`Preview of ${name}`}>
-        {!state && <span className="typing"><i /><i /><i /></span>}
-        {state?.kind === "image" && <img src={state.content} alt={name} />}
+      <div className="max-h-[60dvh] overflow-auto rounded-2xl bg-muted/50 p-4" role="document" aria-label={`Preview of ${name}`}>
+        {!state && (
+          <span className="typing text-muted-foreground">
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
+        {state?.kind === "image" && <img src={state.content} alt={name} className="mx-auto max-w-full rounded-lg" />}
         {state?.kind === "md" && (
-          <article className="prose">
+          <article className="bubble leading-relaxed">
             <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{state.content}</Markdown>
           </article>
         )}
-        {state?.kind === "text" && <pre className="code">{state.content}</pre>}
-        {state?.kind === "other" && <p className="muted">No preview for this file type.</p>}
+        {state?.kind === "text" && <pre className="font-mono text-xs whitespace-pre-wrap">{state.content}</pre>}
+        {state?.kind === "other" && <p className="text-muted-foreground">No preview for this file type.</p>}
       </div>
-      <div className="row-end">
-        <a className="btn-soft" href={url + (url.includes("?") ? "&" : "?") + "download"} download={name}>
-          Download
-        </a>
-        <a className="btn-soft" href={url} target="_blank" rel="noreferrer">
-          <Icon name="external" size={14} /> Open
-        </a>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="secondary" className="rounded-full" asChild>
+          <a href={url + (url.includes("?") ? "&" : "?") + "download"} download={name}>
+            Download
+          </a>
+        </Button>
+        <Button variant="secondary" className="rounded-full" asChild>
+          <a href={url} target="_blank" rel="noreferrer">
+            <ExternalLink /> Open
+          </a>
+        </Button>
       </div>
     </Modal>
   );

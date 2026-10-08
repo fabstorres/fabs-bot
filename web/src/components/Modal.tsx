@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { useWindowEvent } from "../hooks";
 import { closeModal } from "../store";
-import { Icon } from "./Icon";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export function Modal({
   children,
@@ -17,16 +17,16 @@ export function Modal({
   label?: string;
   onClose?(): void;
 }) {
-  useWindowEvent("keydown", (e) => e.key === "Escape" && onClose());
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`modal ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={label ?? (typeof title === "string" ? title : undefined)}>
-        <button className="round modal-close" onClick={onClose} aria-label="Close">
-          <Icon name="x" />
-        </button>
-        {title && <h2 className="modal-title">{title}</h2>}
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        aria-label={label ?? (typeof title === "string" ? title : undefined)}
+        className={cn("max-h-[90dvh] gap-0 overflow-y-auto rounded-3xl p-6 sm:max-w-lg", wide && "sm:max-w-3xl")}
+      >
+        <DialogTitle className={cn("mb-4 pr-8 text-xl font-semibold", !title && "sr-only")}>{title ?? label}</DialogTitle>
+        <DialogDescription className="sr-only">{label ?? (typeof title === "string" ? title : "Dialog")}</DialogDescription>
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

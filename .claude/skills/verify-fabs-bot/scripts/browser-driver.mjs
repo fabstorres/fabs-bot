@@ -97,7 +97,7 @@ try {
       await page.evaluate(() => document.fonts.ready);
       await sleep(Number(flag("settle") ?? 700));
       const out = artifactPath(flag("path") ?? die("--path required (relative to the run's artifacts)"));
-      const mask = flags["no-mask"] === true ? [] : [page.getByRole("button", { name: "This PC" }), page.locator(".pair-qr, .mono-box, .host-line")];
+      const mask = flags["no-mask"] === true ? [] : [page.getByRole("button", { name: "This PC", exact: true, includeHidden: true }), page.locator(".pair-qr, .mono-box, .host-line")];
       await page.screenshot({ path: out, fullPage: flags["full-page"] === true, mask, maskColor: "#d9d9d4" });
       console.log(`→ ${out}`);
       break;

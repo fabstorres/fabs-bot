@@ -4,7 +4,7 @@
 
 A team of always-on agents that live on your PC and use it as their workplace. They run on the agent CLIs you already have (Claude Code, Codex, and others), and you reach them from your phone or laptop over Tailscale.
 
-It isn't another chat clone. The home screen is a **field** of bots. Each one has a role, a desk folder, connectors, and routines. You can watch them work, see them message each other, and step in when one needs you.
+It's laid out like Grok Bot: a sidebar of bots, a chat with the one you picked, and a desk panel with its files and routines. Each bot has a role, a desk folder, plugins, and routines. You can watch them work, see them message each other, and step in when one needs you.
 
 ## Run it
 
@@ -45,19 +45,19 @@ phone / laptop ──tailnet──▶ Bun server ──spawns per turn──▶ 
 - **Bots** pair a persona (name, role, instructions, look) with a CLI, model, desk folder, autonomy level, and connectors.
 - **Turns.** Each message runs the bot's CLI headlessly in its desk folder. The CLI's own session is resumed, so a bot only gets new messages after its first turn. Output streams live into the thread: text, a compact work log of tool calls, and files.
 - **The `fabsbot` MCP server** is injected into every Claude and Codex turn. It gives each bot these tools:
-  - `message_bot`: a private bot↔bot backchannel. You can read it, and the field draws a link while they talk.
+  - `message_bot`: a private bot↔bot backchannel. You can read it; the chat shows the exchange as a card that opens it.
   - `ask_user`: tap-to-answer question cards.
   - `share_file`
-  - `set_status`: the speech bubble on the field.
+  - `set_status`: the live status line on the bot's sidebar row.
   - `set_topic`
   - `notify_user`
   - `schedule_routine`, `list_routines`, `delete_routine`
-- **Group threads.** @mention bots in the dock or the composer to pull them in. Bots hand each other the floor with @Name, with a limit on hops.
+- **Group threads.** @mention bots in the composer, or use *More → Bring in a bot*, to pull them in. Bots hand each other the floor with @Name, with a limit on hops.
 - **Autonomy.**
   - *Just do it*: Claude runs in bypass mode; Codex runs without approvals or sandbox.
   - *Ask me before acting*: Claude's permission prompts become Allow/Deny cards on your phone (`--permission-prompt-tool`), while reads stay free. Codex runs sandboxed to its workspace.
-- **Connectors.**
-  - Claude bots inherit your existing Claude Code MCP servers and claude.ai connectors, including Notion and Google Drive. Use *Connectors → Scan* to list them.
+- **Plugins (connectors).**
+  - Claude bots inherit your existing Claude Code MCP servers and claude.ai connectors, including Notion and Google Drive. Use *Plugins → Scan* to list them.
   - Connectors you add in Fabs Bot (Notion, Google Drive, GitHub, Browser, or any custom MCP server) are attached per bot and passed to each run.
 - **Routines.** Cron schedules run a bot on a prompt in its own thread. Bots can also schedule routines themselves.
 
@@ -97,5 +97,5 @@ server/            Bun HTTP + WebSocket server
   tailscale.ts     read-only Tailscale status
   auth.ts          pairing token + Tailscale identity
 shared/            types + bot templates + connector presets
-web/               React app (field, inbox, sheets, editor, panels)
+web/               React app: Tailwind + shadcn (sidebar, chat, desk panel, new bot, dialogs)
 ```

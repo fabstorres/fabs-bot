@@ -1,4 +1,5 @@
 import type { BotState, Shape } from "../../../shared/types";
+import { cn } from "@/lib/utils";
 
 /** Body silhouettes on a 100×100 canvas, plus where each one's eyes sit. */
 const BODIES: Record<Shape, { d: string; eyes: [number, number, number]; rotate?: number }> = {
@@ -37,8 +38,8 @@ export function BotAvatar({ shape, color, size = 48, state = "idle", dot = false
   const body = BODIES[shape] ?? BODIES.blob;
   const [ex, ey, es] = body.eyes;
   return (
-    <span className={`bot-avatar state-${state} ${className}`} style={{ width: size, height: size }}>
-      <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden>
+    <span className={cn("relative inline-block flex-none leading-none", `state-${state}`, className)} style={{ width: size, height: size }}>
+      <svg viewBox="0 0 100 100" width={size} height={size} className="block overflow-visible" aria-hidden>
         <g className="bot-body">
           <path d={body.d} fill={color} />
           <g className="bot-eyes" transform={`translate(${ex} ${ey}) scale(${es})`}>
@@ -49,7 +50,16 @@ export function BotAvatar({ shape, color, size = 48, state = "idle", dot = false
           </g>
         </g>
       </svg>
-      {dot && state !== "idle" && <i className={`presence presence-${state}`} />}
+      {dot && state !== "idle" && (
+        <i
+          className={cn(
+            "absolute right-[2%] bottom-[2%] size-[24%] min-h-2.5 min-w-2.5 rounded-full border-2 border-sidebar",
+            state === "working" && "bg-working",
+            state === "waiting" && "presence-waiting bg-waiting",
+            state === "error" && "bg-failing",
+          )}
+        />
+      )}
     </span>
   );
 }
@@ -67,7 +77,7 @@ export function AvatarStack({ bots, size = 48 }: { bots: { shape: Shape; color: 
     { left: size * 0.44, top: size * 0.42 },
   ];
   return (
-    <span className="avatar-stack" style={{ width: size, height: size }}>
+    <span className="relative inline-block flex-none" style={{ width: size, height: size }}>
       {bots.slice(0, 3).map((b, i) => (
         <span key={b.id} style={{ position: "absolute", ...spots[i] }}>
           <BotAvatar shape={b.shape} color={b.color} size={small} />

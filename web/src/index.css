@@ -1,0 +1,274 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.75rem;
+  --background: #ffffff;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f1f1;
+  --secondary-foreground: #111111;
+  --muted: #f3f3f3;
+  --muted-foreground: #737373;
+  --accent: #ececec;
+  --accent-foreground: #111111;
+  --destructive: #e5372b;
+  --border: #e8e8e8;
+  --input: #e2e2e2;
+  --ring: #a3a3a3;
+  --sidebar: #f7f7f7;
+  --sidebar-foreground: #111111;
+  --sidebar-accent: #e9e9e9;
+  --sidebar-border: #ececec;
+  --bubble: #f1f1f1;
+  --working: #22b55e;
+  --waiting: #ffa41b;
+  --failing: #ff3b30;
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-bubble: var(--bubble);
+  --color-working: var(--working);
+  --color-waiting: var(--waiting);
+  --color-failing: var(--failing);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+  body {
+    @apply overflow-hidden bg-background font-sans text-[15px] text-foreground antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .bubble > :first-child {
+    @apply mt-0;
+  }
+  .bubble > :last-child {
+    @apply mb-0;
+  }
+  .bubble p {
+    @apply mb-[0.6em];
+  }
+  .bubble ul,
+  .bubble ol {
+    @apply mt-[0.2em] mb-[0.6em] pl-[1.3em];
+  }
+  .bubble ul {
+    @apply list-disc;
+  }
+  .bubble ol {
+    @apply list-decimal;
+  }
+  .bubble li {
+    @apply my-[0.15em];
+  }
+  .bubble h1,
+  .bubble h2,
+  .bubble h3 {
+    @apply mt-[0.6em] mb-[0.3em] text-[1.1em] font-semibold;
+  }
+  .bubble a {
+    @apply text-blue-600 underline-offset-2 hover:underline;
+  }
+  .bubble code {
+    @apply rounded-md bg-black/7 px-1 py-px font-mono text-[0.88em];
+  }
+  .bubble pre {
+    @apply overflow-x-auto rounded-xl bg-black/6 px-3.5 py-3 text-[13px];
+  }
+  .bubble pre code {
+    @apply bg-transparent p-0;
+  }
+  .bubble table {
+    @apply my-[0.4em] border-collapse text-sm;
+  }
+  .bubble th,
+  .bubble td {
+    @apply border-b border-black/10 py-1 pr-2.5 text-left;
+  }
+  .bubble-user code {
+    @apply bg-white/15;
+  }
+}
+
+.typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 1em;
+}
+.typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: typing 1.2s infinite;
+}
+.typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 0.8;
+  }
+}
+
+.bot-body {
+  transform-box: fill-box;
+  transform-origin: 50% 90%;
+}
+.bot-eyes-inner line {
+  stroke: #fff;
+  stroke-width: 8.5;
+  stroke-linecap: round;
+}
+.bot-eyes-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 6s infinite;
+}
+@keyframes blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.12);
+  }
+}
+.state-working .bot-eyes-inner {
+  animation: look 2.6s ease-in-out infinite;
+}
+@keyframes look {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  55% {
+    transform: translateX(5px) translateY(-1px);
+  }
+}
+.state-working .bot-body {
+  animation: hop 1.3s ease-in-out infinite;
+}
+@keyframes hop {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  35% {
+    transform: scale(1.05, 0.94);
+  }
+  65% {
+    transform: translateY(-5%) scale(0.97, 1.04);
+  }
+}
+.state-waiting .bot-body {
+  animation: wiggle 1.8s ease-in-out infinite;
+}
+@keyframes wiggle {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+  70% {
+    transform: rotate(-6deg);
+  }
+  80% {
+    transform: rotate(5deg);
+  }
+  90% {
+    transform: rotate(-3deg);
+  }
+}
+.state-error .bot-body {
+  filter: saturate(0.35);
+}
+.state-error .bot-eyes-inner {
+  animation: none;
+  transform: rotate(14deg) scaleY(0.7);
+}
+.presence-waiting {
+  animation: ping 1.4s infinite;
+}
+@keyframes ping {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 164, 27, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(255, 164, 27, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

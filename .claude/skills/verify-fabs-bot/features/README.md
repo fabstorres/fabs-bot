@@ -7,7 +7,7 @@ This directory is the maintained source for verifying the user-facing behavior o
 - Launch with `$C launch`, which gives a loopback-only isolated instance at `http://127.0.0.1:<port ≥ 4870>`. Only [pairing-and-access](./pairing-and-access.md) needs `$C launch --tailnet`.
 - `$C doctor` reports no `FAIL`, including `isolated work root confirmed`.
 - `$C seed` has created `Chief`, `Design`, and `Careful` (Claude, haiku). `Engineer` (Codex) appears too when Codex is installed.
-- `$C browser start` is running at `1440x900` unless the recipe says `430x932`, and `$C browser open /` shows `--role button --name "Bot Chief"`.
+- `$C browser start` is running at `1440x900` unless the recipe says `430x932`, and `$C browser open /` shows `--role button --name "Bot Chief"` in the sidebar.
 - Never drive an instance this run did not launch. The user's own instance on port 4800 is off limits.
 
 ## Driving conventions
@@ -22,7 +22,7 @@ This directory is the maintained source for verifying the user-facing behavior o
 ## Proof and skip reporting
 
 - Capture the user action and the resulting state, not only the final screen.
-- UI proof is an ARIA snapshot plus a screenshot with the same basename (`<feature>/<step>.aria.txt` and `.png`) showing the Fabs Bot field or sheet.
+- UI proof is an ARIA snapshot plus a screenshot with the same basename (`<feature>/<step>.aria.txt` and `.png`) showing the Fabs Bot sidebar, chat, or desk panel.
 - Thread proof is `$C thread <id>`. It must show the tool the recipe asked for (for example `[tool fabsbot · share_file done]`).
 - Mutation proof includes a second, read-only view: the file on disk via `$C paths`, the bot's desk, or the same thread after `$C browser open /`.
 - Record the feature ID and entry point with every artifact (directory and file names do this).
@@ -43,10 +43,10 @@ Keep implementation details out of the map. Name only user paths, stable handles
 
 ## Features
 
-- [Direct chat](./direct-chat.md): hand work to one bot from the dock or a thread, watch it work, open the file it shares, and find it on its desk and on disk.
-- [Teamwork](./teamwork.md): bot↔bot messaging through private backchannels (field link, the Bot ↔ bot tab) and group threads driven by @mentions.
-- [Needs you](./needs-you.md): tap-to-answer question cards and Allow/Deny approval cards, and the Needs you filter.
-- [Bots](./bots.md): meet and create a bot from a template, customize it, edit it from the field, and retire it.
+- [Direct chat](./direct-chat.md): open a bot from the sidebar, hand it work, watch it work, open the file it shares, find it in the desk panel and on disk, see its routines, and the phone list → chat flow.
+- [Teamwork](./teamwork.md): bot↔bot messaging shown as inline exchange cards that open the private backchannel, and group chats (sidebar rows, member switcher) driven by @mentions.
+- [Needs you](./needs-you.md): tap-to-answer question cards, Allow/Deny approval cards, and the sidebar's `Needs you` dot.
+- [Bots](./bots.md): create a bot in the New Bot pane (from scratch or a suggestion), edit it from its settings, and retire it.
 - [Pairing and access](./pairing-and-access.md): unpaired devices are refused, a pairing link admits a browser over Tailscale, and the bot MCP endpoint stays loopback-only.
 
-Not yet mapped: routines (bot editor → Routines → "Run now"), connectors (top bar → Connectors), thread search, and the phone layout beyond what direct chat covers.
+Not yet mapped: running routines (settings → Routines → "Run now", or the desk panel's play button), plugins (sidebar → Plugins), and sidebar search.
