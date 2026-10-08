@@ -20,8 +20,11 @@ Requirements: `bun`, `node`, and a Chromium. The harness picks the newest browse
 
 ```sh
 $C launch                # builds web, starts on the first free port ≥ 4870, loopback only
-$C launch --tailnet      # also binds this PC's Tailscale IP (needed only for the pairing feature)
+$C launch --tailnet      # also binds this PC's Tailscale IP (pairing and the desktop app's remote PC)
+$C launch --tailnet --tailscale-shim   # plus a simulated `tailscale serve` (Tailscale HTTPS)
 ```
+
+`--tailscale-shim` puts a stand-in `tailscale` first on the instance's PATH. `status` goes to the real CLI (read-only). `serve` changes go to a copy of the user's serve config kept in the run dir, and anything else fails. Never turn on Tailscale HTTPS without it: that would change the user's real Tailscale.
 
 It's ready when the command prints `ready  run=<id>  url=http://127.0.0.1:<port>`; it has already polled `/api/host` until it answered. Run state lives in `$XDG_RUNTIME_DIR/fabs-verify/<run>/` (data dir, bot desks, `server.log`, browser profile). Evidence goes to `.verify/artifacts/<run>/` in the repo, which is gitignored. Only one instance per run; `launch` refuses if the current run is still up. Use `--run <id>` to address a specific run.
 
@@ -81,8 +84,30 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
 | bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` for Brain and Autonomy |
+| This PC panel | `--role switch --name "Tailscale HTTPS"` inside `--role group --name "Tailscale HTTPS"` |
+| desktop launcher | `--role region --name "PCs"`; rows `--role group --name "PC <name>"` with `"Open"` / `"Forget <name>"`; form `--role form --name "Add a PC"` with `--label "Pairing link or address"`, `--label "Name (optional)"`, `"Connect"`; errors `--role alert` |
 
-Other drivers: `browser click|fill|press|wait|count|text`, `api <METHOD> <path> [json]`, `threads`, `paths` (scratch dirs for checking files on disk), `logs`, and `pair-check` (the remote-device auth matrix over the tailnet; needs `--tailnet`).
+Other drivers:
+- `browser click|fill|press|wait|count|text`
+- `api <METHOD> <path> [json]`
+- `threads`
+- `paths` (scratch dirs for checking files on disk)
+- `logs`
+- `pair-check`: the remote-device auth matrix over the tailnet; needs `--tailnet`.
+- `serve-shim state|log|occupy <port>|fail <stderr>`: inspect or rig the simulated serve config.
+- `serve-check`: the Tailscale HTTPS auth matrix.
+
+### Desktop app
+
+```sh
+$C desktop start [--fresh]          # Electron inside a virtual kwin_wayland compositor; nothing reaches the screen
+$C desktop menu "Switch PC…"        # click a real application-menu item
+$C desktop stop
+```
+
+- While the app runs, `browser` actions drive its newest window. `browser open` is refused; drive the launcher instead.
+- The app gets this run's port and its own data dir. `--fresh` wipes saved PCs and cookies.
+- `browser fill --value @pair-link` or `--value @tailnet-url` types the tailnet link without it appearing anywhere (needs `--tailnet`).
 
 Real bot turns cost money and take time (usually 3–30 s on haiku). Wait on observable state with `$C wait` or `browser wait`, never fixed sleeps. Phrase prompts so the bot must use the tool you are proving, for example "share it with share_file" or "use ask_user".
 

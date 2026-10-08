@@ -28,11 +28,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.connectOverCDP(`http://127.0.0.1:${job.cdpPort}`, { timeout: 10_000 });
 try {
   const ctx = browser.contexts()[0];
-  const page = ctx.pages()[0] ?? (await ctx.newPage());
+  const page = job.desktop ? ctx.pages().at(-1) ?? die("the desktop app has no window") : ctx.pages()[0] ?? (await ctx.newPage());
   page.setDefaultTimeout(Number(flag("timeout") ?? 15) * 1000);
-  // Headless window size != viewport, so pin the viewport on every connection.
-  const [vw, vh] = job.viewport.split("x").map(Number);
-  await page.setViewportSize({ width: vw, height: vh });
+  if (!job.desktop) {
+    // Headless window size != viewport, so pin the viewport on every connection.
+    const [vw, vh] = job.viewport.split("x").map(Number);
+    await page.setViewportSize({ width: vw, height: vh });
+  }
   page.on("dialog", (d) => (flags["accept-dialog"] === true ? d.accept(flag("dialog-text")) : d.dismiss()).catch(() => {}));
   const hasTarget = () => flag("role") || flag("label") || flag("text") || flag("selector");
   const target = () => {
@@ -48,6 +50,7 @@ try {
 
   switch (action) {
     case "open": {
+      if (job.desktop) die("the desktop app navigates on its own; drive its launcher instead");
       const path = positional[0] ?? "/";
       const url = (flag("via") === "tailnet" ? job.tailnetBase ?? die("--via tailnet needs a --tailnet launch") : job.url) + path;
       await page.goto(url, { waitUntil: "load" });
@@ -64,7 +67,9 @@ try {
       console.log("clicked");
       break;
     case "fill":
-      await pick().fill(flag("value") ?? die("--value required"));
+      const secret = { "@pair-link": job.pairUrl, "@tailnet-url": job.tailnetBase };
+      const value = flag("value") in secret ? secret[flag("value")] ?? die(`${flag("value")} needs a --tailnet launch`) : flag("value");
+      await pick().fill(value ?? die("--value required"));
       console.log("filled");
       break;
     case "press": {
@@ -97,7 +102,7 @@ try {
       await page.evaluate(() => document.fonts.ready);
       await sleep(Number(flag("settle") ?? 700));
       const out = artifactPath(flag("path") ?? die("--path required (relative to the run's artifacts)"));
-      const mask = flags["no-mask"] === true ? [] : [page.getByRole("button", { name: "This PC", exact: true, includeHidden: true }), page.locator(".pair-qr, .mono-box, .host-line")];
+      const mask = flags["no-mask"] === true ? [] : [page.getByRole("button", { name: "This PC", exact: true, includeHidden: true }), page.locator(".pair-qr, .mono-box, .host-line, .host-peers")];
       await page.screenshot({ path: out, fullPage: flags["full-page"] === true, mask, maskColor: "#d9d9d4" });
       console.log(`→ ${out}`);
       break;
