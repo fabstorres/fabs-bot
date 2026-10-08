@@ -1,0 +1,281 @@
+/**
+ * A minimal MCP server (streamable HTTP, JSON responses) that every bot gets for each turn.
+ * The URL token identifies the bot, thread and turn, so tools act in the right place.
+ */
+import { copyFileSync, existsSync, statSync } from "node:fs";
+import { basename, isAbsolute, join, resolve } from "node:path";
+import { Cron } from "croner";
+import type { MessagePart } from "../shared/types";
+import { FILES_DIR } from "./config";
+import * as db from "./db";
+import { getStatus, publish, setStatus } from "./bus";
+import { directThread, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
+import { reschedule } from "./scheduler";
+import { clip } from "./providers/spawn";
+
+type ToolDef = {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  run(args: any, ctx: TurnContext): Promise<string> | string;
+};
+
+const str = (description: string) => ({ type: "string", description });
+
+const pendingApprovals = new Map<string, { resolve: (d: "allow" | "deny") => void; ctx: TurnContext; index: number }>();
+
+function publishThread(threadId: string) {
+  const t = db.getThread(threadId);
+  if (t) publish({ type: "thread", thread: t });
+}
+
+export function decideApproval(requestId: string, decision: "allow" | "deny"): boolean {
+  const p = pendingApprovals.get(requestId);
+  if (!p) return false;
+  pendingApprovals.delete(requestId);
+  p.resolve(decision);
+  return true;
+}
+
+const tools: ToolDef[] = [
+  {
+    name: "list_bots",
+    description: "List your teammates: name, role, provider and what they're doing right now.",
+    inputSchema: { type: "object", properties: {} },
+    run(_args, ctx) {
+      return db
+        .listBots()
+        .filter((b) => b.id !== ctx.botId)
+        .map((b) => {
+          const s = getStatus(b.id);
+          return `- ${b.name} (${b.provider}): ${b.role || "general helper"} — ${s.state}${s.text ? `: ${s.text}` : ""}`;
+        })
+        .join("\n") || "No teammates yet.";
+    },
+  },
+  {
+    name: "message_bot",
+    description:
+      "Send a message to a teammate and wait for their reply. Use it to delegate a task or ask for their expertise. Give them full context; they can't see your thread.",
+    inputSchema: {
+      type: "object",
+      properties: { bot: str("Teammate name, e.g. 'Design'"), message: str("What you need from them") },
+      required: ["bot", "message"],
+    },
+    async run(args, ctx) {
+      const from = db.getBot(ctx.botId)!;
+      const to = db.findBotByName(String(args.bot));
+      if (!to) return `No teammate named "${args.bot}". Call list_bots to see who exists.`;
+      if (to.id === from.id) return "That's you.";
+      setStatus(from.id, { state: "waiting", text: `Waiting on ${to.name}`, threadId: ctx.threadId });
+      const reply = await messageBot(from, to, String(args.message), ctx.depth);
+      setStatus(from.id, { state: "working", text: `Got reply from ${to.name}`, threadId: ctx.threadId });
+      return `${to.name} replied:\n\n${reply}`;
+    },
+  },
+  {
+    name: "ask_user",
+    description:
+      "Ask the user a short multiple-choice question (2–6 options). They tap an option on their phone; their answer arrives as your next message. End your turn after calling this.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: str("The question, one sentence"),
+        options: { type: "array", items: { type: "string" }, description: "2–6 short options" },
+      },
+      required: ["question", "options"],
+    },
+    run(args, ctx) {
+      const options = (Array.isArray(args.options) ? args.options : []).map(String).slice(0, 6);
+      if (options.length < 2) return "Give at least two options.";
+      ctx.addPart({ type: "question", question: String(args.question), options });
+      publishThread(ctx.threadId);
+      setStatus(ctx.botId, { state: "waiting", text: "Waiting for your answer", threadId: ctx.threadId });
+      return "Question posted. End your turn now; the user's choice will arrive as a new message.";
+    },
+  },
+  {
+    name: "share_file",
+    description: "Attach a file you created (or found) to this conversation so the user can open it from any device.",
+    inputSchema: {
+      type: "object",
+      properties: { path: str("Path to the file, absolute or relative to your workspace") },
+      required: ["path"],
+    },
+    run(args, ctx) {
+      const bot = db.getBot(ctx.botId)!;
+      const p = String(args.path);
+      const full = isAbsolute(p) ? p : resolve(bot.cwd, p);
+      if (!existsSync(full) || !statSync(full).isFile()) return `No file at ${full}`;
+      const size = statSync(full).size;
+      if (size > 50 * 1024 * 1024) return "File is over 50 MB; share a smaller file or a link.";
+      const f = db.addFile({ thread_id: ctx.threadId, bot_id: ctx.botId, path: "", name: basename(full), size });
+      const stored = join(FILES_DIR, f.id);
+      copyFileSync(full, stored);
+      db.db.query("UPDATE files SET path = ? WHERE id = ?").run(stored, f.id);
+      ctx.addPart({ type: "file", fileId: f.id, name: f.name, size });
+      return `Shared ${f.name} (${size} bytes).`;
+    },
+  },
+  {
+    name: "set_status",
+    description: "Show a short live status under your avatar, e.g. 'Reading tomorrow's calendar'. Under 8 words.",
+    inputSchema: { type: "object", properties: { text: str("Status line") }, required: ["text"] },
+    run(args, ctx) {
+      setStatus(ctx.botId, { state: "working", text: clip(String(args.text), 60), threadId: ctx.threadId });
+      return "ok";
+    },
+  },
+  {
+    name: "set_topic",
+    description: "Tag the current thread with a 1–3 word topic, e.g. 'Meal prepping'.",
+    inputSchema: { type: "object", properties: { topic: str("Topic") }, required: ["topic"] },
+    run(args, ctx) {
+      const t = db.updateThread(ctx.threadId, { topic: clip(String(args.topic), 32) });
+      if (t) publish({ type: "thread", thread: t });
+      return "ok";
+    },
+  },
+  {
+    name: "notify_user",
+    description:
+      "Post a message to the user in your direct thread with them. Use from routines or bot-to-bot channels when something needs their attention.",
+    inputSchema: { type: "object", properties: { message: str("Message") }, required: ["message"] },
+    run(args, ctx) {
+      const t = directThread(ctx.botId);
+      if (t.id === ctx.threadId) return "You're already talking to the user here; just reply.";
+      const m = db.addMessage({ threadId: t.id, author: "bot", botId: ctx.botId, fromBotId: ctx.botId, parts: [{ type: "text", text: String(args.message) }] });
+      publish({ type: "message", message: m });
+      const updated = db.updateThread(t.id, { preview: clip(String(args.message), 140), unread: t.unread + 1 });
+      if (updated) publish({ type: "thread", thread: updated });
+      return "Sent.";
+    },
+  },
+  {
+    name: "schedule_routine",
+    description:
+      "Create a recurring routine for yourself. At each run you get `prompt` as a new message in a dedicated thread. Cron uses the PC's local time, e.g. '41 8 * * 0' = Sundays 8:41.",
+    inputSchema: {
+      type: "object",
+      properties: { name: str("Short name"), cron: str("5-field cron expression"), prompt: str("What to do each run") },
+      required: ["name", "cron", "prompt"],
+    },
+    run(args, ctx) {
+      let next: Date | null;
+      try {
+        next = new Cron(String(args.cron), { paused: true }).nextRun();
+      } catch (e) {
+        return `Invalid cron: ${(e as Error).message}`;
+      }
+      const r = db.saveRoutine({
+        id: db.newId(),
+        botId: ctx.botId,
+        name: String(args.name),
+        cron: String(args.cron),
+        prompt: String(args.prompt),
+        threadId: null,
+        enabled: true,
+      });
+      reschedule();
+      return `Routine "${r.name}" scheduled (id ${r.id}). Next run: ${next?.toString() ?? "never"}.`;
+    },
+  },
+  {
+    name: "list_routines",
+    description: "List your routines.",
+    inputSchema: { type: "object", properties: {} },
+    run(_args, ctx) {
+      const rs = db.listRoutines(ctx.botId);
+      return rs.length ? rs.map((r) => `- ${r.id} "${r.name}" ${r.cron} ${r.enabled ? "" : "(paused)"}: ${r.prompt}`).join("\n") : "No routines.";
+    },
+  },
+  {
+    name: "delete_routine",
+    description: "Delete one of your routines by id.",
+    inputSchema: { type: "object", properties: { id: str("Routine id") }, required: ["id"] },
+    run(args, ctx) {
+      const r = db.getRoutine(String(args.id));
+      if (!r || r.botId !== ctx.botId) return "No such routine.";
+      db.deleteRoutine(r.id);
+      reschedule();
+      return "Deleted.";
+    },
+  },
+  {
+    name: "approve",
+    description: "Internal: permission prompt relay. Do not call directly.",
+    inputSchema: {
+      type: "object",
+      properties: { tool_name: { type: "string" }, input: { type: "object" }, tool_use_id: { type: "string" } },
+    },
+    async run(args, ctx) {
+      const requestId = crypto.randomUUID();
+      const input = args.input ?? {};
+      const summary = clip(String(input.command ?? input.file_path ?? input.url ?? JSON.stringify(input)), 300);
+      const part: MessagePart = { type: "approval", requestId, tool: String(args.tool_name), summary };
+      const index = ctx.addPart(part);
+      publishThread(ctx.threadId);
+      const prev = getStatus(ctx.botId);
+      setStatus(ctx.botId, { state: "waiting", text: `Needs your OK: ${args.tool_name}`, threadId: ctx.threadId });
+      const decision = await new Promise<"allow" | "deny">((res) => {
+        pendingApprovals.set(requestId, { resolve: res, ctx, index });
+        if (ctx.signal.aborted) decideApproval(requestId, "deny");
+        else ctx.signal.addEventListener("abort", () => decideApproval(requestId, "deny"), { once: true });
+      });
+      ctx.updatePart(index, { ...part, decision });
+      publishThread(ctx.threadId);
+      setStatus(ctx.botId, { state: "working", text: prev.text, threadId: ctx.threadId });
+      return JSON.stringify(
+        decision === "allow" ? { behavior: "allow", updatedInput: input } : { behavior: "deny", message: "The user declined this action." },
+      );
+    },
+  },
+];
+
+type RpcRequest = { jsonrpc: "2.0"; id?: number | string; method: string; params?: any };
+
+export async function handleMcp(req: Request, token: string): Promise<Response> {
+  if (req.method === "GET") return new Response("SSE not supported", { status: 405 });
+  if (req.method === "DELETE") return new Response(null, { status: 204 });
+  const ctx = turnsByToken.get(token);
+  if (!ctx) return new Response("turn is over", { status: 404 });
+
+  const body = (await req.json()) as RpcRequest | RpcRequest[];
+  const batch = Array.isArray(body) ? body : [body];
+  const responses = (await Promise.all(batch.map((r) => handleRpc(r, ctx)))).filter(Boolean);
+  if (!responses.length) return new Response(null, { status: 202 });
+  return Response.json(Array.isArray(body) ? responses : responses[0], {
+    headers: { "Mcp-Session-Id": token },
+  });
+}
+
+async function handleRpc(r: RpcRequest, ctx: TurnContext) {
+  if (r.id === undefined) return null;
+  const ok = (result: unknown) => ({ jsonrpc: "2.0", id: r.id, result });
+  const fail = (code: number, message: string) => ({ jsonrpc: "2.0", id: r.id, error: { code, message } });
+  switch (r.method) {
+    case "initialize":
+      return ok({
+        protocolVersion: r.params?.protocolVersion ?? "2025-06-18",
+        capabilities: { tools: { listChanged: false } },
+        serverInfo: { name: "fabsbot", version: "0.1.0" },
+        instructions: "Tools for working with the Fabs Bot team: message teammates, ask the user, share files, set status.",
+      });
+    case "ping":
+      return ok({});
+    case "tools/list":
+      return ok({ tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
+    case "tools/call": {
+      const tool = tools.find((t) => t.name === r.params?.name);
+      if (!tool) return fail(-32602, `Unknown tool ${r.params?.name}`);
+      try {
+        const text = await tool.run(r.params?.arguments ?? {}, ctx);
+        return ok({ content: [{ type: "text", text }] });
+      } catch (e) {
+        return ok({ content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true });
+      }
+    }
+    default:
+      return fail(-32601, `Method not found: ${r.method}`);
+  }
+}
