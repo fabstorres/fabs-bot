@@ -17,8 +17,8 @@ export default defineConfig({
     strictPort: true,
     port: 5173,
     proxy: {
-      "/api": target,
-      "/files": target,
+      "/api": { target },
+      "/files": { target },
       "/ws": { target, ws: true },
     },
   },
