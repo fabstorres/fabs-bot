@@ -33,12 +33,18 @@ const key = (threadId: string, botId: string) => `${threadId}:${botId}`;
 const stopCount = (threadId: string) => stops.get(threadId) ?? 0;
 
 const DONE_MS = 2500;
+const settling = new Map<string, ReturnType<typeof setTimeout>>();
 
 function settle(botId: string) {
+  clearTimeout(settling.get(botId));
   setStatus(botId, { state: "done", text: "", threadId: null });
-  setTimeout(() => {
-    if (getStatus(botId).state === "done") setStatus(botId, { state: "idle" });
-  }, DONE_MS);
+  settling.set(
+    botId,
+    setTimeout(() => {
+      settling.delete(botId);
+      if (getStatus(botId).state === "done") setStatus(botId, { state: "idle" });
+    }, DONE_MS),
+  );
 }
 
 export interface TurnOptions {

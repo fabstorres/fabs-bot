@@ -73,14 +73,17 @@ type Editable = "name" | "label" | "role";
 /** Name, label and description, saved as you leave each field. The rest lives in the full editor. */
 function BotSettings({ bot }: { bot: Bot }) {
   const [draft, setDraft] = useState<Partial<Record<Editable, string>>>({});
+  const [error, setError] = useState("");
   const field = (key: Editable) => ({
     value: draft[key] ?? bot[key],
     onChange: (e: { target: { value: string } }) => setDraft({ ...draft, [key]: e.target.value }),
     onBlur: () => {
       const value = draft[key]?.trim();
-      const done = () => setDraft((d) => ({ ...d, [key]: undefined }));
-      if (value === undefined || value === bot[key] || (key === "name" && !value)) return done();
-      void api.put(`/api/bots/${bot.id}`, { [key]: value }).finally(done);
+      const clearIfUnchanged = () => setDraft((d) => (d[key]?.trim() === value ? { ...d, [key]: undefined } : d));
+      if (value === undefined) return;
+      if (value === bot[key] || (key === "name" && !value)) return clearIfUnchanged();
+      setError("");
+      api.put(`/api/bots/${bot.id}`, { [key]: value }).then(clearIfUnchanged, (e) => setError((e as Error).message));
     },
   });
   return (
@@ -98,6 +101,7 @@ function BotSettings({ bot }: { bot: Bot }) {
         <Label htmlFor="bot-settings-role">Description</Label>
         <Textarea id="bot-settings-role" rows={3} placeholder={`What is ${bot.name} for?`} {...field("role")} />
       </div>
+      {error && <p className="text-sm text-failing">{error}</p>}
       <Button variant="outline" className="rounded-full" onClick={() => openModal({ kind: "bot", botId: bot.id })} aria-label={`Edit ${bot.name}`}>
         More settings
       </Button>
