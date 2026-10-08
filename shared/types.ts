@@ -141,6 +141,12 @@ export interface HostInfo {
     peers: { name: string; os: string; online: boolean; ip: string }[];
     serveUrl: string | null;
   };
+  /** Tailscale HTTPS: `tailscale serve` on its own port, turned on from the This PC panel. */
+  serve: {
+    enabled: boolean;
+    port: number;
+    problem: "not-installed" | "not-logged-in" | "permission-denied" | "port-taken" | "target-busy" | "failed" | null;
+  };
   pairUrl: string | null;
   workRoot: string;
 }
@@ -164,3 +170,24 @@ export type ServerEvent =
   | { type: "message"; message: Message }
   | { type: "link.start"; link: Link }
   | { type: "link.end"; linkId: string };
+
+/** A PC the desktop app can open: a name and the web origin its Fabs Bot answers on. */
+export interface SavedPc {
+  id: string;
+  name: string;
+  origin: string;
+}
+
+export interface DesktopState {
+  pcs: SavedPc[];
+  /** `"local"` for this PC, a saved PC's id, or null before the first connection. */
+  last: string | null;
+}
+
+/** What the desktop launcher may ask the Electron app. Calls that can fail resolve to an error message, or null. */
+export interface DesktopBridge {
+  state(): Promise<DesktopState>;
+  open(id: string): Promise<string | null>;
+  add(link: string, name: string): Promise<string | null>;
+  remove(id: string): Promise<void>;
+}

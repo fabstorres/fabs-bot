@@ -11,6 +11,8 @@ import { useLoad } from "../hooks";
 import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -44,8 +46,53 @@ async function loadHost() {
   return { host, qr };
 }
 
+const SERVE_PROBLEMS: Record<NonNullable<HostInfo["serve"]["problem"]>, string> = {
+  "not-installed": "The tailscale command isn't installed on this PC.",
+  "not-logged-in": "Tailscale isn't logged in on this PC.",
+  "permission-denied": "Tailscale refused. Run `sudo tailscale set --operator=$USER` once, then try again.",
+  "port-taken": "Another app already uses this HTTPS port. Set FABS_TAILSCALE_SERVE_PORT to a free one.",
+  "target-busy": "Another app is using the local port Fabs Bot serves HTTPS from.",
+  failed: "Tailscale couldn't set up HTTPS. Check that HTTPS is enabled for your tailnet.",
+};
+
+function TailscaleHttps({ host, onChange }: { host: HostInfo; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const { serve, tailscale } = host;
+  const toggle = async (enabled: boolean) => {
+    setBusy(true);
+    await api.put("/api/host/serve", { enabled }).catch(() => {});
+    setBusy(false);
+    onChange();
+  };
+  let status: ReactNode = (
+    <span className="text-muted-foreground">
+      Serves this PC over HTTPS on port {serve.port} of your tailnet. It turns on the mic and install-to-home-screen, and your own devices sign in
+      without pairing. Other apps using Tailscale HTTPS are left alone.
+    </span>
+  );
+  if (serve.problem) status = <span className="text-destructive">{SERVE_PROBLEMS[serve.problem]}</span>;
+  else if (serve.enabled && tailscale.serveUrl)
+    status = (
+      <>
+        On at <a className="mono-box underline" href={tailscale.serveUrl}>{tailscale.serveUrl}</a>. Your own devices sign in automatically.
+      </>
+    );
+  else if (serve.enabled) status = <span className="text-muted-foreground">Turned on, but Tailscale isn't serving it yet.</span>;
+  return (
+    <div role="group" aria-label="Tailscale HTTPS" className="mt-1 flex flex-col gap-1.5 border-t pt-3">
+      <div className="flex items-center justify-between gap-3">
+        <Label htmlFor="tailscale-https">Tailscale HTTPS</Label>
+        <Switch id="tailscale-https" checked={serve.enabled} disabled={busy || !tailscale.running} onCheckedChange={toggle} />
+      </div>
+      <p className="text-sm">{status}</p>
+    </div>
+  );
+}
+
 export function SettingsPanel() {
-  const { host, qr = "" } = useLoad(loadHost, []).data ?? {};
+  const hostLoad = useLoad(loadHost, []);
+  const { host, qr = "" } = hostLoad.data ?? {};
+  const reload = hostLoad.reload;
   const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []).data ?? [];
   const ts = host?.tailscale;
 
@@ -63,7 +110,7 @@ export function SettingsPanel() {
             </div>
           </div>
           {ts && ts.peers.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="host-peers mt-3 flex flex-wrap gap-1.5">
               {ts.peers.map((p) => (
                 <span key={p.ip} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
                   <Led on={p.online} /> {p.name} <small className="text-muted-foreground">{p.os}</small>
@@ -90,25 +137,7 @@ export function SettingsPanel() {
             ) : (
               <p className="text-sm text-muted-foreground">Start Tailscale on this PC to get a link.</p>
             )}
-            {ts?.serveUrl ? (
-              <p className="text-sm">
-                HTTPS is on:{" "}
-                <a className="underline" href={ts.serveUrl}>
-                  {ts.serveUrl}
-                </a>
-                . Your own devices sign in automatically.
-              </p>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Optional: run this yourself for HTTPS (enables mic + install-to-home-screen). Fabs Bot never changes Tailscale settings.
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="rounded-lg bg-muted px-2 py-1.5 font-mono text-xs">tailscale serve --bg {host?.port ?? 4800}</code>
-                  <Copy text={`tailscale serve --bg ${host?.port ?? 4800}`} />
-                </div>
-              </>
-            )}
+            {host && <TailscaleHttps host={host} onChange={reload} />}
           </div>
         </Card>
 

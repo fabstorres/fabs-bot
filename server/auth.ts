@@ -25,14 +25,14 @@ function cookieToken(req: Request): string | null {
 
 /**
  * Who may talk to the app:
- * - this PC itself (loopback, no proxy identity header),
- * - your own devices via `tailscale serve` (it sets Tailscale-User-Login on loopback requests),
+ * - this PC itself (loopback, no proxy identity header, not arriving through Tailscale HTTPS),
+ * - your own devices via Tailscale HTTPS (`tailscale serve` sets Tailscale-User-Login; tagged devices get none),
  * - anything presenting the pairing token (cookie, bearer, or ?token=).
  */
-export function authorized(req: Request, ip: string | undefined, ownerLogin: string | null): boolean {
+export function authorized(req: Request, ip: string | undefined, ownerLogin: string | null, viaServe = false): boolean {
   const tsUser = req.headers.get("tailscale-user-login");
   if (isLoopback(ip)) {
-    if (!tsUser) return true;
+    if (!tsUser && !viaServe) return true;
     if (ownerLogin && tsUser === ownerLogin) return true;
   }
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
