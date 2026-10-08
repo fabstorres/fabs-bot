@@ -15,13 +15,28 @@ bun run start        # builds the web app, then serves on :4800
 
 The server listens on `127.0.0.1` and on this PC's Tailscale IP. It never listens on your LAN. On first start it prints a pairing link. You can also open the app on the PC, tap the PC name in the top-left, and scan the QR code with your phone (the phone must be on your tailnet).
 
-Optional HTTPS, which turns on the mic and lets you install the app to your home screen. Run this yourself; Fabs Bot never changes Tailscale settings:
+### Tailscale HTTPS
+
+Optional, and off until you turn it on: *This PC → Tailscale HTTPS*. It serves the app at `https://<pc>.<tailnet>.ts.net:8443`, which turns on the mic and lets you install the app to your home screen. Devices signed in to your own Tailscale account get in without pairing. Anyone else, including tagged devices, still needs the pairing link.
+
+Under the hood it runs `tailscale serve --bg --https=8443 http://127.0.0.1:4801`, and turning it off runs `tailscale serve --https=8443 off`. That HTTPS port is the only serve setting Fabs Bot ever touches:
+
+- It never uses 443, so other apps' Tailscale HTTPS (for example one already on `:443`) keeps working.
+- If another app already holds 8443, Fabs Bot refuses and changes nothing. Pick a free port with `FABS_TAILSCALE_SERVE_PORT`.
+- Requests through HTTPS arrive on their own loopback port (`FABS_PORT + 1`). There they are never treated as coming from this PC, and the bots' MCP endpoint is refused.
+
+### Desktop app
 
 ```sh
-tailscale serve --bg 4800
+bun run desktop      # builds, then opens the Electron app
 ```
 
-With `tailscale serve`, your own devices sign in automatically through Tailscale identity headers.
+The desktop app is a window onto a Fabs Bot server: this PC's, or another PC's on your tailnet. Run it on your laptop to work with the bots on your PC:
+
+1. On the PC, open *This PC* and copy the pairing link. With Tailscale HTTPS on, its `https://` address works too.
+2. On the laptop, paste it under *Add a PC*.
+
+The app remembers each PC and reopens the last one. *File → Switch PC…* (`Ctrl/Cmd+Shift+O`) goes back to the list. For *This PC* it attaches to a server that's already running (`bun run start`); it doesn't start one yet. Its data (saved PCs, sign-ins) lives in its own `Fabs Bot` app-data folder.
 
 To develop with hot reload: `bun run dev` (server + Vite together), then open `http://127.0.0.1:5173` on this PC. The Vite dev server is loopback-only; use `bun run start` to reach the app from other devices.
 
@@ -31,6 +46,7 @@ To develop with hot reload: `bun run dev` (server + Vite together), then open `h
 | `FABS_DATA_DIR` | `~/.fabs-bot` | database, shared files, access token (`access-token`; delete it to revoke every paired device) |
 | `FABS_WORK_ROOT` | `~/FabsBot` | bots' desk folders; `shared/` is visible to all of them and holds your uploads |
 | `FABS_HOST` | – | bind to a single address instead of loopback + tailnet |
+| `FABS_TAILSCALE_SERVE_PORT` | `8443` | HTTPS port for Tailscale HTTPS (never 443) |
 
 ## How it works
 
@@ -63,7 +79,7 @@ phone / laptop ──tailnet──▶ Bun server ──spawns per turn──▶ 
 
 ### Your configs are left alone
 
-Fabs Bot never writes to `~/.claude.json`, `~/.codex/config.toml`, Cursor or OpenCode configs, or Tailscale settings. Everything is passed per run as flags: `--mcp-config` (inline JSON), `--append-system-prompt`, `--disallowedTools`, `codex -c key=value`, and similar.
+Fabs Bot never writes to `~/.claude.json`, `~/.codex/config.toml`, or Cursor or OpenCode configs. The one Tailscale setting it changes is its own HTTPS port, and only after you turn on Tailscale HTTPS. Everything is passed per run as flags: `--mcp-config` (inline JSON), `--append-system-prompt`, `--disallowedTools`, `codex -c key=value`, and similar.
 
 ## Provider support
 
@@ -94,8 +110,9 @@ server/            Bun HTTP + WebSocket server
   mcp.ts           the fabsbot MCP server bots call back into
   providers/       one adapter per CLI → normalized events
   scheduler.ts     routines (croner)
-  tailscale.ts     read-only Tailscale status
+  tailscale.ts     Tailscale status, plus Tailscale HTTPS on its own serve port
   auth.ts          pairing token + Tailscale identity
 shared/            types + bot templates + connector presets
-web/               React app: Tailwind + shadcn (sidebar, chat, desk panel, new bot, dialogs)
+web/               React app: Tailwind + shadcn (sidebar, chat, desk panel, new bot, dialogs, desktop launcher)
+desktop/           Electron app: PC launcher, one window per connection
 ```
