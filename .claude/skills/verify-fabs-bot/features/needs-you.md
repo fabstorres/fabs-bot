@@ -1,6 +1,6 @@
 # Needs you
 
-When a bot needs the user, it asks instead of guessing. A question arrives as a card of lettered options that the user answers with one tap. A bot in "Ask me before acting" mode pauses before running commands or editing files and shows an Allow / Deny card. Waiting bots are flagged in the sidebar (amber `Needs you` dot, a wiggling avatar, and `Waiting for your answer` as the preview line) until the user responds.
+When a bot needs the user, it asks instead of guessing. A question arrives as a card of lettered options that the user answers with one tap. A bot in "Ask me before acting" mode pauses before running commands or editing files and shows an Allow / Deny card. Waiting bots are flagged in the sidebar (amber `Needs you` dot, an avatar that turns into a "!", and `Waiting for your answer` as the preview line) until the user responds.
 
 ## Sub-features
 
@@ -42,6 +42,7 @@ Preconditions:
 - Use `--exact` for short button names like `Stop`. Without it, any button whose name contains "stop" matches first.
 - After Stop, the last message is the user's queued one, so `wait --for idle` never passes. Wait for `text:Stopped` instead.
 - Option buttons are named `<Letter> <option text>`. Read the snapshot for the exact text the bot chose.
+- A new bot's greeting card is a question too, but it never raises `Needs you`. Count dots knowing that.
 - The `Needs you` dot sits on the bot's row, not on a thread. A bot with several chats shows one dot if any of them waits.
 - While a question is pending, clicking that bot's row opens the pending thread, not its usual direct chat. Answer it (or use the desk's `Chats`) before driving the direct chat.
 - History survives `browser open /`. `Back` after a reload can land in a chat from before it; `browser start` gives a clean history.

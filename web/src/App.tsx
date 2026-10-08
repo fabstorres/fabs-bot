@@ -33,7 +33,7 @@ export function App() {
   if (!loaded)
     return (
       <div className="grid h-dvh place-items-center">
-        <BotAvatar shape="drop" color="#FF5A00" size={64} state="working" />
+        <BotAvatar shape="drop" color="#FF5A00" size={64} state="thinking" />
       </div>
     );
 

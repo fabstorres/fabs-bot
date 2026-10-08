@@ -3,13 +3,13 @@ import { hostname } from "node:os";
 import { basename, join, relative, resolve } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
 import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
-import { CONNECTOR_PRESETS } from "../shared/templates";
+import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SHARED_DIR, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
 import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
-import { directThread, editMessageParts, postUserMessage, stopTurns } from "./orchestrator";
+import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
@@ -58,6 +58,7 @@ function sanitizeBot(input: Partial<Bot>, existing?: Bot): Omit<Bot, "createdAt"
   return {
     id: existing?.id ?? db.newId(),
     name,
+    label: String(input.label ?? existing?.label ?? "").trim(),
     role: String(input.role ?? existing?.role ?? ""),
     instructions: String(input.instructions ?? existing?.instructions ?? ""),
     shape: (input.shape ?? existing?.shape ?? "blob") as Bot["shape"],
@@ -68,6 +69,21 @@ function sanitizeBot(input: Partial<Bot>, existing?: Bot): Omit<Bot, "createdAt"
     autonomy: input.autonomy === "ask" || input.autonomy === "full" ? input.autonomy : (existing?.autonomy ?? "full"),
     connectorIds: Array.isArray(input.connectorIds) ? input.connectorIds.map(String) : (existing?.connectorIds ?? []),
   };
+}
+
+function createBot(input: Partial<Bot>): Bot {
+  const bot = db.saveBot(sanitizeBot(input));
+  mkdirSync(bot.cwd, { recursive: true });
+  publish({ type: "bot", bot });
+  greet(bot);
+  return bot;
+}
+
+/** A fresh install starts with one bot already waiting in its chat. */
+function onboard() {
+  if (db.getSetting("onboarded")) return;
+  if (db.listBots().length === 0) createBot(BOT_TEMPLATES.find((t) => t.key === "chief")!);
+  db.setSetting("onboarded", "1");
 }
 
 async function hostInfo(): Promise<HostInfo> {
@@ -94,12 +110,7 @@ route("GET", "/api/host", () => hostInfo().then(json));
 route("GET", "/api/providers", (_r, _p, url) => providerInfo(url.searchParams.has("refresh")).then(json));
 
 route("GET", "/api/bots", () => json(db.listBots()));
-route("POST", "/api/bots", async (req) => {
-  const bot = db.saveBot(sanitizeBot(await body(req)));
-  mkdirSync(bot.cwd, { recursive: true });
-  publish({ type: "bot", bot });
-  return json(bot);
-});
+route("POST", "/api/bots", async (req) => json(createBot(await body(req))));
 route("PUT", "/api/bots/:id", async (req, p) => {
   const existing = db.getBot(p.id!);
   if (!existing) return bad("not found", 404);
@@ -392,6 +403,7 @@ function listen(hostname: string) {
   return s;
 }
 
+onboard();
 console.log("fabs-bot");
 if (process.env.FABS_HOST) {
   listen(process.env.FABS_HOST);

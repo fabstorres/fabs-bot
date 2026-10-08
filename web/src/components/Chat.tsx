@@ -3,7 +3,7 @@ import { ArrowUp, ChevronLeft, Ellipsis, Mic, Monitor, Paperclip, Pencil, Plus, 
 import type { Bot, Thread } from "../../../shared/types";
 import { api } from "../api";
 import { goBack, openModal, threadTitle, togglePanel, useStore } from "../store";
-import { AvatarStack, BotAvatar } from "./BotAvatar";
+import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,7 @@ export function Chat({ thread }: { thread: Thread }) {
           <ChevronLeft className="size-5" />
         </Button>
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <AvatarStack bots={members} size={28} />
+          {members.length === 1 ? <LiveAvatar bot={members[0]!} size={28} /> : <AvatarStack bots={members} size={28} />}
           <span className="truncate text-[17px] font-semibold">{title}</span>
           {thread.topic && <Badge variant="secondary">{thread.topic}</Badge>}
         </div>

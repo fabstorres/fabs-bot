@@ -59,7 +59,8 @@ function upsert<T extends { id: string }>(list: T[], item: T): T[] {
 
 function apply(e: ServerEvent) {
   switch (e.type) {
-    case "hello":
+    case "hello": {
+      const firstLoad = !get().loaded;
       set({
         bots: e.bots,
         statuses: Object.fromEntries(e.statuses.map((s) => [s.botId, s])),
@@ -68,7 +69,9 @@ function apply(e: ServerEvent) {
         loaded: true,
       });
       if (get().openThreadId) void loadMessages(get().openThreadId!);
+      else if (firstLoad) land(e.threads);
       break;
+    }
     case "bot":
       set({ bots: upsert(get().bots, e.bot) });
       break;
@@ -153,6 +156,15 @@ function go(view: View, stack: boolean) {
   if (history.state?.view && !stack) history.replaceState({ view }, "");
   else history.pushState({ view }, "");
   show(view);
+}
+
+/** On desktop, start in the latest chat instead of an empty pane. */
+function land(threads: Thread[]) {
+  if (get().creating || !window.matchMedia("(min-width: 768px)").matches) return;
+  const latest = threads.find((t) => t.kind !== "backchannel");
+  if (!latest) return;
+  history.replaceState({ view: { thread: latest.id } }, "");
+  show({ thread: latest.id });
 }
 
 export const openThread = (threadId: string) => go({ thread: threadId }, false);

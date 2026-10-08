@@ -19,6 +19,8 @@ export type Autonomy = "full" | "ask";
 export interface Bot {
   id: string;
   name: string;
+  /** Short optional tag shown next to the name, e.g. "Executive Assistant". */
+  label: string;
   role: string;
   instructions: string;
   shape: Shape;
@@ -31,7 +33,7 @@ export interface Bot {
   createdAt: number;
 }
 
-export type BotState = "idle" | "working" | "waiting" | "error";
+export type BotState = "idle" | "thinking" | "working" | "waiting" | "blocked" | "done" | "error";
 
 export interface BotStatus {
   botId: string;
@@ -67,6 +69,8 @@ export type MessagePart =
       options: string[];
       /** Index of the tapped option, or -1 when the user answered by typing. */
       answered?: number;
+      /** A new bot's opening question. It invites an answer but doesn't flag the thread as needing you. */
+      greeting?: boolean;
     }
   | {
       type: "approval";

@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { LOCAL_BASE, MAX_HOPS, SHARED_DIR } from "./config";
 import * as db from "./db";
-import { endLink, publish, setStatus, startLink } from "./bus";
+import { endLink, getStatus, publish, setStatus, startLink } from "./bus";
 import { providers } from "./providers";
 import type { ProviderEvent } from "./providers/types";
 import { clip } from "./providers/spawn";
@@ -31,6 +31,21 @@ const stops = new Map<string, number>();
 
 const key = (threadId: string, botId: string) => `${threadId}:${botId}`;
 const stopCount = (threadId: string) => stops.get(threadId) ?? 0;
+
+const DONE_MS = 2500;
+const settling = new Map<string, ReturnType<typeof setTimeout>>();
+
+function settle(botId: string) {
+  clearTimeout(settling.get(botId));
+  setStatus(botId, { state: "done", text: "", threadId: null });
+  settling.set(
+    botId,
+    setTimeout(() => {
+      settling.delete(botId);
+      if (getStatus(botId).state === "done") setStatus(botId, { state: "idle" });
+    }, DONE_MS),
+  );
+}
 
 export interface TurnOptions {
   /** How many bot-to-bot hops led here; stops runaway conversations. */
@@ -147,10 +162,10 @@ function describeMessage(m: Message, self: Bot): string {
 }
 
 /** Messages a bot hasn't seen yet. Its own turn output is already in its session; tool-sent messages are not. */
-function unseen(threadId: string, bot: Bot, afterSeq: number): Message[] {
+function unseen(threadId: string, bot: Bot, afterSeq: number, includeOwn = false): Message[] {
   return db
     .listMessages(threadId, afterSeq)
-    .filter((m) => !(m.author === "bot" && m.botId === bot.id && m.fromBotId === null) && m.status !== "streaming");
+    .filter((m) => (includeOwn || !(m.author === "bot" && m.botId === bot.id && m.fromBotId === null)) && m.status !== "streaming");
 }
 
 function buildPrompt(thread: Thread, bot: Bot, msgs: Message[], fresh: boolean): string {
@@ -170,7 +185,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   const member = db.getMember(threadId, botId) ?? { session_id: null, last_seen_seq: 0 };
   const resume = provider.resumable && member.session_id ? member.session_id : null;
 
-  const pending = unseen(threadId, bot, resume ? member.last_seen_seq : 0);
+  const pending = unseen(threadId, bot, resume ? member.last_seen_seq : 0, !resume);
   const fresh = !resume;
   const newSinceLast = resume ? pending : unseen(threadId, bot, member.last_seen_seq);
   if (newSinceLast.length === 0) return null;
@@ -181,7 +196,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   const ctrl = new AbortController();
   aborts.set(key(threadId, botId), ctrl);
   activeTurns.set(botId, (activeTurns.get(botId) ?? 0) + 1);
-  setStatus(botId, { state: "working", text: "Thinking…", threadId });
+  setStatus(botId, { state: "thinking", text: "Thinking…", threadId });
 
   const parts: MessagePart[] = [];
   let msg = db.addMessage({ threadId, author: "bot", botId, parts, status: "streaming" });
@@ -311,8 +326,8 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   const asked = parts.some((p) => p.type === "question" && p.answered === undefined);
   if (remaining <= 0) {
     if (error) setStatus(botId, { state: "error", text: clip(error, 60), threadId: null });
-    else if (asked) setStatus(botId, { state: "waiting", text: "Waiting for your answer", threadId });
-    else setStatus(botId, { state: "idle", text: "", threadId: null });
+    else if (asked) setStatus(botId, { state: "blocked", text: "Waiting for your answer", threadId });
+    else settle(botId);
   }
 
   const later = db.listMessages(threadId, snapshotSeq).filter((m) => m.author === "user");
@@ -419,6 +434,27 @@ export function directThread(botId: string): Thread {
   const existing = db.listThreads().find((t) => t.kind === "direct" && t.memberIds.length === 1 && t.memberIds[0] === botId);
   if (existing) return existing;
   const t = db.createThread("direct", [botId]);
+  publish({ type: "thread", thread: t });
+  return t;
+}
+
+const GREETING_OPTIONS = ["Day-to-day ops", "A specific project", "Research and writing", "Something else"];
+
+/** Open a new bot's direct chat with a hello and a first question, so it's ready to go. */
+export function greet(bot: Bot): Thread {
+  const thread = directThread(bot.id);
+  const text = `Hey, I'm ${bot.name}. What's the main thing you want me on?`;
+  const m = db.addMessage({
+    threadId: thread.id,
+    author: "bot",
+    botId: bot.id,
+    parts: [
+      { type: "text", text },
+      { type: "question", question: "What should I own for you?", options: GREETING_OPTIONS, greeting: true },
+    ],
+  });
+  publish({ type: "message", message: m });
+  const t = db.updateThread(thread.id, { preview: text, unread: 1 })!;
   publish({ type: "thread", thread: t });
   return t;
 }

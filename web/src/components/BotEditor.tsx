@@ -18,6 +18,7 @@ type Draft = Omit<Bot, "id" | "createdAt">;
 
 export const blankBot: Draft = {
   name: "",
+  label: "",
   role: "",
   instructions: "",
   shape: "blob",

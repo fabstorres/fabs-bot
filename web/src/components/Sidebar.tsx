@@ -4,7 +4,8 @@ import type { Bot, Thread } from "../../../shared/types";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
 import { openDirect, openModal, openNestedThread, openThread, startCreating, threadTitle, useStore } from "../store";
-import { AvatarStack, BotAvatar } from "./BotAvatar";
+import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ function useRows(): Row[] {
   return rows
     .filter((r) => {
       if (!search) return true;
-      const text = r.kind === "bot" ? `${r.bot.name} ${r.bot.role} ${r.threads[0]?.preview ?? ""}` : `${threadTitle(r.thread, bots)} ${r.thread.preview}`;
+      const text = r.kind === "bot" ? `${r.bot.name} ${r.bot.label} ${r.bot.role} ${r.threads[0]?.preview ?? ""}` : `${threadTitle(r.thread, bots)} ${r.thread.preview}`;
       return text.toLowerCase().includes(search);
     })
     .sort((a, b) => b.at - a.at);
@@ -102,12 +103,11 @@ export function Sidebar() {
 
 /** Phone only: the first few bots as big tappable faces, like the Grok Bot home. */
 function Favorites({ bots }: { bots: Bot[] }) {
-  const statuses = useStore((s) => s.statuses);
   return (
     <div className="flex justify-around px-4 pt-2 pb-4 md:hidden">
       {bots.map((b) => (
         <button key={b.id} className="flex w-24 flex-col items-center gap-1.5" onClick={() => void openDirect(b.id)} aria-label={`Open ${b.name}`}>
-          <BotAvatar shape={b.shape} color={b.color} size={68} state={statuses[b.id]?.state} />
+          <LiveAvatar bot={b} size={68} />
           <span className="w-full truncate text-center text-[13px] text-muted-foreground">{b.name}</span>
         </button>
       ))}
@@ -121,6 +121,7 @@ function RowShell({
   onClick,
   avatar,
   title,
+  tag,
   time,
   preview,
   flag,
@@ -130,7 +131,8 @@ function RowShell({
   label: string;
   onClick(): void;
   avatar: ReactNode;
-  title: ReactNode;
+  title: string;
+  tag?: string;
   time: string;
   preview: ReactNode;
   flag: "needs" | "unread" | null;
@@ -147,7 +149,14 @@ function RowShell({
       {avatar}
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+            <span className="max-w-full flex-none truncate font-semibold">{title}</span>
+            {tag && (
+              <Badge variant="secondary" className="block min-w-0 truncate rounded-md px-1.5 font-normal text-muted-foreground">
+                {tag}
+              </Badge>
+            )}
+          </span>
           <span className="flex-none text-[13px] text-muted-foreground">{time}</span>
         </span>
         <span className="flex items-center gap-2">
@@ -180,12 +189,13 @@ function BotRow({ bot, threads, pending }: { bot: Bot; threads: Thread[]; pendin
         else if (pending) openThread(pending.id);
         else void openDirect(bot.id);
       }}
-      avatar={<BotAvatar shape={bot.shape} color={bot.color} size={44} state={status?.state} dot />}
+      avatar={<LiveAvatar bot={bot} size={44} />}
       title={bot.name}
+      tag={bot.label}
       time={latest ? formatTime(latest.updatedAt) : ""}
       preview={
         busy ? (
-          <span className={status.state === "waiting" ? "text-amber-600" : undefined}>{status.text}</span>
+          <span className={status.state === "blocked" ? "text-amber-600" : undefined}>{status.text}</span>
         ) : pending?.kind === "backchannel" ? (
           <span className="text-amber-600">Waiting for you in {threadTitle(pending, bots)}</span>
         ) : (
@@ -219,7 +229,7 @@ function GroupRow({ thread }: { thread: Thread }) {
 function HostChip() {
   const connected = useStore((s) => s.connected);
   const statuses = useStore((s) => s.statuses);
-  const busy = Object.values(statuses).filter((s) => s.state === "working").length;
+  const busy = Object.values(statuses).filter((s) => s.state === "thinking" || s.state === "working").length;
   const host = useLoad(() => api.get<{ hostname: string }>("/api/host"), []).data?.hostname ?? "";
   return (
     <button

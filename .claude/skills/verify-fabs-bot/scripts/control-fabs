@@ -301,7 +301,7 @@ const commands: Record<string, () => Promise<void>> = {
         const idleNow = !streaming && last?.author === "bot";
         stableSince = idleNow ? stableSince || Date.now() : 0;
         hit = idleNow && Date.now() - stableSince > 2500;
-      } else if (want === "question") hit = parts.some((p) => p.type === "question" && p.answered === undefined);
+      } else if (want === "question") hit = parts.some((p) => p.type === "question" && p.answered === undefined && !p.greeting);
       else if (want === "approval") hit = parts.some((p) => p.type === "approval" && !p.decision);
       else if (want === "file") hit = parts.some((p) => p.type === "file");
       else if (want.startsWith("text:")) hit = parts.some((p) => p.type === "text" && p.text.toLowerCase().includes(want.slice(5).toLowerCase()));
