@@ -1,0 +1,11 @@
+## 3-nav-guard
+"http://127.0.0.1:4870/ bridge=undefined"
+"window.open denied"
+## 4-reopens-last
+"http://127.0.0.1:4870"
+## 5-remote-paired
+"tailnet paired=true bridge=undefined"
+## 6-relaunch-still-paired
+"tailnet/ paired=true"
+## 10-repair-no-duplicate
+Fedora rows: 1
