@@ -1,6 +1,6 @@
 ---
 name: verify-fabs-bot
-description: Launch an isolated Fabs Bot instance and prove its behavior the way a user sees it — the field of bots, threads, file sharing, bot↔bot messaging, question/approval cards, and Tailscale pairing — with a headless browser plus real agent CLI turns. Use whenever you change Fabs Bot (server, providers, MCP tools, or web UI) and need evidence it works, or when asked to "verify", "smoke test", or "prove" a Fabs Bot feature.
+description: Launch an isolated Fabs Bot instance and prove its behavior the way a user sees it — the bot sidebar, chats, the desk panel, file sharing, bot↔bot messaging, question/approval cards, and Tailscale pairing — with a headless browser plus real agent CLI turns. Use whenever you change Fabs Bot (server, providers, MCP tools, or web UI) and need evidence it works, or when asked to "verify", "smoke test", or "prove" a Fabs Bot feature.
 ---
 
 # Verify Fabs Bot
@@ -58,10 +58,10 @@ Then drive the browser. Every command connects, acts, and disconnects; the page,
 ```sh
 $C browser start [--viewport 1440x900]      # 430x932 for the phone layout; restart to switch
 $C browser open /
-$C browser wait  --role button --name "Bot Chief"
-$C browser fill  --label "Hand off work" --value "@Chief …"
-$C browser press --label "Hand off work" --key Enter
+$C browser click --role button --name "Bot Chief"
 $C browser wait  --role region --name "Thread with Chief"
+$C browser fill  --label "Message" --value "…"
+$C browser press --label "Message" --key Enter
 $C browser eval  "document.querySelector('[role=region][data-thread-id]').dataset.threadId"
 $C wait <threadId> --for file|question|approval|idle|text:<substring> [--timeout 180]
 $C thread <threadId>                        # compact dump: authors, tool steps, files, cards
@@ -71,16 +71,15 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 
 | UI | handle |
 |---|---|
-| field bot | `--role button --name "Bot <Name>"`; bot card `--role dialog --name "<Name> card"` |
-| status bubble | `--role button --name "<Name> status:"` |
-| dock input | `--label "Hand off work"`; send `--role button --name "Start thread"` |
-| inbox | `--role complementary --name "Inbox"`; rows `--role button --name "Thread: <title>"`; filters `--role tab --name "Threads"`, `"Needs you"`, `"Bot ↔ bot"` |
-| open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"` |
-| thread header | `"Back"`, `"Open desk"`, `"More"`; menu `--role menu --name "Thread menu"` |
-| cards | `--role group --name "Question: <q>"` (options are buttons named `"<Letter> <option>"`); `--role group --name "Approval: <Tool>"` with buttons `Allow` / `Deny` |
-| files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"`; desk `--role dialog --name "<Bot>'s desk"` |
-| top bar | `"This PC"`, `"Connectors"`, `"New bot"`; search `--label "Search threads"` |
-| bot editor | dialog `"New bot"` or `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` for Brain and Autonomy |
+| sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`), `"Plugins"`, `"This PC"` |
+| phone favorites | `--role button --name "Open <Name>"` (big faces above the list, 430px only) |
+| new bot pane | `--role region --name "New bot"`; `--role radio` in groups `Color` / `Shape`; `--label "Name"`; suggestions `"Suggestion <Template>"`; `"Get started"` |
+| open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"`, `"Send"`, `"Stop"`, `"Attach"` |
+| thread header | `"Back"` (phone, or desktop inside a backchannel), `"Open desk"`, `"More"`; menu `--role menu --name "Thread menu"` |
+| cards | `--role group --name "Question: <q>"` (options are buttons named `"<Letter> <option>"`); `--role group --name "Approval: <Tool>"` with buttons `Allow` / `Deny`; bot↔bot `--role button --name "Exchange with <Bot>"` (opens the backchannel) |
+| desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; `"Edit <Bot>"` (gear), `"Close desk"`; group threads add `"Show <Bot>"` |
+| files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
+| bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` for Brain and Autonomy |
 
 Other drivers: `browser click|fill|press|wait|count|text`, `api <METHOD> <path> [json]`, `threads`, `paths` (scratch dirs for checking files on disk), `logs`, and `pair-check` (the remote-device auth matrix over the tailnet; needs `--tailnet`).
 
@@ -99,7 +98,7 @@ Put everything under the run's artifacts dir, using paths relative to it: `--pat
 - **Side-effect proof** reads the result back from a second place. A file shared in chat must also appear on disk (`$C paths` → `workRoot/<bot-slug>/…`) and in the bot's desk. A sent message must survive `browser open /` (a reload).
 
 Proof standards:
-- Exercise the real user path: the dock, the composer, and the cards in the browser. Use the API only for seeding and for reading back.
+- Exercise the real user path: the sidebar, the composer, and the cards in the browser. Use the API only for seeding and for reading back.
 - Capture the action and the resulting state, not just the final screen.
 - Verify side effects as well as what's visible.
 - No mocks: the agent CLIs are the product.
