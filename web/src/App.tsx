@@ -48,8 +48,8 @@ export function App() {
           <NewBot />
         ) : thread ? (
           <>
-            <Chat key={thread.id} thread={thread} />
-            {panelOpen && <DeskPanel key={thread.id} thread={thread} />}
+            <Chat key={`chat-${thread.id}`} thread={thread} />
+            {panelOpen && <DeskPanel key={`desk-${thread.id}`} thread={thread} />}
           </>
         ) : (
           <Empty />

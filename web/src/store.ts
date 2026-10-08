@@ -175,6 +175,7 @@ export async function openDirect(botId: string) {
 export const openModal = (modal: Modal) => set({ modal });
 export const closeModal = () => set({ modal: null });
 export const togglePanel = () => set({ panelOpen: !get().panelOpen });
+export const closePanel = () => set({ panelOpen: false });
 
 export function botById(id: string | null | undefined): Bot | undefined {
   return id ? get().bots.find((b) => b.id === id) : undefined;

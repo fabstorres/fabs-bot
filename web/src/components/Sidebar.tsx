@@ -3,16 +3,19 @@ import { Plug, Plus, Search } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
-import { openDirect, openModal, openThread, startCreating, threadTitle, useStore } from "../store";
+import { openDirect, openModal, openNestedThread, openThread, startCreating, threadTitle, useStore } from "../store";
 import { AvatarStack, BotAvatar } from "./BotAvatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type Row = { kind: "bot"; bot: Bot; threads: Thread[]; at: number } | { kind: "group"; thread: Thread; at: number };
+type Row = { kind: "bot"; bot: Bot; threads: Thread[]; pending?: Thread; at: number } | { kind: "group"; thread: Thread; at: number };
 
 const isDirectWith = (t: Thread, botId: string) => t.kind === "direct" && t.memberIds.length === 1 && t.memberIds[0] === botId;
 
-/** One row per bot (its direct chats rolled up) plus one per group chat, most recent first. */
+/**
+ * One row per bot (its direct chats rolled up) plus one per group chat, most recent first.
+ * Backchannels have no row, so a question waiting in one is surfaced on both bots' rows.
+ */
 function useRows(): Row[] {
   const bots = useStore((s) => s.bots);
   const threads = useStore((s) => s.threads);
@@ -20,7 +23,8 @@ function useRows(): Row[] {
   const rows: Row[] = [
     ...bots.map((bot) => {
       const mine = threads.filter((t) => isDirectWith(t, bot.id));
-      return { kind: "bot" as const, bot, threads: mine, at: mine[0]?.updatedAt ?? bot.createdAt };
+      const pending = threads.find((t) => t.needsYou && t.memberIds.includes(bot.id) && (t.kind === "backchannel" || isDirectWith(t, bot.id)));
+      return { kind: "bot" as const, bot, threads: mine, pending, at: Math.max(mine[0]?.updatedAt ?? bot.createdAt, pending?.updatedAt ?? 0) };
     }),
     ...threads.filter((t) => t.kind === "group").map((thread) => ({ kind: "group" as const, thread, at: thread.updatedAt })),
   ];
@@ -77,7 +81,9 @@ export function Sidebar() {
             <span className="font-medium">New Bot</span>
           </div>
         )}
-        {rows.map((r) => (r.kind === "bot" ? <BotRow key={r.bot.id} bot={r.bot} threads={r.threads} /> : <GroupRow key={r.thread.id} thread={r.thread} />))}
+        {rows.map((r) =>
+          r.kind === "bot" ? <BotRow key={r.bot.id} bot={r.bot} threads={r.threads} pending={r.pending} /> : <GroupRow key={r.thread.id} thread={r.thread} />,
+        )}
         {search && rows.length === 0 && <p className="mt-10 text-center text-sm text-muted-foreground">Nothing matches "{search}".</p>}
       </nav>
 
@@ -159,21 +165,34 @@ function RowShell({
   );
 }
 
-function BotRow({ bot, threads }: { bot: Bot; threads: Thread[] }) {
+function BotRow({ bot, threads, pending }: { bot: Bot; threads: Thread[]; pending?: Thread }) {
   const status = useStore((s) => s.statuses[bot.id]);
   const open = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
+  const bots = useStore((s) => s.bots);
   const latest = threads[0];
   const busy = status && status.state !== "idle" && status.text;
   return (
     <RowShell
       label={`Bot ${bot.name}`}
       active={!!open && isDirectWith(open, bot.id)}
-      onClick={() => void openDirect(bot.id)}
+      onClick={() => {
+        if (pending?.kind === "backchannel") openNestedThread(pending.id);
+        else if (pending) openThread(pending.id);
+        else void openDirect(bot.id);
+      }}
       avatar={<BotAvatar shape={bot.shape} color={bot.color} size={44} state={status?.state} dot />}
       title={bot.name}
       time={latest ? formatTime(latest.updatedAt) : ""}
-      preview={busy ? <span className={status.state === "waiting" ? "text-amber-600" : undefined}>{status.text}</span> : latest?.preview || bot.role}
-      flag={threads.some((t) => t.needsYou) ? "needs" : threads.some((t) => t.unread > 0) ? "unread" : null}
+      preview={
+        busy ? (
+          <span className={status.state === "waiting" ? "text-amber-600" : undefined}>{status.text}</span>
+        ) : pending?.kind === "backchannel" ? (
+          <span className="text-amber-600">Waiting for you in {threadTitle(pending, bots)}</span>
+        ) : (
+          latest?.preview || bot.role
+        )
+      }
+      flag={pending ? "needs" : threads.some((t) => t.unread > 0) ? "unread" : null}
     />
   );
 }

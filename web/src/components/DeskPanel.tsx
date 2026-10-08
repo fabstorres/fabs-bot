@@ -3,7 +3,7 @@ import { ChevronRight, Clock, File, Folder, Pause, Play, Settings, X } from "luc
 import type { Bot, Routine, Thread } from "../../../shared/types";
 import { api, formatSize, formatTime } from "../api";
 import { useLoad } from "../hooks";
-import { openModal, openNestedThread, openThread, threadTitle, togglePanel, useStore } from "../store";
+import { closePanel, openModal, openNestedThread, openThread, threadTitle, togglePanel, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { scheduleLabel } from "./BotEditor";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,9 @@ export function DeskPanel({ thread }: { thread: Thread }) {
     </aside>
   );
 }
+
+/** On a phone the desk covers the whole screen, so it has to step aside for the chat you picked. */
+const onPhone = () => !window.matchMedia("(min-width: 768px)").matches;
 
 type Entry = { name: string; dir: boolean; size: number; mtime: number; path: string };
 
@@ -151,7 +154,15 @@ function OtherChats({ bot, openId }: { bot: Bot; openId: string }) {
     <section className="mt-6">
       <h3 className="mb-1 px-1 text-sm text-muted-foreground">Chats</h3>
       {others.map((t) => (
-        <button key={t.id} className="flex w-full items-center gap-2 rounded-xl px-1 py-2 text-left hover:bg-muted" onClick={() => (t.kind === "backchannel" ? openNestedThread(t.id) : openThread(t.id))}>
+        <button
+          key={t.id}
+          className="flex w-full items-center gap-2 rounded-xl px-1 py-2 text-left hover:bg-muted"
+          onClick={() => {
+            if (t.kind === "backchannel") openNestedThread(t.id);
+            else openThread(t.id);
+            if (onPhone()) closePanel();
+          }}
+        >
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">{threadTitle(t, bots)}</span>
             <span className="block truncate text-[13px] text-muted-foreground">{t.preview}</span>
