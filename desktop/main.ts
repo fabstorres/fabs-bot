@@ -197,9 +197,14 @@ app.whenReady().then(async () => {
     if (url.host !== "launcher" || !file.startsWith(WEB_DIST + sep) || !existsSync(file)) return new Response("not found", { status: 404 });
     return net.fetch(pathToFileURL(file).toString());
   });
-  session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
-    callback(contents !== launcher?.webContents && !!pcOrigin && within(details.requestingUrl, pcOrigin) && PERMISSIONS.includes(permission));
-  });
+  const allowPermission = (contents: WebContents | null, permission: string, url: string) =>
+    !!contents && contents !== launcher?.webContents && !!pcOrigin && within(url, pcOrigin) && PERMISSIONS.includes(permission);
+  session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) =>
+    callback(allowPermission(contents, permission, details.requestingUrl) && !("mediaTypes" in details && details.mediaTypes?.includes("video"))),
+  );
+  session.defaultSession.setPermissionCheckHandler(
+    (contents, permission, origin, details) => allowPermission(contents, permission, origin) && details.mediaType !== "video",
+  );
   setMenu();
 
   const { last } = readStore();
