@@ -143,7 +143,7 @@ route("PUT", "/api/host/serve", async (req) => {
   const { enabled } = await body<{ enabled: boolean }>(req);
   db.setSetting("tailscale.serve", enabled ? "1" : "0");
   await applyServe();
-  if (enabled && serveProblem) db.setSetting("tailscale.serve", "0");
+  if (serveProblem) db.setSetting("tailscale.serve", enabled ? "0" : "1");
   return json(await hostInfo());
 });
 route("GET", "/api/providers", (_r, _p, url) => providerInfo(url.searchParams.has("refresh")).then(json));

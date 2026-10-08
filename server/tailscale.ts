@@ -124,6 +124,7 @@ export async function enableServe(localPort: number, servePort: number): Promise
 
 /** Remove our mapping on `servePort`. Leaves the port alone when it belongs to another app. */
 export async function disableServe(localPort: number, servePort: number): Promise<ServeProblem | null> {
+  if (servePort === 443) return null;
   const cfg = await readServeConfig();
   if (typeof cfg === "string") return cfg;
   if (servePortOwner(cfg, servePort, localPort) !== "us") return null;
