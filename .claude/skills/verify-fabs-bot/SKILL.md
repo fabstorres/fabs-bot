@@ -51,6 +51,7 @@ Setup goes through the API; behavior goes through the UI. Seed fixtures once:
 
 ```sh
 $C seed      # Chief, Design (Claude haiku), Careful (Claude haiku, "ask" autonomy), Engineer (Codex, if installed)
+             # alongside the starter bot every fresh install gets: Chief of Staff
 ```
 
 Then drive the browser. Every command connects, acts, and disconnects; the page, cookies, and viewport persist between commands.
@@ -77,7 +78,7 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"`, `"Send"`, `"Stop"`, `"Attach"` |
 | thread header | `"Back"` (phone, or desktop inside a backchannel), `"Open desk"`, `"More"`; menu `--role menu --name "Thread menu"` |
 | cards | `--role group --name "Question: <q>"` (options are buttons named `"<Letter> <option>"`); `--role group --name "Approval: <Tool>"` with buttons `Allow` / `Deny`; bot↔bot `--role button --name "Exchange with <Bot>"` (opens the backchannel) |
-| desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; `"Edit <Bot>"` (gear), `"Close desk"`; group threads add `"Show <Bot>"` |
+| desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
 | bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` for Brain and Autonomy |
 

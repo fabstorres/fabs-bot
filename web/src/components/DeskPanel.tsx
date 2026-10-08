@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { ChevronRight, Clock, File, Folder, Pause, Play, Settings, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, File, Folder, Pause, Play, X } from "lucide-react";
 import type { Bot, Routine, Thread } from "../../../shared/types";
 import { api, formatSize, formatTime } from "../api";
 import { useLoad } from "../hooks";
 import { closePanel, openModal, openNestedThread, openThread, threadTitle, togglePanel, useStore } from "../store";
-import { BotAvatar } from "./BotAvatar";
+import { BotAvatar, LiveAvatar } from "./BotAvatar";
 import { scheduleLabel } from "./BotEditor";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 /** The bot's side of the conversation: its desk, its routines and its other chats. */
@@ -14,6 +17,7 @@ export function DeskPanel({ thread }: { thread: Thread }) {
   const bots = useStore((s) => s.bots);
   const members = thread.memberIds.map((id) => bots.find((b) => b.id === id)).filter((b): b is Bot => !!b);
   const [pickedId, setPickedId] = useState(members[0]?.id);
+  const [page, setPage] = useState<"desk" | "settings">("desk");
   const bot = members.find((b) => b.id === pickedId) ?? members[0];
   if (!bot) return null;
 
@@ -23,36 +27,81 @@ export function DeskPanel({ thread }: { thread: Thread }) {
       className="fixed inset-0 z-40 flex flex-col bg-background animate-in slide-in-from-right-4 md:static md:z-auto md:w-[360px] md:flex-none md:border-l"
     >
       <header className="flex h-14 flex-none items-center gap-1 px-3">
-        <div className="flex min-w-0 flex-1 items-center gap-1">
-          {members.length > 1 ? (
-            members.map((m) => (
-              <button
-                key={m.id}
-                aria-label={`Show ${m.name}`}
-                aria-pressed={m.id === bot.id}
-                className={cn("rounded-full p-1", m.id === bot.id && "bg-accent")}
-                onClick={() => setPickedId(m.id)}
-              >
-                <BotAvatar shape={m.shape} color={m.color} size={26} />
-              </button>
-            ))
-          ) : (
-            <span className="truncate pl-2 font-semibold">{bot.name}</span>
-          )}
-        </div>
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => openModal({ kind: "bot", botId: bot.id })} aria-label={`Edit ${bot.name}`} title="Edit bot">
-          <Settings className="size-5" />
+        <Button variant="ghost" size="icon" className="rounded-full" disabled={page === "desk"} onClick={() => setPage("desk")} aria-label="Show desk">
+          <ChevronLeft className="size-5" />
+        </Button>
+        <h2 className="flex-1 text-center font-semibold">{page === "desk" ? "Desk" : "Settings"}</h2>
+        <Button variant="ghost" size="icon" className="rounded-full" disabled={page === "settings"} onClick={() => setPage("settings")} aria-label="Show settings">
+          <ChevronRight className="size-5" />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={togglePanel} aria-label="Close desk">
           <X className="size-5" />
         </Button>
       </header>
+      {members.length > 1 && (
+        <div className="flex flex-none justify-center gap-1 pb-2">
+          {members.map((m) => (
+            <button
+              key={m.id}
+              aria-label={`Show ${m.name}`}
+              aria-pressed={m.id === bot.id}
+              className={cn("rounded-full p-1", m.id === bot.id && "bg-accent")}
+              onClick={() => setPickedId(m.id)}
+            >
+              <BotAvatar shape={m.shape} color={m.color} size={26} />
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto px-4 pb-6">
-        <Desk key={bot.id} bot={bot} />
-        <Routines bot={bot} />
-        <OtherChats bot={bot} openId={thread.id} />
+        {page === "desk" ? (
+          <>
+            <Desk key={bot.id} bot={bot} />
+            <Routines bot={bot} />
+            <OtherChats bot={bot} openId={thread.id} />
+          </>
+        ) : (
+          <BotSettings key={bot.id} bot={bot} />
+        )}
       </div>
     </aside>
+  );
+}
+
+type Editable = "name" | "label" | "role";
+
+/** Name, label and description, saved as you leave each field. The rest lives in the full editor. */
+function BotSettings({ bot }: { bot: Bot }) {
+  const [draft, setDraft] = useState<Partial<Record<Editable, string>>>({});
+  const field = (key: Editable) => ({
+    value: draft[key] ?? bot[key],
+    onChange: (e: { target: { value: string } }) => setDraft({ ...draft, [key]: e.target.value }),
+    onBlur: () => {
+      const value = draft[key]?.trim();
+      const done = () => setDraft((d) => ({ ...d, [key]: undefined }));
+      if (value === undefined || value === bot[key] || (key === "name" && !value)) return done();
+      void api.put(`/api/bots/${bot.id}`, { [key]: value }).finally(done);
+    },
+  });
+  return (
+    <section className="flex flex-col gap-5 pt-2" aria-label={`${bot.name} settings`}>
+      <LiveAvatar bot={bot} size={88} className="mx-auto my-4" />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="bot-settings-name">Name</Label>
+        <Input id="bot-settings-name" {...field("name")} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="bot-settings-label">Label (optional)</Label>
+        <Input id="bot-settings-label" placeholder="Research, marketing, admin" {...field("label")} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="bot-settings-role">Description</Label>
+        <Textarea id="bot-settings-role" rows={3} placeholder={`What is ${bot.name} for?`} {...field("role")} />
+      </div>
+      <Button variant="outline" className="rounded-full" onClick={() => openModal({ kind: "bot", botId: bot.id })} aria-label={`Edit ${bot.name}`}>
+        More settings
+      </Button>
+    </section>
   );
 }
 

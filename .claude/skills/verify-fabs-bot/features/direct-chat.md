@@ -6,7 +6,7 @@ A user hands one bot a piece of work. Clicking a bot in the sidebar opens its ch
 
 - `chat-open` opens a bot's direct chat from its sidebar row.
 - `chat-compose` sends from the composer.
-- `chat-live` shows the bot working: status text in its sidebar row, typing dots, a work log of tool steps.
+- `chat-live` shows the bot working: status text in its sidebar row, an avatar that turns into thinking dots, works while tools run, and spins once when done, typing dots, a work log of tool steps.
 - `chat-file` shows a shared file as a card that opens in a preview dialog.
 - `chat-desk` lists the same file in the desk panel, and it exists on disk.
 - `chat-routines` lists the bot's routines in the desk panel, with their schedule or `Paused`.
@@ -45,4 +45,4 @@ Preconditions:
 - The file card in chat and the desk entry share the name `File haiku.md`. Scope desk assertions to `--role complementary --name "Chief's desk"`.
 - `browser start` restarts Chromium. Switching to the phone viewport drops the open chat; reopen it.
 - Clicking a bot opens its direct thread (the most recent one if a routine made others). Other threads with the bot are listed under `Chats` in its desk panel.
-- The desk panel only lists routines; add or delete them in the bot's settings (gear).
+- The desk panel only lists routines; add or delete them in the bot's full editor (`Show settings` → `More settings`).

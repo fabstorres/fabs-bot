@@ -93,6 +93,9 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 `);
 
+const botColumns = db.query("PRAGMA table_info(bots)").all() as { name: string }[];
+if (!botColumns.some((c) => c.name === "label")) db.exec("ALTER TABLE bots ADD COLUMN label TEXT NOT NULL DEFAULT ''");
+
 export const newId = () => crypto.randomUUID();
 const now = () => Date.now();
 
@@ -105,12 +108,13 @@ export function setSetting(key: string, value: string) {
 }
 
 type BotRow = {
-  id: string; name: string; role: string; instructions: string; shape: string; color: string;
+  id: string; name: string; label: string; role: string; instructions: string; shape: string; color: string;
   provider: string; model: string; cwd: string; autonomy: string; connector_ids: string; created_at: number;
 };
 const toBot = (r: BotRow): Bot => ({
   id: r.id,
   name: r.name,
+  label: r.label,
   role: r.role,
   instructions: r.instructions,
   shape: r.shape as Bot["shape"],
@@ -136,13 +140,14 @@ export function findBotByName(name: string): Bot | null {
 }
 export function saveBot(bot: Omit<Bot, "createdAt"> & { createdAt?: number }): Bot {
   db.query(
-    `INSERT INTO bots (id, name, role, instructions, shape, color, provider, model, cwd, autonomy, connector_ids, created_at)
-     VALUES ($id, $name, $role, $instructions, $shape, $color, $provider, $model, $cwd, $autonomy, $connectorIds, $createdAt)
-     ON CONFLICT(id) DO UPDATE SET name=$name, role=$role, instructions=$instructions, shape=$shape, color=$color,
+    `INSERT INTO bots (id, name, label, role, instructions, shape, color, provider, model, cwd, autonomy, connector_ids, created_at)
+     VALUES ($id, $name, $label, $role, $instructions, $shape, $color, $provider, $model, $cwd, $autonomy, $connectorIds, $createdAt)
+     ON CONFLICT(id) DO UPDATE SET name=$name, label=$label, role=$role, instructions=$instructions, shape=$shape, color=$color,
        provider=$provider, model=$model, cwd=$cwd, autonomy=$autonomy, connector_ids=$connectorIds`,
   ).run({
     $id: bot.id,
     $name: bot.name,
+    $label: bot.label,
     $role: bot.role,
     $instructions: bot.instructions,
     $shape: bot.shape,
@@ -184,7 +189,8 @@ function toThread(r: ThreadRow): Thread {
       .query(
         `SELECT 1 FROM messages m, json_each(m.parts) p
          WHERE m.thread_id = ?
-           AND ((json_extract(p.value, '$.type') = 'question' AND json_extract(p.value, '$.answered') IS NULL)
+           AND ((json_extract(p.value, '$.type') = 'question' AND json_extract(p.value, '$.answered') IS NULL
+                 AND json_extract(p.value, '$.greeting') IS NULL)
              OR (json_extract(p.value, '$.type') = 'approval' AND json_extract(p.value, '$.decision') IS NULL))
          LIMIT 1`,
       )

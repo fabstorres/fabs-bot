@@ -90,7 +90,7 @@ const tools: ToolDef[] = [
       if (options.length < 2) return "Give at least two options.";
       ctx.addPart({ type: "question", question: String(args.question), options });
       publishThread(ctx.threadId);
-      setStatus(ctx.botId, { state: "waiting", text: "Waiting for your answer", threadId: ctx.threadId });
+      setStatus(ctx.botId, { state: "blocked", text: "Waiting for your answer", threadId: ctx.threadId });
       return "Question posted. End your turn now; the user's choice will arrive as a new message.";
     },
   },
@@ -216,7 +216,7 @@ const tools: ToolDef[] = [
       const index = ctx.addPart(part);
       publishThread(ctx.threadId);
       const prev = getStatus(ctx.botId);
-      setStatus(ctx.botId, { state: "waiting", text: `Needs your OK: ${args.tool_name}`, threadId: ctx.threadId });
+      setStatus(ctx.botId, { state: "blocked", text: `Needs your OK: ${args.tool_name}`, threadId: ctx.threadId });
       const decision = await new Promise<"allow" | "deny">((res) => {
         pendingApprovals.set(requestId, { resolve: res, ctx, index });
         if (ctx.signal.aborted) decideApproval(requestId, "deny");

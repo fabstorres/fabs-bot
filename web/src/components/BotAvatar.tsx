@@ -1,4 +1,5 @@
-import type { BotState, Shape } from "../../../shared/types";
+import type { Bot, BotState, Shape } from "../../../shared/types";
+import { useStore } from "../store";
 import { cn } from "@/lib/utils";
 
 /** Body silhouettes on a 100×100 canvas, plus where each one's eyes sit. */
@@ -24,44 +25,64 @@ const BODIES: Record<Shape, { d: string; eyes: [number, number, number]; rotate?
   bean: { d: "M30 12 C48 4 62 20 70 18 C86 14 98 34 92 56 C86 80 66 94 42 92 C18 90 4 70 8 46 C10 28 18 16 30 12 Z", eyes: [52, 46, 1] },
 };
 
+const RIBBONS: [string, number][] = [
+  ["#7B61FF", -25],
+  ["#2BD4A4", 35],
+  ["#FF7AB6", 95],
+  ["#FFC53D", 150],
+];
+
 interface Props {
   shape: Shape;
   color: string;
   size?: number;
   state?: BotState;
-  /** Show the presence dot (green working, amber waiting, red error). */
-  dot?: boolean;
+  /** What the bot is doing, shown on hover. */
+  hint?: string;
   className?: string;
 }
 
-export function BotAvatar({ shape, color, size = 48, state = "idle", dot = false, className = "" }: Props) {
+export function BotAvatar({ shape, color, size = 48, state = "idle", hint, className = "" }: Props) {
   const body = BODIES[shape] ?? BODIES.blob;
   const [ex, ey, es] = body.eyes;
   return (
-    <span className={cn("relative inline-block flex-none leading-none", `state-${state}`, className)} style={{ width: size, height: size }}>
+    <span
+      className={cn("bot-avatar relative inline-block flex-none leading-none", `state-${state}`, className)}
+      style={{ width: size, height: size }}
+      title={hint || undefined}
+    >
       <svg viewBox="0 0 100 100" width={size} height={size} className="block overflow-visible" aria-hidden>
-        <g className="bot-body">
-          <path d={body.d} fill={color} />
-          <g className="bot-eyes" transform={`translate(${ex} ${ey}) scale(${es})`}>
-            <g className="bot-eyes-inner">
-              <line x1="-7" y1="-8" x2="-10" y2="8" />
-              <line x1="11" y1="-8" x2="8" y2="8" />
+        <g className="bot-whole">
+          <g className="bot-body">
+            <path d={body.d} fill={color} />
+            <g transform={`translate(${ex} ${ey}) scale(${es})`}>
+              <g className="bot-eyes">
+                <line className="bot-eye" x1="-7" y1="-8" x2="-10" y2="8" />
+                <line className="bot-eye" x1="11" y1="-8" x2="8" y2="8" />
+              </g>
             </g>
+          </g>
+          <g className="bot-ribbons" fill="none" strokeWidth="5" strokeLinecap="round">
+            {RIBBONS.map(([stroke, angle]) => (
+              <path key={stroke} d="M4 50 A46 20 0 1 0 96 50 A46 20 0 1 0 4 50" pathLength={1} stroke={stroke} transform={`rotate(${angle} 50 50)`} />
+            ))}
+          </g>
+          <rect className="bot-alert" x="43" y="10" width="14" height="58" rx="7" fill={color} />
+          <g className="bot-dots" fill={color}>
+            <circle cx="22" cy="50" r="10" />
+            <circle cx="50" cy="50" r="10" />
+            <circle cx="78" cy="50" r="10" />
           </g>
         </g>
       </svg>
-      {dot && state !== "idle" && (
-        <i
-          className={cn(
-            "absolute right-[2%] bottom-[2%] size-[24%] min-h-2.5 min-w-2.5 rounded-full border-2 border-sidebar",
-            state === "working" && "bg-working",
-            state === "waiting" && "presence-waiting bg-waiting",
-            state === "error" && "bg-failing",
-          )}
-        />
-      )}
     </span>
   );
+}
+
+/** A bot's avatar that follows what the bot is doing right now. */
+export function LiveAvatar({ bot, size, className }: { bot: Bot; size?: number; className?: string }) {
+  const status = useStore((s) => s.statuses[bot.id]);
+  return <BotAvatar shape={bot.shape} color={bot.color} size={size} state={status?.state} hint={status?.text} className={className} />;
 }
 
 /** Two or three overlapping avatars for group threads. */
