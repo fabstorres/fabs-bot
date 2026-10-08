@@ -256,7 +256,7 @@
   animation: swoosh 1s ease-out 1;
 }
 .state-working .bot-ribbons path {
-  animation: orbit 1s ease-out 1;
+  animation: lap 1s ease-out 1;
 }
 .state-working .bot-ribbons g:nth-child(n + 2) {
   display: none;
@@ -436,6 +436,14 @@
   100% {
     opacity: 0;
     transform: scale(1.06);
+  }
+}
+@keyframes lap {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -1;
   }
 }
 @keyframes orbit {
