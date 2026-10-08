@@ -16,9 +16,10 @@ export default defineConfig({
     host: "127.0.0.1",
     strictPort: true,
     port: 5173,
+    // Object form keeps the browser's Host; a bare string implies changeOrigin, which fails the server's same-origin check.
     proxy: {
-      "/api": target,
-      "/files": target,
+      "/api": { target },
+      "/files": { target },
       "/ws": { target, ws: true },
     },
   },
