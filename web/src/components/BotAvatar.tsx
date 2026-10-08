@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { Bot, BotState, Shape } from "../../../shared/types";
 import { useStore } from "../store";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,21 @@ const RIBBONS: [string, number][] = [
   ["#FFC53D", 150],
 ];
 
+const ORBIT = "M4 50 A46 20 0 1 0 96 50 A46 20 0 1 0 4 50";
+
+/** Rings around the body. The back copy passes behind it; the front copy is clipped to the near half. */
+function Ribbons({ side, clip }: { side: "back" | "front"; clip: string }) {
+  return (
+    <g className={`bot-ribbons bot-ribbons-${side}`} fill="none" strokeLinecap="round">
+      {RIBBONS.map(([stroke, angle]) => (
+        <g key={stroke} transform={`rotate(${angle} 50 50)`}>
+          <path d={ORBIT} pathLength={1} stroke={stroke} clipPath={side === "front" ? `url(#${clip})` : undefined} />
+        </g>
+      ))}
+    </g>
+  );
+}
+
 interface Props {
   shape: Shape;
   color: string;
@@ -45,6 +61,7 @@ interface Props {
 export function BotAvatar({ shape, color, size = 48, state = "idle", hint, className = "" }: Props) {
   const body = BODIES[shape] ?? BODIES.blob;
   const [ex, ey, es] = body.eyes;
+  const clip = useId();
   return (
     <span
       className={cn("bot-avatar relative inline-block flex-none leading-none", `state-${state}`, className)}
@@ -52,7 +69,13 @@ export function BotAvatar({ shape, color, size = 48, state = "idle", hint, class
       title={hint || undefined}
     >
       <svg viewBox="0 0 100 100" width={size} height={size} className="block overflow-visible" aria-hidden>
+        <defs>
+          <clipPath id={clip}>
+            <rect x="-10" y="50" width="120" height="60" />
+          </clipPath>
+        </defs>
         <g className="bot-whole">
+          <Ribbons side="back" clip={clip} />
           <g className="bot-body">
             <path d={body.d} fill={color} />
             <g transform={`translate(${ex} ${ey}) scale(${es})`}>
@@ -62,11 +85,7 @@ export function BotAvatar({ shape, color, size = 48, state = "idle", hint, class
               </g>
             </g>
           </g>
-          <g className="bot-ribbons" fill="none" strokeWidth="5" strokeLinecap="round">
-            {RIBBONS.map(([stroke, angle]) => (
-              <path key={stroke} d="M4 50 A46 20 0 1 0 96 50 A46 20 0 1 0 4 50" pathLength={1} stroke={stroke} transform={`rotate(${angle} 50 50)`} />
-            ))}
-          </g>
+          <Ribbons side="front" clip={clip} />
           <rect className="bot-alert" x="43" y="10" width="14" height="58" rx="7" fill={color} />
           <g className="bot-dots" fill={color}>
             <circle cx="22" cy="50" r="10" />

@@ -213,6 +213,13 @@
 .bot-ribbons path {
   stroke-dasharray: 0.3 0.7;
 }
+.bot-ribbons-back path {
+  stroke-width: 4;
+  stroke-opacity: 0.55;
+}
+.bot-ribbons-front path {
+  stroke-width: 5.5;
+}
 
 .state-idle .bot-body {
   animation: breathe 4.2s ease-in-out infinite;
@@ -246,7 +253,13 @@
   animation: look 2.6s ease-in-out infinite;
 }
 .state-working .bot-ribbons {
-  animation: swoosh 0.9s ease-out 1;
+  animation: swoosh 1s ease-out 1;
+}
+.state-working .bot-ribbons path {
+  animation: orbit 1s ease-out 1;
+}
+.state-working .bot-ribbons g:nth-child(n + 2) {
+  display: none;
 }
 
 .state-waiting .bot-body {
@@ -283,7 +296,8 @@
   fill: var(--failing);
 }
 
-.state-done .bot-whole {
+.state-done .bot-body {
+  transform-origin: 50px 50px;
   animation: spin 0.9s cubic-bezier(0.5, 0, 0.2, 1) 1;
 }
 .state-done .bot-eye {
@@ -291,10 +305,10 @@
   animation: none;
 }
 .state-done .bot-ribbons {
-  animation: celebrate 1.8s ease-out 1;
+  animation: celebrate 2s ease-out 1;
 }
 .state-done .bot-ribbons path {
-  animation: ribbon 1.8s ease-out 1;
+  animation: orbit 2s cubic-bezier(0.3, 0, 0.3, 1) 1;
 }
 
 @keyframes blink {
@@ -401,30 +415,30 @@
   }
 }
 @keyframes swoosh {
-  0% {
-    opacity: 1;
-    transform: rotate(-60deg);
-  }
-  100% {
-    opacity: 0;
-    transform: rotate(120deg);
-  }
-}
-@keyframes celebrate {
-  0% {
-    opacity: 0;
-    transform: rotate(0) scale(0.8);
-  }
-  15%,
+  0%,
   70% {
     opacity: 1;
   }
   100% {
     opacity: 0;
-    transform: rotate(-300deg) scale(1.1);
   }
 }
-@keyframes ribbon {
+@keyframes celebrate {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  15%,
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+@keyframes orbit {
   from {
     stroke-dashoffset: 0;
   }
