@@ -95,6 +95,7 @@ export function clip(s: string, n = 120): string {
 /** One-line human summary of a tool call input. */
 export function summarizeToolInput(name: string, input: any): string {
   if (!input || typeof input !== "object") return "";
+  if (typeof input.bot === "string" && typeof input.message === "string") return clip(`${input.bot}: ${input.message}`);
   const pick =
     input.command ?? input.cmd ?? input.file_path ?? input.path ?? input.pattern ?? input.query ?? input.url ??
     input.description ?? input.prompt ?? input.message ?? input.bot ?? input.title;
