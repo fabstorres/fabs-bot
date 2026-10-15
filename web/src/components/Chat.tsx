@@ -150,10 +150,12 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
 function RenameThread({ thread, trigger, onClose }: { thread: Thread; trigger: RefObject<HTMLButtonElement | null>; onClose(): void }) {
   const bots = useStore((s) => s.bots);
   const [title, setTitle] = useState(() => threadTitle(thread, bots));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   return (
     <Modal
       title="Rename thread"
-      onClose={onClose}
+      onClose={() => !busy && onClose()}
       onCloseAutoFocus={(e) => {
         e.preventDefault();
         trigger.current?.focus();
@@ -163,16 +165,28 @@ function RenameThread({ thread, trigger, onClose }: { thread: Thread; trigger: R
         className="flex flex-col gap-4"
         onSubmit={async (e) => {
           e.preventDefault();
-          await api.patch(`/api/threads/${thread.id}`, { title });
-          onClose();
+          setBusy(true);
+          setError("");
+          try {
+            await api.patch(`/api/threads/${thread.id}`, { title });
+            onClose();
+          } catch (e) {
+            setError((e as Error).message);
+            setBusy(false);
+          }
         }}
       >
-        <Input aria-label="Thread name" value={title} onFocus={(e) => e.target.select()} onChange={(e) => setTitle(e.target.value)} />
+        <Input aria-label="Thread name" value={title} readOnly={busy} onFocus={(e) => e.target.select()} onChange={(e) => setTitle(e.target.value)} />
+        {error && (
+          <p role="alert" className="text-sm text-failing">
+            {error}
+          </p>
+        )}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" className="rounded-full px-6">
+          <Button type="submit" className="rounded-full px-6" disabled={busy}>
             Save
           </Button>
         </div>
