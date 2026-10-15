@@ -15,7 +15,8 @@ export function onRadioGroupKeyDown(e: KeyboardEvent<HTMLElement>) {
   next.click();
 }
 
-/** Gives a radio group one Tab stop: the selected option, or the first option when none is selected. */
+/** Gives a radio group one Tab stop among its enabled `options`: the selected one, or the first when the selection isn't among them. */
 export function radioTabIndex<T>(option: T, selected: T, options: readonly T[]) {
-  return option === selected || (option === options[0] && !options.includes(selected)) ? 0 : -1;
+  const stop = options.includes(selected) ? selected : options[0];
+  return option === stop ? 0 : -1;
 }

@@ -149,7 +149,7 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
                 key={p.id}
                 role="radio"
                 aria-checked={draft.provider === p.id}
-                tabIndex={radioTabIndex(p.id, draft.provider, brains.map((b) => b.id))}
+                tabIndex={radioTabIndex(p.id, draft.provider, brains.filter((b) => b.installed).map((b) => b.id))}
                 aria-label={p.label}
                 className={cn(
                   "flex flex-col rounded-xl border px-3 py-2 text-left transition-colors enabled:hover:bg-muted disabled:opacity-45",
