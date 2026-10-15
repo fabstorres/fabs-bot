@@ -1,0 +1,65 @@
+#!/usr/bin/env bun
+/**
+ * Stand-in for `tailscale` during verification, put first on the instance's PATH by `launch --tailscale-shim`.
+ * `status` passes through to the real CLI (read-only). `serve` changes go to a simulated config seeded from the
+ * real one, so the user's Tailscale is never changed. Anything else fails closed.
+ */
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+const dir = process.env.FABS_SHIM_DIR ?? "";
+const real = process.env.FABS_SHIM_REAL ?? "";
+const args = process.argv.slice(2);
+const stateFile = join(dir, "serve.json");
+appendFileSync(join(dir, "calls.log"), `tailscale ${args.join(" ")}\n`);
+
+const realRun = (a: string[]) => Bun.spawnSync([real, ...a], { stdout: "pipe", stderr: "pipe" });
+const fail = (msg: string): never => {
+  process.stderr.write(`${msg}\n`);
+  process.exit(1);
+};
+
+if (!dir || !real) fail("tailscale-shim: FABS_SHIM_DIR and FABS_SHIM_REAL must be set");
+if (args[0] === "status") {
+  const r = realRun(args);
+  process.stdout.write(r.stdout);
+  process.exit(r.exitCode);
+}
+if (args[0] !== "serve") fail(`tailscale-shim: refusing "${args[0]}" during verification`);
+
+type State = { cfg: any; failNext: string | null };
+const load = (): State => {
+  if (existsSync(stateFile)) return JSON.parse(readFileSync(stateFile, "utf8"));
+  const r = realRun(["serve", "status", "--json"]);
+  return { cfg: r.exitCode === 0 ? JSON.parse(r.stdout.toString() || "{}") : {}, failNext: null };
+};
+const state = load();
+const save = () => writeFileSync(stateFile, JSON.stringify(state, null, 2));
+const rest = args.slice(1);
+
+if (rest[0] === "status") {
+  save();
+  process.stdout.write(JSON.stringify(state.cfg));
+  process.exit(0);
+}
+if (state.failNext) {
+  const msg = state.failNext;
+  state.failNext = null;
+  save();
+  fail(msg);
+}
+
+const port = rest.find((a) => a.startsWith("--https="))?.slice(8) ?? fail("tailscale-shim: only --https serve changes are simulated");
+const dns = String(JSON.parse(realRun(["status", "--json"]).stdout.toString()).Self?.DNSName ?? "").replace(/\.$/, "");
+const key = `${dns}:${port}`;
+if (rest.at(-1) === "off") {
+  if (!state.cfg.Web?.[key]) fail("error: failed to remove web serve: handler does not exist");
+  delete state.cfg.Web[key];
+  delete state.cfg.TCP?.[port];
+} else {
+  const target = rest.at(-1) ?? "";
+  if (!rest.includes("--bg") || !/^http:\/\/127\.0\.0\.1:\d+$/.test(target)) fail("tailscale-shim: expected serve --bg --https=P http://127.0.0.1:N");
+  state.cfg.TCP = { ...state.cfg.TCP, [port]: { HTTPS: true } };
+  state.cfg.Web = { ...state.cfg.Web, [key]: { Handlers: { "/": { Proxy: target } } } };
+}
+save();

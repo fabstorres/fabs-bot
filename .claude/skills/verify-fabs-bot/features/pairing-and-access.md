@@ -8,7 +8,7 @@ Fabs Bot is reachable only from the PC itself and from the user's Tailscale netw
 - `access-unpaired` shows "Not paired yet" to a tailnet browser without the cookie, and refuses API calls (401).
 - `access-pair` makes the pairing link set a long-lived cookie and redirect into the app; a wrong token is refused.
 - `access-mcp-local` refuses the bot MCP endpoint from anything but loopback.
-- `access-panel` shows Tailscale status, peers, a QR code, and the optional `tailscale serve` command in the This PC panel.
+- `access-panel` shows Tailscale status, peers, a QR code, and the Tailscale HTTPS switch in the This PC panel.
 
 ## How to get to it (user POV)
 
@@ -27,7 +27,7 @@ Preconditions:
 - **Loopback.** Run `$C browser open /` and `$C browser wait --role button --name "This PC"`. The sidebar loads with no pairing.
 - **Unpaired over the tailnet.** The browser has no cookie yet (loopback never sets one). Run `$C browser open / --via tailnet` and `$C browser wait --role heading --name "Not paired yet"`. Capture `pairing/unpaired.aria.txt` plus `.png`.
 - **Pair.** Run `$C browser pair`, then `$C browser wait --role button --name "This PC"`. The app loads over the tailnet. Run `$C browser open / --via tailnet` again; it still loads, so the cookie persisted. Capture `pairing/paired.aria.txt` plus `.png` (the host chip is masked).
-- **Panel.** Over loopback, run `$C browser click --role button --name "This PC"` and `$C browser snapshot --role dialog --name "This PC" --path pairing/panel.aria.txt`. The snapshot names `Pair your phone or laptop`, `Copy pairing link`, and `tailscale serve --bg <port>`, with the link redacted. If you screenshot it, keep the default mask.
+- **Panel.** Over loopback, run `$C browser click --role button --name "This PC"` and `$C browser snapshot --role dialog --name "This PC" --path pairing/panel.aria.txt`. The snapshot names `Pair your phone or laptop`, `Copy pairing link`, and the `Tailscale HTTPS` switch, with the link redacted. If you screenshot it, keep the default mask.
 - **Proof.** `pairing/pair-check.txt`, the unpaired and paired snapshot pairs, and `pairing/panel.aria.txt`. Run `$C privacy-check` before sharing any of them.
 
 ## Gotchas
@@ -36,4 +36,4 @@ Preconditions:
 - `browser start` reuses the run's profile. Delete it or relaunch the run to get back to an unpaired state.
 - `launch` without `--tailnet` is loopback-only, so `pair-check`, `--via tailnet`, and `browser pair` refuse to run.
 - The This PC panel prints the real tailnet hostname. Never capture it unmasked, and never paste `$C api GET /api/host` output into a PR. Hostnames and IPs are redacted, but it still lists your peer device names; prefer `doctor`.
-- Requests through `tailscale serve` (HTTPS) are trusted by Tailscale identity instead of the cookie. That path needs the user to run `tailscale serve` themselves; never run it from verification.
+- Requests through Tailscale HTTPS are trusted by Tailscale identity instead of the cookie. Never turn it on against the real `tailscale`. Prove it with [tailscale-https](./tailscale-https.md), which runs on the simulated serve config.

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "dist/desktop/main.cjs",
   "scripts": {
     "dev": "bun scripts/dev.ts",
     "dev:server": "bun --watch server/index.ts",
@@ -10,6 +11,8 @@
     "build": "vite build",
     "start": "bun run build && bun server/index.ts",
     "serve": "bun server/index.ts",
+    "build:desktop": "bun build desktop/main.ts desktop/preload.ts --outdir dist/desktop --entry-naming [name].cjs --target node --format cjs --external electron",
+    "desktop": "bun run build && bun run build:desktop && env -u ELECTRON_RUN_AS_NODE electron .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -38,6 +41,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^44.7.0",
     "playwright-core": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.2"

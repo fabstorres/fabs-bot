@@ -4,7 +4,7 @@ import { basename, join, relative, resolve } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
 import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
-import { FILES_DIR, PORT, SHARED_DIR, WEB_DIST, WORK_ROOT } from "./config";
+import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
 import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
@@ -13,16 +13,47 @@ import { directThread, editMessageParts, greet, postUserMessage, stopTurns } fro
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
-import { tailscaleState } from "./tailscale";
+import { disableServe, enableServe, tailscaleState, type ServeProblem } from "./tailscale";
 
 db.closeDanglingMessages();
 reschedule();
 
 let ownerLogin: string | null = null;
 async function refreshTailscale() {
-  const ts = await tailscaleState(PORT);
+  const ts = await tailscaleState(SERVE_TARGET_PORT);
   ownerLogin = ts.login;
   return ts;
+}
+
+let serveProblem: ServeProblem | null = null;
+let serveListener: Server<WsData> | null = null;
+let serveQueue: Promise<void> = Promise.resolve();
+const serveEnabled = () => db.getSetting("tailscale.serve") === "1";
+
+function listenForServe(): boolean {
+  try {
+    serveListener ??= Bun.serve<WsData>({
+      hostname: "127.0.0.1",
+      port: SERVE_TARGET_PORT,
+      fetch: (req, server) => fetchHandler(req, server, true),
+      websocket,
+      idleTimeout: 255,
+    });
+    return true;
+  } catch (e) {
+    console.warn(`  could not bind 127.0.0.1:${SERVE_TARGET_PORT} for Tailscale HTTPS`, (e as Error).message);
+    return false;
+  }
+}
+
+/** Bring `tailscale serve` in line with the saved setting. One change at a time. */
+function applyServe(): Promise<void> {
+  serveQueue = serveQueue.then(async () => {
+    if (!serveEnabled()) serveProblem = await disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT);
+    else serveProblem = listenForServe() ? await enableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT) : "target-busy";
+    await refreshTailscale();
+  });
+  return serveQueue;
 }
 
 const json = (data: unknown, status = 200) => Response.json(data, { status });
@@ -93,6 +124,7 @@ async function hostInfo(): Promise<HostInfo> {
     hostname: hostname(),
     port: PORT,
     tailscale: ts,
+    serve: { enabled: serveEnabled(), port: TAILSCALE_SERVE_PORT, problem: serveProblem },
     pairUrl: base ? `${base}/pair?token=${ACCESS_TOKEN}` : null,
     workRoot: WORK_ROOT,
   };
@@ -107,6 +139,13 @@ function route(method: string, path: string, h: Handler) {
 }
 
 route("GET", "/api/host", () => hostInfo().then(json));
+route("PUT", "/api/host/serve", async (req) => {
+  const { enabled } = await body<{ enabled: boolean }>(req);
+  db.setSetting("tailscale.serve", enabled ? "1" : "0");
+  await applyServe();
+  if (serveProblem) db.setSetting("tailscale.serve", enabled ? "0" : "1");
+  return json(await hostInfo());
+});
 route("GET", "/api/providers", (_r, _p, url) => providerInfo(url.searchParams.has("refresh")).then(json));
 
 route("GET", "/api/bots", () => json(db.listBots()));
@@ -327,13 +366,13 @@ function serveStatic(url: URL): Response {
   return new Response(Bun.file(join(WEB_DIST, "index.html")), { headers: { "Cache-Control": "no-cache" } });
 }
 
-async function fetchHandler(req: Request, server: Server<WsData>): Promise<Response | undefined> {
+async function fetchHandler(req: Request, server: Server<WsData>, viaServe = false): Promise<Response | undefined> {
   const url = new URL(req.url);
   const ip = server.requestIP(req)?.address;
 
   // Agents on this PC call back into the app; never exposed beyond loopback.
   if (url.pathname.startsWith("/mcp/")) {
-    if (!isLoopback(ip) || req.headers.get("tailscale-user-login")) return new Response("forbidden", { status: 403 });
+    if (viaServe || !isLoopback(ip) || req.headers.get("tailscale-user-login")) return new Response("forbidden", { status: 403 });
     return handleMcp(req, url.pathname.slice(5));
   }
 
@@ -343,7 +382,7 @@ async function fetchHandler(req: Request, server: Server<WsData>): Promise<Respo
   }
 
   const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws";
-  if (isApi && !authorized(req, ip, ownerLogin)) return json({ error: "unpaired" }, 401);
+  if (isApi && !authorized(req, ip, ownerLogin, viaServe)) return json({ error: "unpaired" }, 401);
   if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
 
   if (url.pathname === "/ws") {
@@ -405,6 +444,7 @@ function listen(hostname: string) {
 
 onboard();
 console.log("fabs-bot");
+if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {
   listen(process.env.FABS_HOST);
 } else {

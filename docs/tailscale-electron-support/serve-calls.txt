@@ -1,0 +1,11 @@
+tailscale serve status --json
+tailscale serve status --json
+tailscale serve --bg --https=8443 http://127.0.0.1:4871
+tailscale serve status --json
+tailscale serve status --json
+tailscale serve --https=8443 off
+tailscale serve status --json
+tailscale serve status --json
+tailscale serve --bg --https=8443 http://127.0.0.1:4871
+tailscale serve status --json
+tailscale serve status --json

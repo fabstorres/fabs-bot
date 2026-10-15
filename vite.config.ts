@@ -9,7 +9,11 @@ export default defineConfig({
   root: "web",
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": fileURLToPath(new URL("./web/src", import.meta.url)) } },
-  build: { outDir: "../dist/web", emptyOutDir: true },
+  build: {
+    outDir: "../dist/web",
+    emptyOutDir: true,
+    rolldownOptions: { input: { main: "web/index.html", desktop: "web/desktop.html" } },
+  },
   server: {
     // Loopback only: proxied requests reach the server from 127.0.0.1, which it
     // trusts without pairing, so exposing Vite would bypass pairing.

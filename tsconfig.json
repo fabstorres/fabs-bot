@@ -12,5 +12,5 @@
     "types": ["bun"],
     "paths": { "@/*": ["./web/src/*"] }
   },
-  "include": ["server", "web/src", "shared"]
+  "include": ["server", "web/src", "shared", "desktop"]
 }

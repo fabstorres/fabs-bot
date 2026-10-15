@@ -4,7 +4,7 @@ This directory is the maintained source for verifying the user-facing behavior o
 
 ## Baseline preconditions
 
-- Launch with `$C launch`, which gives a loopback-only isolated instance at `http://127.0.0.1:<port ≥ 4870>`. Only [pairing-and-access](./pairing-and-access.md) needs `$C launch --tailnet`.
+- Launch with `$C launch`, which gives a loopback-only isolated instance at `http://127.0.0.1:<port ≥ 4870>`. [Pairing and access](./pairing-and-access.md) and [desktop app](./desktop-app.md) need `$C launch --tailnet`. [Tailscale HTTPS](./tailscale-https.md) needs `$C launch --tailnet --tailscale-shim`.
 - `$C doctor` reports no `FAIL`, including `isolated work root confirmed`.
 - `$C seed` has created `Chief`, `Design`, and `Careful` (Claude, haiku). `Engineer` (Codex) appears too when Codex is installed. The starter bot `Chief of Staff` is there from launch.
 - Every bot's direct chat opens with a greeting card (`Question: What should I own for you?`). It never raises `Needs you`, and `$C wait --for question` ignores it.
@@ -50,5 +50,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Needs you](./needs-you.md): tap-to-answer question cards, Allow/Deny approval cards, and the sidebar's `Needs you` dot.
 - [Bots](./bots.md): the starter bot on a fresh install, create a bot in the New Bot pane (from scratch or a suggestion), the greeting card, inline settings with a label, the full editor, and retiring.
 - [Pairing and access](./pairing-and-access.md): unpaired devices are refused, a pairing link admits a browser over Tailscale, and the bot MCP endpoint stays loopback-only.
+- [Tailscale HTTPS](./tailscale-https.md): the This PC switch that serves the app over HTTPS on its own port, leaves other apps' serve ports alone, and trusts only the owner's Tailscale login or pairing.
+- [Desktop app](./desktop-app.md): the Electron launcher, opening This PC or a remote PC by pairing link, staying signed in across restarts, Switch PC, forgetting a PC, and keeping PC pages away from the launcher's controls.
 
 Not yet mapped: running routines (settings → Routines → "Run now", or the desk panel's play button), plugins (sidebar → Plugins), and sidebar search.
