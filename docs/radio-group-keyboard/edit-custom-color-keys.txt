@@ -1,0 +1,3 @@
+start {"focus":"Name","checked":null,"selected":["blob","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"#FF5A00","checked":"false","selected":["blob","Claude Code","Just do it"]}
+ArrowLeft  {"focus":"#111111","checked":"true","selected":["blob","#111111","Claude Code","Just do it"]}

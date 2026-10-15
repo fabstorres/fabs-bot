@@ -1,0 +1,1329 @@
+new initial {
+  "tag": "INPUT",
+  "label": "Name",
+  "id": "new-bot-name",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 1 {
+  "tag": "BUTTON",
+  "label": "bean",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new right {
+  "tag": "BUTTON",
+  "label": "bean",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 2 {
+  "tag": "BUTTON",
+  "label": "flower",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 3 {
+  "tag": "BUTTON",
+  "label": "triangle",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 4 {
+  "tag": "BUTTON",
+  "label": "pill",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 5 {
+  "tag": "BUTTON",
+  "label": "egg",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 6 {
+  "tag": "BUTTON",
+  "label": "square",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 7 {
+  "tag": "BUTTON",
+  "label": "hex",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 8 {
+  "tag": "BUTTON",
+  "label": "drop",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 9 {
+  "tag": "BUTTON",
+  "label": "cloud",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 10 {
+  "tag": "BUTTON",
+  "label": "blob",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 11 {
+  "tag": "BUTTON",
+  "label": "#111111",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 12 {
+  "tag": "BUTTON",
+  "label": "#7A7A7A",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 13 {
+  "tag": "BUTTON",
+  "label": "#8A5530",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 14 {
+  "tag": "BUTTON",
+  "label": "#00C060",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 15 {
+  "tag": "BUTTON",
+  "label": "#00B39A",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 16 {
+  "tag": "BUTTON",
+  "label": "#1478FF",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 17 {
+  "tag": "BUTTON",
+  "label": "#7B3FF2",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 18 {
+  "tag": "BUTTON",
+  "label": "#FF2E93",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 19 {
+  "tag": "BUTTON",
+  "label": "#FF2238",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 20 {
+  "tag": "BUTTON",
+  "label": "#FF9500",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 21 {
+  "tag": "BUTTON",
+  "label": "#FF5A00",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new shift-tab 22 {
+  "tag": "BUTTON",
+  "label": "This PC",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new radio DOM [
+  {
+    "group": "Color",
+    "items": [
+      {
+        "label": "#FF5A00",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#FF9500",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#FF2238",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#FF2E93",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#7B3FF2",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#1478FF",
+        "tabIndex": 0,
+        "checked": "true"
+      },
+      {
+        "label": "#00B39A",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#00C060",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#8A5530",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#7A7A7A",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "#111111",
+        "tabIndex": 0,
+        "checked": "false"
+      }
+    ]
+  },
+  {
+    "group": "Shape",
+    "items": [
+      {
+        "label": "blob",
+        "tabIndex": 0,
+        "checked": "true"
+      },
+      {
+        "label": "cloud",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "drop",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "hex",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "square",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "egg",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "pill",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "triangle",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "flower",
+        "tabIndex": 0,
+        "checked": "false"
+      },
+      {
+        "label": "bean",
+        "tabIndex": 0,
+        "checked": "false"
+      }
+    ]
+  }
+]
+edit initial {
+  "tag": "BUTTON",
+  "label": "blob",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit right {
+  "tag": "BUTTON",
+  "label": "blob",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 1 {
+  "tag": "BUTTON",
+  "label": "cloud",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 2 {
+  "tag": "BUTTON",
+  "label": "drop",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 3 {
+  "tag": "BUTTON",
+  "label": "hex",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 4 {
+  "tag": "BUTTON",
+  "label": "square",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 5 {
+  "tag": "BUTTON",
+  "label": "egg",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 6 {
+  "tag": "BUTTON",
+  "label": "pill",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 7 {
+  "tag": "BUTTON",
+  "label": "triangle",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 8 {
+  "tag": "BUTTON",
+  "label": "flower",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 9 {
+  "tag": "BUTTON",
+  "label": "bean",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 10 {
+  "tag": "BUTTON",
+  "label": "#FF5A00",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 11 {
+  "tag": "BUTTON",
+  "label": "#FF9500",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 12 {
+  "tag": "BUTTON",
+  "label": "#FF2238",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 13 {
+  "tag": "BUTTON",
+  "label": "#FF2E93",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 14 {
+  "tag": "BUTTON",
+  "label": "#7B3FF2",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 15 {
+  "tag": "BUTTON",
+  "label": "#1478FF",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 16 {
+  "tag": "BUTTON",
+  "label": "#00B39A",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 17 {
+  "tag": "BUTTON",
+  "label": "#00C060",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 18 {
+  "tag": "BUTTON",
+  "label": "#8A5530",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 19 {
+  "tag": "BUTTON",
+  "label": "#7A7A7A",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 20 {
+  "tag": "BUTTON",
+  "label": "#111111",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 21 {
+  "tag": "INPUT",
+  "label": "Name",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit tab 22 {
+  "tag": "INPUT",
+  "label": "Role",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit groups DOM [
+  {
+    "label": "blob",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "cloud",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "drop",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "hex",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "square",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "egg",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "pill",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "triangle",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "flower",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "bean",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#FF5A00",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#FF9500",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#FF2238",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#FF2E93",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#7B3FF2",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#1478FF",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#00B39A",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#00C060",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#8A5530",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#7A7A7A",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "#111111",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "Claude Code",
+    "role": "radio",
+    "checked": "true",
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false,
+    "group": "Brain"
+  },
+  {
+    "label": "Codex",
+    "role": "radio",
+    "checked": "false",
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false,
+    "group": "Brain"
+  },
+  {
+    "label": "Cursor Agent",
+    "role": "radio",
+    "checked": "false",
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false,
+    "group": "Brain"
+  },
+  {
+    "label": "OpenCode",
+    "role": "radio",
+    "checked": "false",
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false,
+    "group": "Brain"
+  },
+  {
+    "label": "Gemini CLI",
+    "role": "radio",
+    "checked": "false",
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false,
+    "group": "Brain"
+  },
+  {
+    "label": "Just do it",
+    "role": "radio",
+    "checked": "true",
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false,
+    "group": "Autonomy"
+  },
+  {
+    "label": "Ask me before acting",
+    "role": "radio",
+    "checked": "false",
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false,
+    "group": "Autonomy"
+  },
+  {
+    "label": "Add routine",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "Retire",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "Fresh memory",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "Save",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  },
+  {
+    "label": "Close",
+    "role": null,
+    "checked": null,
+    "pressed": null,
+    "tabIndex": 0,
+    "disabled": false
+  }
+]
+edit after role 1 {
+  "tag": "TEXTAREA",
+  "label": "How it works",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit after role 2 {
+  "tag": "BUTTON",
+  "label": "Claude Code",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain ArrowRight {
+  "tag": "BUTTON",
+  "label": "Claude Code",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain ArrowDown {
+  "tag": "BUTTON",
+  "label": "Claude Code",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain ArrowLeft {
+  "tag": "BUTTON",
+  "label": "Claude Code",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain ArrowUp {
+  "tag": "BUTTON",
+  "label": "Claude Code",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain traversal 1 {
+  "tag": "BUTTON",
+  "label": "Codex",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain traversal 2 {
+  "tag": "BUTTON",
+  "label": "Cursor Agent",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain traversal 3 {
+  "tag": "BUTTON",
+  "label": "OpenCode",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain traversal 4 {
+  "tag": "BUTTON",
+  "label": "Gemini CLI",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain traversal 5 {
+  "tag": "INPUT",
+  "label": "Model",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain traversal 6 {
+  "tag": "INPUT",
+  "label": "Desk folder",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+brain traversal 7 {
+  "tag": "BUTTON",
+  "label": "Just do it",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+autonomy ArrowRight {
+  "tag": "BUTTON",
+  "label": "Just do it",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+autonomy ArrowDown {
+  "tag": "BUTTON",
+  "label": "Just do it",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+autonomy ArrowLeft {
+  "tag": "BUTTON",
+  "label": "Just do it",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+autonomy ArrowUp {
+  "tag": "BUTTON",
+  "label": "Just do it",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+autonomy next tab {
+  "tag": "BUTTON",
+  "label": "Ask me before acting",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+autonomy second left {
+  "tag": "BUTTON",
+  "label": "Ask me before acting",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+autonomy exit tab {
+  "tag": "BUTTON",
+  "label": "Add routine",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit color clicked {
+  "tag": "BUTTON",
+  "label": "#FF5A00",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit color before [
+  {
+    "label": "#FF5A00",
+    "class": "size-6 rounded-full ring-offset-2 ring-2 ring-(--ring-color)"
+  },
+  {
+    "label": "#FF9500",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#FF2238",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#FF2E93",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#7B3FF2",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#1478FF",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#00B39A",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#00C060",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#8A5530",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#7A7A7A",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#111111",
+    "class": "size-6 rounded-full ring-offset-2"
+  }
+]
+edit color right {
+  "tag": "BUTTON",
+  "label": "#FF5A00",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit color after [
+  {
+    "label": "#FF5A00",
+    "class": "size-6 rounded-full ring-offset-2 ring-2 ring-(--ring-color)"
+  },
+  {
+    "label": "#FF9500",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#FF2238",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#FF2E93",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#7B3FF2",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#1478FF",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#00B39A",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#00C060",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#8A5530",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#7A7A7A",
+    "class": "size-6 rounded-full ring-offset-2"
+  },
+  {
+    "label": "#111111",
+    "class": "size-6 rounded-full ring-offset-2"
+  }
+]
+new color clicked {
+  "tag": "BUTTON",
+  "label": "#1478FF",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new color right {
+  "tag": "BUTTON",
+  "label": "#1478FF",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new color next tab {
+  "tag": "BUTTON",
+  "label": "#00B39A",
+  "id": "",
+  "role": "radio",
+  "checked": "false",
+  "selected": [
+    "#1478FF",
+    "blob"
+  ]
+}
+new color Space {
+  "tag": "BUTTON",
+  "label": "#00B39A",
+  "id": "",
+  "role": "radio",
+  "checked": "true",
+  "selected": [
+    "#00B39A",
+    "blob"
+  ]
+}
+edit reopened {
+  "tag": "BUTTON",
+  "label": "blob",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit backwards from initial {
+  "tag": "BUTTON",
+  "label": "Close",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}
+edit forward from Close {
+  "tag": "BUTTON",
+  "label": "blob",
+  "id": "",
+  "role": null,
+  "checked": null,
+  "selected": [
+    "Claude Code",
+    "Just do it"
+  ]
+}

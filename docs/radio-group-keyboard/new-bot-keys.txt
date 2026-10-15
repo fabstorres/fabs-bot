@@ -1,0 +1,7 @@
+start {"focus":"Name","checked":null,"selected":["#1478FF","blob"]}
+Shift+Tab  {"focus":"blob","checked":"true","selected":["#1478FF","blob"]}
+ArrowRight {"focus":"cloud","checked":"true","selected":["#1478FF","cloud"]}
+ArrowRight {"focus":"drop","checked":"true","selected":["#1478FF","drop"]}
+Shift+Tab  {"focus":"#1478FF","checked":"true","selected":["#1478FF","drop"]}
+ArrowLeft  {"focus":"#7B3FF2","checked":"true","selected":["#7B3FF2","drop"]}
+ArrowLeft  {"focus":"#FF2E93","checked":"true","selected":["#FF2E93","drop"]}

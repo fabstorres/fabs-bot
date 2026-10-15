@@ -1,0 +1,11 @@
+start {"focus":"Name","checked":null,"selected":["drop","#FF5A00","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"#FF5A00","checked":"true","selected":["drop","#FF5A00","Claude Code","Just do it"]}
+ArrowRight {"focus":"#FF9500","checked":"true","selected":["drop","#FF9500","Claude Code","Just do it"]}
+ArrowRight {"focus":"#FF2238","checked":"true","selected":["drop","#FF2238","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"drop","checked":"true","selected":["drop","#FF2238","Claude Code","Just do it"]}
+ArrowLeft  {"focus":"cloud","checked":"true","selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"Close","checked":null,"selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"Save","checked":null,"selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Tab        {"focus":"Close","checked":null,"selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Tab        {"focus":"cloud","checked":"true","selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Tab        {"focus":"#FF2238","checked":"true","selected":["cloud","#FF2238","Claude Code","Just do it"]}

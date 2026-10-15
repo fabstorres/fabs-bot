@@ -1,0 +1,15 @@
+start {"focus":"#FF2238","checked":"true","selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Tab        {"focus":"Name","checked":null,"selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Tab        {"focus":"Role","checked":null,"selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Tab        {"focus":"How it works","checked":null,"selected":["cloud","#FF2238","Claude Code","Just do it"]}
+Tab        {"focus":"Claude Code","checked":"true","selected":["cloud","#FF2238","Claude Code","Just do it"]}
+ArrowRight {"focus":"Codex","checked":"true","selected":["cloud","#FF2238","Codex","Just do it"]}
+ArrowDown  {"focus":"Cursor Agent","checked":"true","selected":["cloud","#FF2238","Cursor Agent","Just do it"]}
+ArrowUp    {"focus":"Codex","checked":"true","selected":["cloud","#FF2238","Codex","Just do it"]}
+Tab        {"focus":"Model","checked":null,"selected":["cloud","#FF2238","Codex","Just do it"]}
+Tab        {"focus":"Desk folder","checked":null,"selected":["cloud","#FF2238","Codex","Just do it"]}
+Tab        {"focus":"Just do it","checked":"true","selected":["cloud","#FF2238","Codex","Just do it"]}
+ArrowRight {"focus":"Ask me before acting","checked":"true","selected":["cloud","#FF2238","Codex","Ask me before acting"]}
+ArrowRight {"focus":"Just do it","checked":"true","selected":["cloud","#FF2238","Codex","Just do it"]}
+ArrowLeft  {"focus":"Ask me before acting","checked":"true","selected":["cloud","#FF2238","Codex","Ask me before acting"]}
+Tab        {"focus":"Add routine","checked":null,"selected":["cloud","#FF2238","Codex","Ask me before acting"]}
