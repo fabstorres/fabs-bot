@@ -34,9 +34,9 @@ bun run desktop      # builds, then opens the Electron app
 The desktop app is a window onto a Fabs Bot server: this PC's, or another PC's on your tailnet. Run it on your laptop to work with the bots on your PC:
 
 1. On the PC, open *This PC* and copy the pairing link. With Tailscale HTTPS on, its `https://` address works too.
-2. On the laptop, paste it under *Add a PC*.
+2. On the laptop, choose *File → Switch PC…* and paste it under *Add a PC*.
 
-The app remembers each PC and reopens the last one. *File → Switch PC…* (`Ctrl/Cmd+Shift+O`) goes back to the list. For *This PC* it attaches to a server that's already running (`bun run start`); it doesn't start one yet. Its data (saved PCs, sign-ins) lives in its own `Fabs Bot` app-data folder.
+The app opens straight into a PC, with no picker: the last saved PC you opened, else the newest one you paired, else *This PC*. *File → Switch PC…* (`Ctrl/Cmd+Shift+O`) goes back to the list. For *This PC* it attaches to a server that's already running (`bun run start`); it doesn't start one yet. Its data (saved PCs, sign-ins) lives in its own `Fabs Bot` app-data folder.
 
 To develop with hot reload: `bun run dev` (server + Vite together), then open `http://127.0.0.1:5173` on this PC. The Vite dev server is loopback-only; use `bun run start` to reach the app from other devices.
 

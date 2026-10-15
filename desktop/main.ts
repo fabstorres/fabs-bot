@@ -107,6 +107,13 @@ async function openPc(id: string, url?: string): Promise<string | null> {
   return null;
 }
 
+/** A saved PC wins over This PC: the last one opened, else the newest paired. */
+function startupPc() {
+  const { pcs, last } = readStore();
+  if (last && pcs.some((pc) => pc.id === last)) return last;
+  return pcs.at(-1)?.id ?? "local";
+}
+
 async function addPc(link: string, name: string): Promise<string | null> {
   let url: URL;
   try {
@@ -207,7 +214,6 @@ app.whenReady().then(async () => {
   );
   setMenu();
 
-  const { last } = readStore();
-  const error = last ? await openPc(last) : null;
-  if (!last || error) showLauncher(error ?? undefined);
+  const error = await openPc(startupPc());
+  if (error) showLauncher(error);
 });
