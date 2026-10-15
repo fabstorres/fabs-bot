@@ -1,0 +1,19 @@
+# fabs-app://launcher/desktop.html?error=Fabs%20Bot%20isn%27t%20running%20on%20this%20PC.%20Start%20it%20with%20%60bun%20run%20start%60%2C%20then%20try%20again.  viewport=window
+- main:
+  - heading "Fabs Bot" [level=1]
+  - paragraph: Pick the PC your bots live on.
+  - region "PCs":
+    - group "PC This PC":
+      - text: This PC Bots running on this computer
+      - button "Open"
+  - alert: "Fabs Bot isn't running on this PC. Start it with `bun run start`, then try again."
+  - form "Add a PC":
+    - heading "Add a PC" [level=2]
+    - paragraph: On the other PC, open This PC and copy the pairing link. If it has Tailscale HTTPS on, its https address works without pairing.
+    - text: Pairing link or address
+    - textbox "Pairing link or address":
+      - /placeholder: Paste the link from the other PC
+    - text: Name (optional)
+    - textbox "Name (optional)":
+      - /placeholder: Fedora
+    - button "Connect" [disabled]

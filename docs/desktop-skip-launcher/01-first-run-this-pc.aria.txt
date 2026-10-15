@@ -1,0 +1,10 @@
+# http://127.0.0.1:4870/  viewport=window
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief of Staff": Chief of Staff 8:08 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+  - button "Plugins"
+  - button "This PC": FE fedora All quiet
