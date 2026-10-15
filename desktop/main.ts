@@ -18,7 +18,8 @@ const storeFile = () => join(app.getPath("userData"), "pcs.json");
 
 function readStore(): DesktopState {
   try {
-    return JSON.parse(readFileSync(storeFile(), "utf8"));
+    const state = JSON.parse(readFileSync(storeFile(), "utf8"));
+    return { pcs: Array.isArray(state.pcs) ? state.pcs : [], last: typeof state.last === "string" ? state.last : null };
   } catch {
     return { pcs: [], last: null };
   }
@@ -105,6 +106,13 @@ async function openPc(id: string, url?: string): Promise<string | null> {
   void opened.loadURL(url ?? `${origin}/`);
   launcher?.close();
   return null;
+}
+
+/** A saved PC wins over This PC: the last one opened, else the newest paired. */
+function startupPc() {
+  const { pcs, last } = readStore();
+  if (last && pcs.some((pc) => pc.id === last)) return last;
+  return pcs.at(-1)?.id ?? "local";
 }
 
 async function addPc(link: string, name: string): Promise<string | null> {
@@ -207,7 +215,6 @@ app.whenReady().then(async () => {
   );
   setMenu();
 
-  const { last } = readStore();
-  const error = last ? await openPc(last) : null;
-  if (!last || error) showLauncher(error ?? undefined);
+  const error = await openPc(startupPc());
+  if (error) showLauncher(error);
 });

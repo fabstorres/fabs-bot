@@ -1,0 +1,10 @@
+fresh start, no saved PCs     -> opened http://127.0.0.1:4870/, PCs region count 0, fabsDesktop undefined
+File > Switch PC...           -> launcher (PCs region visible)
+paired Fedora, restart        -> location.hostname <tailnet-ip>, "Not paired yet" count 0
+opened This PC, restart       -> location.hostname <tailnet-ip> (saved PC wins over last = This PC)
+forgot Fedora, restart        -> opened http://127.0.0.1:4870/
+fresh start, server stopped   -> launcher with alert "Fabs Bot isn't running on this PC. Start it with `bun run start`, then try again."
+pcs.json {"pcs":null,"last":"local"} -> opened http://127.0.0.1:4870/
+pcs.json {"pcs":null,"last":null}    -> opened http://127.0.0.1:4870/
+pcs.json null                        -> opened http://127.0.0.1:4870/
+pcs.json []                          -> opened http://127.0.0.1:4870/
