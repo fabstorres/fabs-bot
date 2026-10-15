@@ -18,7 +18,8 @@ const storeFile = () => join(app.getPath("userData"), "pcs.json");
 
 function readStore(): DesktopState {
   try {
-    return JSON.parse(readFileSync(storeFile(), "utf8"));
+    const state = JSON.parse(readFileSync(storeFile(), "utf8"));
+    return { pcs: Array.isArray(state.pcs) ? state.pcs : [], last: typeof state.last === "string" ? state.last : null };
   } catch {
     return { pcs: [], last: null };
   }
