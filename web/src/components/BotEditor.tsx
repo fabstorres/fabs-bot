@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode, type RefObject } from "react";
 import { Clock, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
 import type { Bot, Connector, ProviderInfo, Routine } from "../../../shared/types";
 import { COLORS, SHAPES } from "../../../shared/templates";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { onRadioGroupKeyDown, radioTabIndex } from "@/lib/radio";
 import { cn } from "@/lib/utils";
 
 type Draft = Omit<Bot, "id" | "createdAt">;
@@ -43,10 +44,11 @@ export const scheduleLabel = (cron: string) => SCHEDULES.find((s) => s[1] === cr
 
 export function BotEditor({ botId }: { botId: string }) {
   const existing = useStore((s) => s.bots.find((b) => b.id === botId));
+  const nameRef = useRef<HTMLInputElement>(null);
   if (!existing) return null;
   return (
-    <Modal wide label={`Edit ${existing.name}`}>
-      <Editor key={existing.id} existing={existing} />
+    <Modal wide label={`Edit ${existing.name}`} initialFocus={nameRef}>
+      <Editor key={existing.id} existing={existing} nameRef={nameRef} />
     </Modal>
   );
 }
@@ -62,7 +64,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-function Editor({ existing }: { existing: Bot }) {
+function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLInputElement | null> }) {
   const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers"), []).data ?? [];
   const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []).data ?? [];
   const [draft, setDraft] = useState<Draft>(existing);
@@ -70,6 +72,7 @@ function Editor({ existing }: { existing: Bot }) {
   const [error, setError] = useState("");
   const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
   const provider = providers.find((p) => p.id === draft.provider);
+  const brains = providers.length ? providers : [{ id: "claude", label: "Claude Code", installed: true } as ProviderInfo];
 
   async function save() {
     if (!draft.name.trim()) return setError("Give your bot a name.");
@@ -91,10 +94,13 @@ function Editor({ existing }: { existing: Bot }) {
           <div className="text-lg font-semibold">{draft.name || "Unnamed bot"}</div>
           <div className="text-sm text-muted-foreground">{draft.role || "What does it do?"}</div>
         </div>
-        <div className="grid grid-cols-5 gap-1">
+        <div className="grid grid-cols-5 gap-1" role="radiogroup" aria-label="Shape" onKeyDown={onRadioGroupKeyDown}>
           {SHAPES.map((s) => (
             <button
               key={s}
+              role="radio"
+              aria-checked={draft.shape === s}
+              tabIndex={radioTabIndex(s, draft.shape, SHAPES)}
               className={cn("rounded-lg border-2 border-transparent p-1 hover:bg-muted", draft.shape === s && "border-foreground/80")}
               onClick={() => set({ shape: s })}
               aria-label={s}
@@ -103,10 +109,13 @@ function Editor({ existing }: { existing: Bot }) {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className="flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Color" onKeyDown={onRadioGroupKeyDown}>
           {COLORS.map((c) => (
             <button
               key={c}
+              role="radio"
+              aria-checked={draft.color === c}
+              tabIndex={radioTabIndex(c, draft.color, COLORS)}
               className={cn("size-6 rounded-full ring-offset-2", draft.color === c && "ring-2 ring-(--ring-color)")}
               style={{ background: c, ["--ring-color" as string]: c }}
               onClick={() => set({ color: c })}
@@ -118,7 +127,7 @@ function Editor({ existing }: { existing: Bot }) {
 
       <div className="flex min-w-0 flex-col gap-5">
         <Field label="Name">
-          <Input aria-label="Name" value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder="Chief of Staff" />
+          <Input ref={nameRef} aria-label="Name" value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder="Chief of Staff" />
         </Field>
         <Field label="Role" hint="one line; teammates see this">
           <Input aria-label="Role" value={draft.role} onChange={(e) => set({ role: e.target.value })} placeholder="Reads tomorrow's calendar, preps a morning digest" />
@@ -134,12 +143,13 @@ function Editor({ existing }: { existing: Bot }) {
         </Field>
 
         <Field label="Brain">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Brain">
-            {(providers.length ? providers : [{ id: "claude", label: "Claude Code", installed: true } as ProviderInfo]).map((p) => (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Brain" onKeyDown={onRadioGroupKeyDown}>
+            {brains.map((p) => (
               <button
                 key={p.id}
                 role="radio"
                 aria-checked={draft.provider === p.id}
+                tabIndex={radioTabIndex(p.id, draft.provider, brains.map((b) => b.id))}
                 aria-label={p.label}
                 className={cn(
                   "flex flex-col rounded-xl border px-3 py-2 text-left transition-colors enabled:hover:bg-muted disabled:opacity-45",
@@ -170,7 +180,7 @@ function Editor({ existing }: { existing: Bot }) {
         </div>
 
         <Field label="Autonomy">
-          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Autonomy">
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Autonomy" onKeyDown={onRadioGroupKeyDown}>
             {(
               [
                 ["full", "Just do it"],
@@ -181,6 +191,7 @@ function Editor({ existing }: { existing: Bot }) {
                 key={value}
                 role="radio"
                 aria-checked={draft.autonomy === value}
+                tabIndex={draft.autonomy === value ? 0 : -1}
                 className={cn("rounded-lg px-3 py-1.5 text-sm", draft.autonomy === value && "bg-background font-medium shadow-sm")}
                 onClick={() => set({ autonomy: value })}
               >
