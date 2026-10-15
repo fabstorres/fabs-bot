@@ -1,0 +1,7 @@
+Issue #7 reproduction, revision e83d58f
+Plugins: Escape -> BODY (aria-label null); Tab -> BUTTON aria-label="New bot", text="". Reproduced.
+This PC: Escape -> BODY (aria-label null); Tab -> BUTTON aria-label="New bot", text="". Reproduced.
+More > Edit Chief: Escape -> BODY (aria-label null); Tab -> BUTTON aria-label="New bot", text="". Reproduced.
+Close desk: Enter -> BODY (aria-label null); Tab -> BUTTON aria-label="New bot", text="". Reproduced.
+More menu control: Escape -> BUTTON aria-label="More", text=""; Tab -> BUTTON aria-label null, text="ADay-to-day ops". No bug.
+Forget Issue7 PC: Enter -> BODY (aria-label null); Tab -> INPUT aria-label null, text="", labelled Pairing link or address (confirmed by screenshot). Focus loss reproduced; next Tab differs from sidebar cases.

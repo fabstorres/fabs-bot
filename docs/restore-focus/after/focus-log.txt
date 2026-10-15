@@ -1,0 +1,4 @@
+Plugins, Escape: "BUTTON Plugins"
+More > Edit Chief, Escape: "BUTTON More"
+Close desk, Enter: "BUTTON Open desk"
+File notes.txt, Escape: "BUTTON File notes.txt"
