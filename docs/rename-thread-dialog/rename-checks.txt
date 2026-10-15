@@ -6,3 +6,9 @@ desktop, Cancel button             -> title unchanged, focus "More"
 desktop, reload                    -> open thread "Thread with Morning planning"
 browser, More > Rename + Enter     -> field selected "Morning planning", saved "Weekly review", focus "More"
 browser, Edit Chief of Staff       -> bot editor still opens and closes (focus lands on BODY, same as before this change)
+desktop, PATCH held + Enter        -> one PATCH sent; field readOnly, Save and Cancel disabled
+desktop, edit/Enter/Escape pending -> value still "First save", still 1 PATCH, dialog stays open
+desktop, PATCH released            -> title "First save", dialog closed, focus "More"
+desktop, PATCH rejected            -> alert "Failed to fetch", draft "Offline rename" kept, Save enabled, title unchanged
+desktop, retry after reconnect     -> title "Offline rename", dialog closed, focus "More"
+desktop, Escape after the fix      -> title unchanged, focus "More"

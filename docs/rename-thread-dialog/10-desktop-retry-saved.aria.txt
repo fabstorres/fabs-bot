@@ -1,0 +1,18 @@
+# http://127.0.0.1:4870/  viewport=window
+- region "Thread with Offline rename":
+  - text: Offline rename
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Chief of Staff. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops"
+      - button "B A specific project"
+      - button "C Research and writing"
+      - button "D Something else"
+  - button "Attach"
+  - textbox "Message":
+    - /placeholder: Message Chief of Staff
+  - button "Dictate"
+  - button "Send" [disabled]

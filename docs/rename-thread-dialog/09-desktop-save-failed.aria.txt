@@ -1,0 +1,9 @@
+# http://127.0.0.1:4870/  viewport=window
+- dialog "Rename thread":
+  - heading "Rename thread" [level=2]
+  - paragraph: Rename thread
+  - textbox "Thread name": Offline rename
+  - alert: Failed to fetch
+  - button "Cancel"
+  - button "Save"
+  - button "Close"
