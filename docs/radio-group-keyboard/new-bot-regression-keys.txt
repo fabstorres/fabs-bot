@@ -1,0 +1,6 @@
+start {"focus":"Name","checked":null,"selected":["#1478FF","blob"]}
+Shift+Tab  {"focus":"blob","checked":"true","selected":["#1478FF","blob"]}
+ArrowLeft  {"focus":"bean","checked":"true","selected":["#1478FF","bean"]}
+Shift+Tab  {"focus":"#1478FF","checked":"true","selected":["#1478FF","bean"]}
+ArrowLeft  {"focus":"#7B3FF2","checked":"true","selected":["#7B3FF2","bean"]}
+Shift+Tab  {"focus":"This PC","checked":null,"selected":["#7B3FF2","bean"]}

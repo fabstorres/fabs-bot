@@ -1,0 +1,6 @@
+start {"focus":"Name","checked":null,"selected":["drop","#FF5A00","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"#FF5A00","checked":"true","selected":["drop","#FF5A00","Claude Code","Just do it"]}
+ArrowRight {"focus":"#FF9500","checked":"true","selected":["drop","#FF9500","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"drop","checked":"true","selected":["drop","#FF9500","Claude Code","Just do it"]}
+ArrowRight {"focus":"hex","checked":"true","selected":["hex","#FF9500","Claude Code","Just do it"]}
+Shift+Tab  {"focus":"Close","checked":null,"selected":["hex","#FF9500","Claude Code","Just do it"]}
