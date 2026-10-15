@@ -49,6 +49,7 @@ export function Chat({ thread }: { thread: Thread }) {
             size="icon"
             className={cn("rounded-full", panelOpen && "bg-accent")}
             title="Open the bot's desk and routines"
+            id="open-desk"
             aria-label="Open desk"
             aria-pressed={panelOpen}
             onClick={togglePanel}
