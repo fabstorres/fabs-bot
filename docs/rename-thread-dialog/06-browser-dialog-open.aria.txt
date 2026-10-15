@@ -1,0 +1,8 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- dialog "Rename thread":
+  - heading "Rename thread" [level=2]
+  - paragraph: Rename thread
+  - textbox "Thread name": Morning planning
+  - button "Cancel"
+  - button "Save"
+  - button "Close"
