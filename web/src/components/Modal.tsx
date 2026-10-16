@@ -1,15 +1,7 @@
-import { useState, type ReactNode, type RefObject } from "react";
-import { closeModal } from "../store";
+import type { ReactNode, RefObject } from "react";
+import { closeModal, useStore } from "../store";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-
-/** The control focus returns to on close: the focused element, or the trigger of the menu it sits in. */
-function opener() {
-  const active = document.activeElement;
-  const menu = active?.closest("[role=menu]");
-  const trigger = menu && document.getElementById(menu.getAttribute("aria-labelledby") ?? "");
-  return (trigger ?? active) as HTMLElement | null;
-}
 
 export function Modal({
   children,
@@ -30,7 +22,6 @@ export function Modal({
   onClose?(): void;
   onCloseAutoFocus?(event: Event): void;
 }) {
-  const [returnTo] = useState(opener);
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -45,7 +36,7 @@ export function Modal({
           onCloseAutoFocus ??
           ((e) => {
             e.preventDefault();
-            returnTo?.focus();
+            if (!document.querySelector("[role=dialog]")) useStore.getState().modalOpener?.focus();
           })
         }
       >
