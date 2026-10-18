@@ -1,0 +1,12 @@
+Keyboard focus checks (headless Chromium 1440x900, focus moved with real Tab / Shift+Tab presses)
+
+Composer pill (Message)
+  focus on Dictate (inside the pill, not the textarea)  box-shadow: drop shadow only         border: rgb(232, 232, 232)
+  Tab from Attach into Message (:focus-visible true)    box-shadow: 3px ring ring/50 + drop  border: rgb(163, 163, 163)
+  mouse click into Message                              box-shadow: 3px ring ring/50 + drop
+
+Sidebar search (Search bots)
+  focus on New bot                                       box-shadow: none                     background: black/5
+  Tab from New bot into Search bots                      box-shadow: 3px ring ring/50         background: black/7
+
+New bot button (reference shadcn ring)                   box-shadow: 3px ring ring/50         border: rgb(163, 163, 163)

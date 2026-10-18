@@ -257,7 +257,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => (e.preventDefault(), attach(e.dataTransfer.files))}
     >
-      <div className="mx-auto max-w-3xl rounded-[26px] border bg-background p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)]">
+      <div className="mx-auto max-w-3xl rounded-[26px] border bg-background p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
         {files.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-1">
             {files.map((f) => (
