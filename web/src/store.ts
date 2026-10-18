@@ -26,6 +26,8 @@ interface State {
   creating: boolean;
   panelOpen: boolean;
   modal: Modal;
+  /** The control focus returns to once the modal closes. */
+  modalOpener: HTMLElement | null;
   search: string;
 }
 
@@ -43,6 +45,7 @@ export const useStore = create<State>(() => ({
   creating: false,
   panelOpen: false,
   modal: null,
+  modalOpener: null,
   search: "",
 }));
 
@@ -184,7 +187,15 @@ export async function openDirect(botId: string) {
   openThread(t.id);
 }
 
-export const openModal = (modal: Modal) => set({ modal });
+/** The focused element, or the trigger of the menu it sits in. */
+function focusedOpener() {
+  const active = document.activeElement;
+  const menu = active?.closest("[role=menu]");
+  const trigger = menu && document.getElementById(menu.getAttribute("aria-labelledby") ?? "");
+  return (trigger ?? active) as HTMLElement | null;
+}
+
+export const openModal = (modal: Modal) => set({ modal, modalOpener: focusedOpener() });
 export const closeModal = () => set({ modal: null });
 export const togglePanel = () => set({ panelOpen: !get().panelOpen });
 export const closePanel = () => set({ panelOpen: false });

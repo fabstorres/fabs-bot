@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Clock, File, Folder, Pause, Play, X } from "
 import type { Bot, Routine, Thread } from "../../../shared/types";
 import { api, formatSize, formatTime } from "../api";
 import { useLoad } from "../hooks";
-import { closePanel, openModal, openNestedThread, openThread, threadTitle, togglePanel, useStore } from "../store";
+import { closePanel, openModal, openNestedThread, openThread, threadTitle, useStore } from "../store";
 import { BotAvatar, LiveAvatar } from "./BotAvatar";
 import { scheduleLabel } from "./BotEditor";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,12 @@ export function DeskPanel({ thread }: { thread: Thread }) {
         <Button variant="ghost" size="icon" className="rounded-full" disabled={page === "settings"} onClick={() => setPage("settings")} aria-label="Show settings">
           <ChevronRight className="size-5" />
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={togglePanel} aria-label="Close desk">
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => {
+            closePanel();
+            document.getElementById("open-desk")?.focus();
+          }}
+          aria-label="Close desk"
+        >
           <X className="size-5" />
         </Button>
       </header>

@@ -22,7 +22,13 @@ function PcRow({ name, detail, address, busy, onOpen, onForget }: { name: string
         <span className={cn("truncate text-xs text-muted-foreground", address && "mono-box font-mono")}>{detail}</span>
       </div>
       {onForget && (
-        <Button variant="ghost" size="icon" aria-label={`Forget ${name}`} onClick={onForget}>
+        <Button variant="ghost" size="icon" aria-label={`Forget ${name}`}
+          onClick={(e) => {
+            const row = e.currentTarget.closest("[role=group]");
+            (row?.nextElementSibling ?? row?.previousElementSibling)?.querySelector("button")?.focus();
+            onForget();
+          }}
+        >
           <Trash2 />
         </Button>
       )}
