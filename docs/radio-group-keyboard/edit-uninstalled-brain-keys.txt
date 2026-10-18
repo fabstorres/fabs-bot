@@ -1,0 +1,10 @@
+open       {"focus":"Name","brainChecked":["Gemini CLI (disabled)"]}
+Tab        {"focus":"Role","brainChecked":["Gemini CLI (disabled)"]}
+Tab        {"focus":"How it works","brainChecked":["Gemini CLI (disabled)"]}
+Tab        {"focus":"Claude Code","brainChecked":["Gemini CLI (disabled)"]}
+ArrowRight {"focus":"Codex","brainChecked":["Codex"]}
+ArrowLeft  {"focus":"Claude Code","brainChecked":["Claude Code"]}
+ArrowLeft  {"focus":"OpenCode","brainChecked":["OpenCode"]}
+Shift+Tab  {"focus":"How it works","brainChecked":["OpenCode"]}
+Tab        {"focus":"OpenCode","brainChecked":["OpenCode"]}
+Tab        {"focus":"Model","brainChecked":["OpenCode"]}

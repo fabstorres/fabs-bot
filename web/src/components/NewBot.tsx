@@ -9,6 +9,7 @@ import { blankBot } from "./BotEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { onRadioGroupKeyDown, radioTabIndex } from "@/lib/radio";
 import { cn } from "@/lib/utils";
 
 /** Pick a face and a name; everything else can be tuned later from the bot's settings. */
@@ -60,13 +61,14 @@ export function NewBot() {
           }}
         >
           <BotAvatar shape={shape} color={color} size={120} className="animate-in zoom-in-90" key={shape} />
-          <div className="flex flex-wrap justify-center gap-2.5" role="radiogroup" aria-label="Color">
+          <div className="flex flex-wrap justify-center gap-2.5" role="radiogroup" aria-label="Color" onKeyDown={onRadioGroupKeyDown}>
             {COLORS.map((c) => (
               <button
                 key={c}
                 type="button"
                 role="radio"
                 aria-checked={color === c}
+                tabIndex={radioTabIndex(c, color, COLORS)}
                 aria-label={c}
                 className={cn("size-8 rounded-full ring-offset-2 transition-transform hover:scale-110", color === c && "ring-2 ring-(--ring-color)")}
                 style={{ background: c, ["--ring-color" as string]: c }}
@@ -74,13 +76,14 @@ export function NewBot() {
               />
             ))}
           </div>
-          <div className="flex flex-wrap justify-center gap-1.5" role="radiogroup" aria-label="Shape">
+          <div className="flex flex-wrap justify-center gap-1.5" role="radiogroup" aria-label="Shape" onKeyDown={onRadioGroupKeyDown}>
             {SHAPES.map((s) => (
               <button
                 key={s}
                 type="button"
                 role="radio"
                 aria-checked={shape === s}
+                tabIndex={radioTabIndex(s, shape, SHAPES)}
                 aria-label={s}
                 className={cn("rounded-xl border-2 border-transparent p-1 hover:bg-muted", shape === s && "border-foreground/80")}
                 onClick={() => setShape(s)}

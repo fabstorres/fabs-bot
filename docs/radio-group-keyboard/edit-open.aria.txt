@@ -1,0 +1,66 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- dialog "Edit Chief":
+  - heading "Edit Chief" [level=2]
+  - paragraph: Edit Chief
+  - text: Chief Coordinates the team
+  - radiogroup "Shape":
+    - radio "blob"
+    - radio "cloud"
+    - radio "drop" [checked]
+    - radio "hex"
+    - radio "square"
+    - radio "egg"
+    - radio "pill"
+    - radio "triangle"
+    - radio "flower"
+    - radio "bean"
+  - radiogroup "Color":
+    - radio "#FF5A00" [checked]
+    - radio "#FF9500"
+    - radio "#FF2238"
+    - radio "#FF2E93"
+    - radio "#7B3FF2"
+    - radio "#1478FF"
+    - radio "#00B39A"
+    - radio "#00C060"
+    - radio "#8A5530"
+    - radio "#7A7A7A"
+    - radio "#111111"
+  - text: Name
+  - textbox "Name":
+    - /placeholder: Chief of Staff
+    - text: Chief
+  - text: Role · one line; teammates see this
+  - textbox "Role":
+    - /placeholder: Reads tomorrow's calendar, preps a morning digest
+    - text: Coordinates the team
+  - text: How it works
+  - textbox "How it works":
+    - /placeholder: "Standing instructions: tone, what to check, what never to do…"
+  - text: Brain
+  - radiogroup "Brain":
+    - radio "Claude Code" [checked]: Claude Code full team tools
+    - radio "Codex": Codex full team tools
+    - radio "Cursor Agent": Cursor Agent chat + workspace
+    - radio "OpenCode": OpenCode chat + workspace
+    - radio "Gemini CLI": Gemini CLI chat + workspace
+  - paragraph: Inherits your Claude Code MCP servers and claude.ai connectors (Notion, Google Drive, …).
+  - text: Model · blank = CLI default
+  - combobox "Model": haiku
+  - text: Desk folder · where it works
+  - textbox "Desk folder":
+    - /placeholder: ~/FabsBot/<name>
+    - text: /run/user/1000/fabs-verify/run-20261015054603/work/chief
+  - text: Autonomy
+  - radiogroup "Autonomy":
+    - radio "Just do it" [checked]
+    - radio "Ask me before acting"
+  - paragraph: Runs commands and edits files on this PC without asking. Best for trusted, well-scoped bots.
+  - text: Plugins
+  - paragraph: No extra plugins yet. Claude bots already inherit your Claude Code MCP servers and claude.ai connectors.
+  - text: Routines · always-on work, on a schedule
+  - button "Add routine"
+  - button "Retire"
+  - button "Fresh memory"
+  - button "Save"
+  - button "Close"
