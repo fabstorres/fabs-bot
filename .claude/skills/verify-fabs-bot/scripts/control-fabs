@@ -352,6 +352,8 @@ const commands: Record<string, () => Promise<void>> = {
     const pair = await fetch(base + `/pair?token=${token}`, { redirect: "manual" });
     const cookie = pair.headers.get("set-cookie")?.split(";")[0] ?? "";
     const paired = await fetch(base + "/api/bots", { headers: { cookie } });
+    const query = await fetch(base + `/api/host?token=${token}`);
+    const bearer = await fetch(base + "/api/host", { headers: { authorization: `Bearer ${token}` } });
     const mcp = await fetch(base + "/mcp/anything", { method: "POST", body: "{}" });
     const foreign = { origin: "https://unrelated.example" };
     const crossWs = await fetch(s.url + "/ws", { headers: { ...foreign, connection: "Upgrade", upgrade: "websocket" } });
@@ -362,6 +364,8 @@ const commands: Record<string, () => Promise<void>> = {
       ["wrong pairing token is refused", bad.status === 403, bad.status],
       ["pairing link sets a cookie and redirects", pair.status === 302 && cookie.startsWith("fabs_token="), pair.status],
       ["paired cookie can call the API", paired.status === 200, paired.status],
+      ["pairing token in ?token= is refused on the API", query.status === 401, query.status],
+      ["pairing token as a bearer header can call the API", bearer.status === 200, bearer.status],
       ["bot MCP endpoint is loopback-only", mcp.status === 403, mcp.status],
       ["cross-origin WebSocket upgrade is refused", crossWs.status === 403, crossWs.status],
       ["cross-origin text/plain write is refused", crossPost.status === 403, crossPost.status],
@@ -460,6 +464,8 @@ const commands: Record<string, () => Promise<void>> = {
       ["another tailnet user is refused", await get("/api/bots", { "tailscale-user-login": "someone-else@example.com" }), 401],
       ["your own Tailscale login is admitted", await get("/api/bots", { "tailscale-user-login": login }), 200],
       ["a pairing cookie is admitted", await get("/api/bots", { cookie: `fabs_token=${token}` }), 200],
+      ["a pairing bearer token is admitted", await get("/api/host", { authorization: `Bearer ${token}` }), 200],
+      ["a pairing token in ?token= is refused", await get(`/api/host?token=${token}`), 401],
       ["bot MCP endpoint refuses Tailscale HTTPS", await fetch(base + "/mcp/anything", { method: "POST", body: "{}", headers: { "tailscale-user-login": login } }).then((r) => r.status).catch(() => 0), 403],
       ["this PC's own loopback stays trusted", await fetch(s.url + "/api/bots").then((r) => r.status), 200],
     ] as const;
