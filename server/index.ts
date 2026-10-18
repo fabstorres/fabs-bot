@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { hostname } from "node:os";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
 import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
@@ -9,6 +9,7 @@ import * as db from "./db";
 import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
+import { within } from "./paths";
 import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
@@ -75,13 +76,6 @@ async function body<T = any>(req: Request): Promise<T> {
   } catch {
     return {} as T;
   }
-}
-
-/** Resolve `rel` inside `root`, refusing paths that escape it. */
-function within(root: string, rel: string): string | null {
-  const full = resolve(root, rel || ".");
-  const r = relative(root, full);
-  return r.startsWith("..") || resolve(root, r) !== full ? null : full;
 }
 
 function sanitizeBot(input: Partial<Bot>, existing?: Bot): Omit<Bot, "createdAt"> {
@@ -179,6 +173,7 @@ route("GET", "/api/bots/:id/files", (_r, p, url) => {
   if (!dir || !existsSync(dir)) return bad("no such folder", 404);
   const entries = readdirSync(dir, { withFileTypes: true })
     .filter((e) => !e.name.startsWith(".") || e.name === ".claude")
+    .filter((e) => within(bot.cwd, join(dir, e.name)))
     .map((e) => {
       const full = join(dir, e.name);
       let size = 0;
