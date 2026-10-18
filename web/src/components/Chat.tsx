@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, Ellipsis, Mic, Monitor, Paperclip, Pencil, Plus, Square, Trash2, UserPlus, X } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api } from "../api";
@@ -6,6 +6,7 @@ import { goBack, openModal, threadTitle, togglePanel, useStore } from "../store"
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
+import { Modal } from "./Modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export function Chat({ thread }: { thread: Thread }) {
@@ -96,20 +98,17 @@ function Hello({ bot }: { bot: Bot }) {
 function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
   const bots = useStore((s) => s.bots);
   const others = bots.filter((b) => !thread.memberIds.includes(b.id));
+  const [renaming, setRenaming] = useState(false);
+  const more = useRef<HTMLButtonElement>(null);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full" aria-label="More">
+        <Button ref={more} variant="ghost" size="icon" className="rounded-full" aria-label="More">
           <Ellipsis className="size-5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56" aria-label="Thread menu">
-        <DropdownMenuItem
-          onSelect={async () => {
-            const title = prompt("Thread name", threadTitle(thread, bots));
-            if (title !== null) await api.patch(`/api/threads/${thread.id}`, { title });
-          }}
-        >
+        <DropdownMenuItem onSelect={() => setRenaming(true)}>
           <Pencil /> Rename
         </DropdownMenuItem>
         {others.length > 0 && thread.kind !== "backchannel" && (
@@ -143,7 +142,56 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
           <Trash2 /> Delete thread
         </DropdownMenuItem>
       </DropdownMenuContent>
+      {renaming && <RenameThread thread={thread} trigger={more} onClose={() => setRenaming(false)} />}
     </DropdownMenu>
+  );
+}
+
+function RenameThread({ thread, trigger, onClose }: { thread: Thread; trigger: RefObject<HTMLButtonElement | null>; onClose(): void }) {
+  const bots = useStore((s) => s.bots);
+  const [title, setTitle] = useState(() => threadTitle(thread, bots));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  return (
+    <Modal
+      title="Rename thread"
+      onClose={() => !busy && onClose()}
+      onCloseAutoFocus={(e) => {
+        e.preventDefault();
+        trigger.current?.focus();
+      }}
+    >
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError("");
+          try {
+            await api.patch(`/api/threads/${thread.id}`, { title });
+            onClose();
+          } catch (e) {
+            setError((e as Error).message);
+            setBusy(false);
+          }
+        }}
+      >
+        <Input aria-label="Thread name" value={title} readOnly={busy} onFocus={(e) => e.target.select()} onChange={(e) => setTitle(e.target.value)} />
+        {error && (
+          <p role="alert" className="text-sm text-failing">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" className="rounded-full px-6" disabled={busy}>
+            Save
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

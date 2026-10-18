@@ -10,6 +10,7 @@ export function Modal({
   label,
   initialFocus,
   onClose = closeModal,
+  onCloseAutoFocus,
 }: {
   children: ReactNode;
   wide?: boolean;
@@ -19,10 +20,12 @@ export function Modal({
   /** Element to focus when the dialog opens, instead of its first focusable element. */
   initialFocus?: RefObject<HTMLElement | null>;
   onClose?(): void;
+  onCloseAutoFocus?(event: Event): void;
 }) {
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        onCloseAutoFocus={onCloseAutoFocus}
         aria-label={label ?? (typeof title === "string" ? title : undefined)}
         onOpenAutoFocus={(e) => {
           if (!initialFocus?.current) return;
