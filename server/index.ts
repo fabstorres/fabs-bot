@@ -458,7 +458,7 @@ if (process.env.FABS_HOST) {
     try {
       listen(ts.ip);
       tailnetBound = true;
-      console.log(`  ↳ pair a device: http://${ts.dnsName ?? ts.ip}:${PORT}/pair?token=${ACCESS_TOKEN}`);
+      console.log("  ↳ pair a device from This PC");
     } catch (e) {
       console.warn(`  could not bind ${ts.ip}:${PORT}`, (e as Error).message);
     }
