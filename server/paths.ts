@@ -1,9 +1,9 @@
 import { realpathSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 const escapes = (root: string, full: string) => {
   const r = relative(root, full);
-  return r.startsWith("..") || resolve(root, r) !== full;
+  return r === ".." || r.startsWith(`..${sep}`) || isAbsolute(r) || resolve(root, r) !== full;
 };
 
 /** Resolve `rel` to an existing path inside `root`, refusing paths that escape it, by `../` or through a symlink. */

@@ -9,9 +9,12 @@ const desk = join(tmp, "desk");
 const outside = join(tmp, "outside");
 mkdirSync(desk);
 mkdirSync(outside);
+mkdirSync(join(desk, "..archive"));
 writeFileSync(join(desk, "plan.md"), "# Plan");
+writeFileSync(join(desk, "..archive", "draft.md"), "# Draft");
 writeFileSync(join(outside, "secret.txt"), "secret");
 symlinkSync("plan.md", join(desk, "plan-link.md"));
+symlinkSync("..archive/draft.md", join(desk, "archive-link.md"));
 symlinkSync(join(outside, "secret.txt"), join(desk, "notes.txt"));
 symlinkSync(outside, join(desk, "out"));
 symlinkSync(desk, join(tmp, "desk-link"));
@@ -26,6 +29,13 @@ describe("within", () => {
 
   test("keeps a symlink that stays inside the root", () => {
     expect(within(desk, "plan-link.md")).toBe(join(desk, "plan-link.md"));
+  });
+
+  test("keeps names that only start with ..", () => {
+    expect(within(desk, "..archive/draft.md")).toBe(join(desk, "..archive", "draft.md"));
+    expect(within(desk, "archive-link.md")).toBe(join(desk, "archive-link.md"));
+    expect(within(desk, "..")).toBeNull();
+    expect(within(desk, "../outside/secret.txt")).toBeNull();
   });
 
   test("accepts a root that is itself a symlink", () => {
