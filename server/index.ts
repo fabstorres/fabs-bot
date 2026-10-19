@@ -84,6 +84,19 @@ function within(root: string, rel: string): string | null {
   return r.startsWith("..") || resolve(root, r) !== full ? null : full;
 }
 
+/** Headers for a desk or shared file. Pages a bot wrote get an opaque origin, so their scripts can't call the API as you. */
+function fileHeaders(name: string, download: boolean): Record<string, string> {
+  const type = Bun.file(name.toLowerCase()).type;
+  const headers: Record<string, string> = {
+    "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${encodeURIComponent(name)}"`,
+    "X-Content-Type-Options": "nosniff",
+  };
+  if (download) headers["Content-Security-Policy"] = "default-src 'none'; sandbox";
+  else if (type.startsWith("image/svg")) headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+  else if (/html|xml/.test(type)) headers["Content-Security-Policy"] = "sandbox allow-scripts allow-forms allow-popups allow-downloads";
+  return headers;
+}
+
 function sanitizeBot(input: Partial<Bot>, existing?: Bot): Omit<Bot, "createdAt"> {
   const name = String(input.name ?? existing?.name ?? "").trim() || "New Bot";
   return {
@@ -197,7 +210,7 @@ route("GET", "/api/bots/:id/file", (_r, p, url) => {
   const bot = db.getBot(p.id!);
   const full = bot && within(bot.cwd, url.searchParams.get("path") ?? "");
   if (!full || !existsSync(full) || !statSync(full).isFile()) return bad("not found", 404);
-  return new Response(Bun.file(full), { headers: { "Content-Disposition": `inline; filename="${encodeURIComponent(basename(full))}"` } });
+  return new Response(Bun.file(full), { headers: fileHeaders(basename(full), url.searchParams.has("download")) });
 });
 
 route("GET", "/api/threads", () => json(db.listThreads()));
@@ -392,9 +405,8 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   if (url.pathname.startsWith("/files/")) {
     const f = db.getFile(url.pathname.slice(7));
     if (!f || !existsSync(f.path)) return new Response("not found", { status: 404 });
-    const disposition = url.searchParams.has("download") ? "attachment" : "inline";
     return new Response(Bun.file(f.path), {
-      headers: { "Content-Disposition": `${disposition}; filename="${encodeURIComponent(f.name)}"` },
+      headers: fileHeaders(f.name, url.searchParams.has("download")),
     });
   }
 
