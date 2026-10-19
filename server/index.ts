@@ -56,6 +56,16 @@ function applyServe(): Promise<void> {
   return serveQueue;
 }
 
+let stopping = false;
+/** On exit, take our `tailscale serve` mapping down but keep the saved setting, so the next start puts it back. */
+function shutdown() {
+  if (stopping) return;
+  stopping = true;
+  if (!serveEnabled()) process.exit(0);
+  const off = serveQueue.then(() => disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT));
+  Promise.race([off, Bun.sleep(5_000)]).finally(() => process.exit(0));
+}
+
 const json = (data: unknown, status = 200) => Response.json(data, { status });
 const bad = (message: string, status = 400) => json({ error: message }, status);
 
@@ -443,6 +453,8 @@ function listen(hostname: string) {
 }
 
 onboard();
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 console.log("fabs-bot");
 if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {
