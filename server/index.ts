@@ -13,7 +13,7 @@ import { directThread, editMessageParts, greet, postUserMessage, stopTurns } fro
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
-import { disableServe, enableServe, tailscaleState, type ServeProblem } from "./tailscale";
+import { disableServe, enableServe, killRunningCommands, tailscaleState, type ServeProblem } from "./tailscale";
 
 db.closeDanglingMessages();
 reschedule();
@@ -61,9 +61,11 @@ let stopping = false;
 function shutdown() {
   if (stopping) return;
   stopping = true;
-  if (!serveEnabled()) process.exit(0);
-  const off = serveQueue.then(() => disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT));
-  Promise.race([off, Bun.sleep(5_000)]).finally(() => process.exit(0));
+  const off = serveQueue.then(() => (serveEnabled() ? disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT) : null));
+  Promise.race([off, Bun.sleep(5_000)]).finally(() => {
+    killRunningCommands();
+    process.exit(0);
+  });
 }
 
 const json = (data: unknown, status = 200) => Response.json(data, { status });
