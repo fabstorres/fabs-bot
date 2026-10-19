@@ -1,0 +1,62 @@
+# Shared and attached files after the html/xml guard
+== GET /files/<id of chart.png>
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="chart.png"
+Content-Type: image/png
+== GET /files/<id of chart.png>?download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="chart.png"
+Content-Type: image/png
+== GET /files/<id of notes.md>
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="notes.md"
+Content-Type: text/markdown
+== GET /files/<id of notes.md>?download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="notes.md"
+Content-Type: text/markdown
+== GET /files/<id of probe.html>
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="probe.html"
+Content-Type: application/octet-stream
+== GET /files/<id of probe.html>?download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="probe.html"
+Content-Type: application/octet-stream
+== GET /files/<id of probe.svg>
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="probe.svg"
+Content-Type: application/octet-stream
+== GET /files/<id of probe.svg>?download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="probe.svg"
+Content-Type: application/octet-stream
+# Attach upload (/api/upload) read-back
+Content-Disposition: inline; filename="probe.svg"
+Content-Type: application/octet-stream
+Content-Disposition: inline; filename="PHOTO.PNG"
+Content-Type: image/png
+
+# Opening the shared probe.html / probe.svg directly (what the viewer's Open link does)
+# Each probe's script would set the title / data-api-status from fetch('/api/bots').
+== browser open /files/<id of probe.html>
+control-fabs browser open: page.goto: Download is starting
+{
+  "href": "/",
+  "title": "Fabs Bot",
+  "contentType": "text/html",
+  "apiStatus": null
+}
+== browser open /files/<id of probe.svg>
+control-fabs browser open: page.goto: Download is starting
+{
+  "href": "/",
+  "title": "Fabs Bot",
+  "contentType": "text/html",
+  "apiStatus": null
+}
+
+# Thread
+#1 Design (done): "Hey, I'm Design. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Your desk folder has chart.png, notes.md, probe.html and probe.svg. Call the share_file tool once for each of these four files (the parameter is named path). Th"
+#3 Design (done): [tool fabsbot · share_file done] [file chart.png 22207B id=a6de26c8-f27f-4c82-a36a-2e48c8509181] [tool fabsbot · share_file done] [file notes.md 111B id=5c4fafed-2fd4-4540-9573-d31d4c9390a7] [tool fabsbot · share_file done] [file probe.html 145B id=97c12942-fa55-4437-8ee9-8d29be6cbc3e] [tool fabsbot · share_file done] [file probe.svg 231B id=81910b4a-e09f-47ae-b260-535cce06b407] "All four files from the desk folder are shared: chart.png, notes.md, probe.html and probe.svg."
