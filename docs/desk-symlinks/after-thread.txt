@@ -1,0 +1,7 @@
+#1 Design (done): "Hey, I'm Design. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "In your desk folder, run exactly these shell commands and nothing else: printf '# Plan\\n\\nShip the desk fix.\\n' > plan.md && ln -s plan.md plan-link.md && ln -s"
+#3 Design (done): [tool Bash error] "Created `plan.md`, `plan-link.md`, `notes.txt`, and `etc` in the desk folder, but the final `ls -l.` failed with \"invalid option -- '.'\" because it has no space"
+#4 user (done): "In your desk folder, run exactly this shell command and nothing else: printf 'first draft\\n' > draft.txt  Then reply with one short sentence."
+#5 Design (done): [tool Bash done] "I wrote `first draft` into `draft.txt` in the desk folder."
+#6 user (done): "In your desk folder, run exactly this shell command and nothing else: ln -sf /etc/os-release draft.txt  Then reply with one short sentence."
+#7 Design (done): [tool Bash done] "I replaced `draft.txt` with a symlink to `/etc/os-release`, so the \"first draft\" text it held is gone."
