@@ -1,0 +1,10 @@
+# http://<tailnet-ip>:4930/  viewport=1440x900
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief of Staff": Chief of Staff 3:09 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+  - button "Plugins"
+  - button "This PC": FE fedora All quiet
