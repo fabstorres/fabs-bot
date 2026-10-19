@@ -1,0 +1,4 @@
+## after relaunch on the same data dir and port
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4876
+saved setting tailscale.serve = 1
