@@ -1,0 +1,9 @@
+# Final build (b5739e8 + fix): desk status.html opened top-level
+page address = http://127.0.0.1:4870
+document origin = null
+cookies blocked: SecurityError
+localStorage blocked: SecurityError
+app API blocked: Failed to fetch
+document.title = SANDBOXED
+viewer notes.md: "markdown table rendered"
+viewer chart.svg: "image naturalWidth=320"

@@ -1,0 +1,10 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- dialog "status.html":
+  - heading "status.html" [level=2]
+  - paragraph: status.html
+  - document "Preview of status.html": "<!doctype html> <title>status</title> <body style=\"font:18px system-ui;padding:32px\"> <h1>Status check</h1> <pre id=\"out\">checking…</pre> <script> const lines = [\"page address = \" + location.origin, \"document origin = \" + self.origin]; try { lines.push(\"cookies = \" + (document.cookie ? \"readable\" : \"empty\")); } catch (e) { lines.push(\"cookies blocked: \" + e.name); } try { localStorage.length; lines.push(\"localStorage = readable\"); } catch (e) { lines.push(\"localStorage blocked: \" + e.name); } fetch(\"/api/host\").then((r) => r.json()).then((j) => { document.title = \"SAME-ORIGIN\"; lines.push(\"app API reachable from this page: \" + Object.keys(j).join(\",\")); }).catch((e) => { document.title = \"SANDBOXED\"; lines.push(\"app API blocked: \" + e.message); }).finally(() => { lines.push(\"document.title = \" + document.title); document.getElementById(\"out\").textContent = lines.join(\"\\n\"); }); </script>"
+  - link "Download":
+    - /url: /api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=status.html&download
+  - link "Open":
+    - /url: /api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=status.html
+  - button "Close"

@@ -1,0 +1,96 @@
+# Response headers on the isolated verify instance, read back with curl
+
+== desk: bot-written status.html (inline)
+GET /api/bots/b938f035-21e5-4e8b-b1a4-fecbdde4a960/file?path=status.html
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="status.html"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+Content-Type: text/html;charset=utf-8
+
+== desk: bot-written chart.svg (inline)
+GET /api/bots/b938f035-21e5-4e8b-b1a4-fecbdde4a960/file?path=chart.svg
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="chart.svg"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox
+Content-Type: image/svg+xml
+
+== desk: bot-written notes.md (inline)
+GET /api/bots/b938f035-21e5-4e8b-b1a4-fecbdde4a960/file?path=notes.md
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="notes.md"
+X-Content-Type-Options: nosniff
+Content-Type: text/markdown
+
+== desk: status.html via the viewer's Download link
+GET /api/bots/b938f035-21e5-4e8b-b1a4-fecbdde4a960/file?path=status.html&download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="status.html"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'; sandbox
+Content-Type: text/html;charset=utf-8
+
+== chat: uploaded logo.png (inline)
+GET /files/217146df-e8c3-446f-bf30-a6261fe7cc19
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="logo.png"
+X-Content-Type-Options: nosniff
+Content-Type: image/png
+
+== chat: uploaded upload-check.html (inline)
+GET /files/81d7869a-69e5-4bfa-b64b-707443ed1565
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="upload-check.html"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+Content-Type: text/html;charset=utf-8
+
+== chat: uploaded upload-check.html via Download
+GET /files/81d7869a-69e5-4bfa-b64b-707443ed1565?download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="upload-check.html"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'; sandbox
+Content-Type: text/html;charset=utf-8
+
+== chat: status.html shared by the bot with share_file (stored without an extension, see #22)
+GET /files/d49037ff-7e0b-462e-9c21-7ff2d96231e7
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="status.html"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+Content-Type: application/octet-stream
+
+== the request a sandboxed page sends (Origin: null) is also refused by the server
+GET /api/host  Origin: null
+HTTP/1.1 403 Forbidden
+
+# Edge cases (fixture files copied into the desk folder on disk)
+
+== desk: page.xhtml
+GET /api/bots/b938f035-21e5-4e8b-b1a4-fecbdde4a960/file?path=page.xhtml
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="page.xhtml"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+Content-Type: application/xhtml+xml
+
+== desk: feed.xml
+GET /api/bots/b938f035-21e5-4e8b-b1a4-fecbdde4a960/file?path=feed.xml
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="feed.xml"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+Content-Type: application/xml
+
+== desk: LOUD.HTML (the desk route serves it as octet-stream, so it downloads; the policy is picked from the lowercased name)
+GET /api/bots/b938f035-21e5-4e8b-b1a4-fecbdde4a960/file?path=LOUD.HTML
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="LOUD.HTML"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+Content-Type: application/octet-stream
+
+== in the browser: page.xhtml opened top-level
+self.origin = "null"
