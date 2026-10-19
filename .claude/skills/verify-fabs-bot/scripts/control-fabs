@@ -136,7 +136,7 @@ const commands: Record<string, () => Promise<void>> = {
       const real = Bun.which("tailscale") ?? die("--tailscale-shim needs the real tailscale CLI for read-only status");
       shimDir = join(runDir, "tailscale-shim");
       mkdirSync(join(shimDir, "bin"), { recursive: true });
-      symlinkSync(join(import.meta.dir, "tailscale-shim"), join(shimDir, "bin", "tailscale"));
+      if (!existsSync(join(shimDir, "bin", "tailscale"))) symlinkSync(join(import.meta.dir, "tailscale-shim"), join(shimDir, "bin", "tailscale"));
       writeFileSync(join(shimDir, "real"), real);
     }
 

@@ -9,6 +9,7 @@ The This PC panel has a Tailscale HTTPS switch. Turning it on serves the app at 
 - `https-coexist` leaves other apps' serve ports alone, including one on 443.
 - `https-port-taken` refuses when another app holds the port, makes no serve change, and leaves the switch off.
 - `https-cli-error` shows a fix (for example `tailscale set --operator`) when Tailscale refuses.
+- `https-stop` removes only Fabs Bot's port when the server gets SIGINT or SIGTERM, keeps the switch on, and puts the port back on the next start. Another app's mapping on the port is left alone.
 - `https-auth` admits the owner's Tailscale login or a pairing cookie, refuses requests with no identity (tagged devices, Funnel) or another user's, and refuses the bot MCP endpoint.
 
 ## How to get to it (user POV)
@@ -29,6 +30,7 @@ Preconditions:
 - **Off again.** Click the switch and wait for `Other apps using Tailscale HTTPS are left alone`. `$C serve-shim state` is back to the "before" list.
 - **CLI error.** Run `$C serve-shim fail "Access denied: serve config denied"`, click the switch, and wait for `Tailscale refused`. The switch is unchecked. Capture `4-permission-denied`.
 - **Port taken.** Run `$C serve-shim occupy 8443`, click the switch, and wait for `Another app already uses this HTTPS port`. `$C serve-shim state` still shows the other app's `:8443` mapping. Capture `5-port-taken`.
+- **Stop and start.** With the switch on, run `$C browser stop`, then `kill -TERM <pid>` using the `pid` from `$FABS_VERIFY_HOME/<run>/state.json` (not `cleanup`, which deletes the run dir). `$C serve-shim state` drops the `:8443` line, and the `settings` row `tailscale.serve` in `<run>/data/fabs-bot.db` is still `1`. Run `$C launch --run-id <run> --port <port> --tailnet --tailscale-shim --no-build` to start again on the same data. The `:8443` line comes back and the switch is still on. Repeat with `$C serve-shim occupy 8443` before the kill: the other app's `:8443` line survives.
 - **Proof.** Run `$C serve-shim log --path tailscale-https/serve-calls.txt`. The only changes are `serve --bg --https=8443 http://127.0.0.1:<port+1>` and `serve --https=8443 off`, with none after `occupy`.
 
 ## Gotchas
