@@ -1,0 +1,5 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- group "Tailscale HTTPS":
+  - text: Tailscale HTTPS
+  - switch "Tailscale HTTPS"
+  - paragraph: Serves this PC over HTTPS on port 8443 of your tailnet. It turns on the mic and install-to-home-screen, and your own devices sign in without pairing. Other apps using Tailscale HTTPS are left alone.

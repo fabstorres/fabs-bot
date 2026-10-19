@@ -1,0 +1,13 @@
+## switch turned off in the panel, nothing in flight
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 0
+
+## repeated signals (Ctrl+C under bun run dev)
+kill -INT 141923
+kill -INT 141923
+kill -TERM 141923
+server exited after 52 ms
+
+tailscale calls during shutdown: 0
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 0

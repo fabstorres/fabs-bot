@@ -1,0 +1,153 @@
+===== r2-lib.sh
+#!/bin/bash
+# Shared helpers for the round-2 checks. Source from the repo root with FABS_VERIFY_HOME exported.
+C=.claude/skills/verify-fabs-bot/scripts/control-fabs
+RUNID=issue21-r2
+RUN=$FABS_VERIFY_HOME/$RUNID
+srv() { bun -e "console.log(require('$RUN/state.json').pid)"; }
+setting() { bun /tmp/issue21-sigtest/setting.ts $RUN/data/fabs-bot.db; }
+state() { $C serve-shim state; }
+open_panel() {
+  $C browser start --viewport 1440x900 >/dev/null && $C browser open / >/dev/null && $C browser click --role button --name "This PC" >/dev/null && $C browser wait --role switch --name "Tailscale HTTPS" >/dev/null
+}
+wait_exit() {
+  local p=$1 t0=$2
+  while kill -0 "$p" 2>/dev/null; do sleep 0.05; done
+  echo "server exited $(( ($(date +%s%N) - t0) / 1000000 )) ms after SIGTERM"
+}
+relaunch() { $C launch --run-id $RUNID --port $1 --tailnet --tailscale-shim --no-build | sed -n 1p; }
+# Pause the first simulated `tailscale` child of the server whose command line matches $2. Prints its pid.
+catch_child() { bun /tmp/issue21-sigtest/catch.ts "$1" "$2"; }
+
+===== catch.ts
+import { readFileSync, readdirSync } from "node:fs";
+
+const [server, pattern] = [process.argv[2]!, process.argv[3]!];
+const read = (p: string) => {
+  try {
+    return readFileSync(p, "utf8");
+  } catch {
+    return "";
+  }
+};
+const deadline = Date.now() + 30_000;
+while (Date.now() < deadline) {
+  let tasks: string[] = [];
+  try {
+    tasks = readdirSync(`/proc/${server}/task`);
+  } catch {
+    break;
+  }
+  for (const t of tasks) {
+    for (const kid of read(`/proc/${server}/task/${t}/children`).trim().split(" ").filter(Boolean)) {
+      if (read(`/proc/${kid}/cmdline`).replace(/\0/g, " ").includes(pattern)) {
+        process.kill(Number(kid), "SIGSTOP");
+        console.log(kid);
+        process.exit(0);
+      }
+    }
+  }
+}
+process.exit(1);
+
+===== stop-server.sh
+#!/bin/bash
+# usage: stop-server.sh <run-dir> <signal...>; sends each signal in order to the server pid, then waits for exit
+RUN=$1; shift
+PID=$(bun -e "console.log(require('$RUN/state.json').pid)")
+echo "server pid from state.json: $PID ($(tr '\0' ' ' < /proc/$PID/cmdline))"
+T0=$(date +%s%N)
+for s in "$@"; do echo "kill -$s $PID"; kill -$s $PID; done
+while kill -0 $PID 2>/dev/null; do sleep 0.05; done
+echo "server exited after $(( ($(date +%s%N) - T0) / 1000000 )) ms"
+
+===== setting.ts
+import { Database } from "bun:sqlite";
+const db = new Database(process.argv[2]!, { readonly: true });
+const row = db.query("SELECT value FROM settings WHERE key = 'tailscale.serve'").get() as { value: string } | null;
+console.log(`saved setting tailscale.serve = ${row?.value ?? "(unset)"}`);
+
+===== finding1.sh
+#!/bin/bash
+# Stop the server while a toggle-off is in flight. Run from the repo root with FABS_VERIFY_HOME exported.
+source /tmp/issue21-sigtest/r2-lib.sh
+S=$(srv)
+echo "## finding 1: stop while a toggle-off is in flight"
+echo "before:"; state; setting
+catch_child $S "serve --https=8443 off" > /tmp/issue21-sigtest/caught &
+CATCHER=$!
+$C browser click --role switch --name "Tailscale HTTPS" >/dev/null
+if ! wait $CATCHER; then echo "did not catch the off child; retry"; exit 1; fi
+CHILD=$(cat /tmp/issue21-sigtest/caught)
+echo "clicked the switch off and paused the simulated 'tailscale serve --https=8443 off' child (ps state: $(ps -o stat= -p $CHILD))"
+setting
+T0=$(date +%s%N); kill -TERM $S; echo "kill -TERM <server>"
+sleep 1
+kill -0 $S 2>/dev/null && echo "1 s later the server is still running: it waits for the pending toggle-off"
+kill -CONT $CHILD; echo "resumed the child"
+wait_exit $S $T0
+echo "after:"; state; setting
+
+===== finding2.sh
+#!/bin/bash
+# Stop the server while a toggle-on's `serve --bg` is stuck past the deadline. Run from the repo root with FABS_VERIFY_HOME exported.
+source /tmp/issue21-sigtest/r2-lib.sh
+S=$(srv)
+echo "## finding 2: stop while a toggle-on is stuck"
+echo "before:"; state; setting
+catch_child $S "serve --bg --https=8443" > /tmp/issue21-sigtest/caught &
+CATCHER=$!
+$C browser click --role switch --name "Tailscale HTTPS" >/dev/null
+if ! wait $CATCHER; then echo "did not catch the --bg child; retry"; exit 1; fi
+CHILD=$(cat /tmp/issue21-sigtest/caught)
+echo "clicked the switch on and paused the simulated 'tailscale serve --bg --https=8443' child (ps state: $(ps -o stat= -p $CHILD))"
+T0=$(date +%s%N); kill -TERM $S; echo "kill -TERM <server>"
+wait_exit $S $T0
+sleep 0.5
+if kill -0 $CHILD 2>/dev/null; then echo "the paused child is STILL alive"; kill -CONT $CHILD; else echo "the paused child is gone (killed at the deadline)"; fi
+sleep 2
+echo "2 s later:"; state; setting
+
+===== dev-path.sh
+#!/bin/bash
+# usage: dev-path.sh <repo> <run-dir> <port>
+# Runs `bun run dev:server` (bun --watch) against the harness run's data dir with the serve shim first on PATH.
+REPO=$1; RUN=$2; PORT=$3
+SHIM=$RUN/tailscale-shim
+C="$REPO/.claude/skills/verify-fabs-bot/scripts/control-fabs"
+WATCHED=$REPO/shared/templates.ts
+cd "$REPO"
+cp "$WATCHED" /tmp/issue21-sigtest/templates.ts.bak
+
+state() { "$C" serve-shim state; }
+server_pid() { pgrep -P "$1" -f "server/index.ts" | head -1; }
+wait_for() { for _ in $(seq 1 80); do state | grep -q "$1" && return 0; sleep 0.25; done; echo "timed out waiting for $1"; return 1; }
+
+env FABS_PORT=$PORT FABS_DATA_DIR=$RUN/data FABS_WORK_ROOT=$RUN/work FABS_HOST=127.0.0.1 \
+  PATH="$SHIM/bin:$PATH" FABS_SHIM_DIR="$SHIM" FABS_SHIM_REAL="$(cat $SHIM/real)" \
+  setsid bun run dev:server > /tmp/issue21-sigtest/dev-server.log 2>&1 < /dev/null &
+R=$!
+for _ in $(seq 1 80); do curl -s -o /dev/null http://127.0.0.1:$PORT/api/host && break; sleep 0.25; done
+wait_for ":8443  →  http://127.0.0.1:$((PORT + 1))"
+S=$(server_pid $R)
+echo "## bun run dev:server up (bun run pid $R, server pid $S)"
+state
+
+echo; echo "## edit a watched file so bun --watch reloads the server"
+printf '\n' >> "$WATCHED"
+for _ in $(seq 1 80); do [ "$(grep -c '^fabs-bot$' /tmp/issue21-sigtest/dev-server.log)" -ge 2 ] && break; sleep 0.25; done
+cp /tmp/issue21-sigtest/templates.ts.bak "$WATCHED"
+for _ in $(seq 1 80); do [ "$(grep -c '^fabs-bot$' /tmp/issue21-sigtest/dev-server.log)" -ge 3 ] && break; sleep 0.25; done
+for _ in $(seq 1 80); do curl -s -o /dev/null http://127.0.0.1:$PORT/api/host && break; sleep 0.25; done
+sleep 1
+echo "server started $(grep -c '^fabs-bot$' /tmp/issue21-sigtest/dev-server.log) times; server pid now $(server_pid $R) (reload is in place, no signal)"
+state
+
+echo; echo "## Ctrl+C: SIGINT to the whole process group"
+T0=$(date +%s%N)
+kill -INT -- -$R
+while ps -o pid= -g $R | grep -q .; do sleep 0.05; done
+echo "process group empty after $(( ($(date +%s%N) - T0) / 1000000 )) ms"
+state
+bun /tmp/issue21-sigtest/setting.ts $RUN/data/fabs-bot.db
+
