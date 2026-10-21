@@ -84,7 +84,6 @@ function within(root: string, rel: string): string | null {
   return r.startsWith("..") || resolve(root, r) !== full ? null : full;
 }
 
-/** Headers for a desk or shared file. Pages a bot wrote get an opaque origin, so their scripts can't call the API as you. */
 function fileHeaders(name: string, download: boolean): Record<string, string> {
   const type = Bun.file(name.toLowerCase()).type;
   const headers: Record<string, string> = {
