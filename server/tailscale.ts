@@ -41,7 +41,6 @@ async function exec(args: string[], timeoutMs = 4000): Promise<CliResult | null>
   }
 }
 
-/** Kill every `tailscale` command still running, so none of them can change serve config after Fabs Bot exits. */
 export function killRunningCommands() {
   for (const proc of running) proc.kill("SIGKILL");
 }

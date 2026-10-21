@@ -57,7 +57,6 @@ function applyServe(): Promise<void> {
 }
 
 let stopping = false;
-/** On exit, take our `tailscale serve` mapping down but keep the saved setting, so the next start puts it back. */
 function shutdown() {
   if (stopping) return;
   stopping = true;
