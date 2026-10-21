@@ -23,12 +23,6 @@ function cookieToken(req: Request): string | null {
   return m ? decodeURIComponent(m[1]!) : null;
 }
 
-/**
- * Who may talk to the app:
- * - this PC itself (loopback, no proxy identity header, not arriving through Tailscale HTTPS),
- * - your own devices via Tailscale HTTPS (`tailscale serve` sets Tailscale-User-Login; tagged devices get none),
- * - anything presenting the pairing token (cookie or bearer); `?token=` only works on `/pair`.
- */
 export function authorized(req: Request, ip: string | undefined, ownerLogin: string | null, viaServe = false): boolean {
   const tsUser = req.headers.get("tailscale-user-login");
   if (isLoopback(ip)) {
