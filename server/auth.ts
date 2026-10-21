@@ -20,7 +20,6 @@ export function isLoopback(ip: string | undefined) {
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
-/** True when the request addresses this PC by a loopback name (any port), which a DNS-rebound page can't send as its Host. */
 function loopbackHost(req: Request): boolean {
   const host = req.headers.get("host")?.toLowerCase().replace(/:\d+$/, "");
   return !!host && LOOPBACK_HOSTS.has(host);
@@ -31,12 +30,6 @@ function cookieToken(req: Request): string | null {
   return m ? decodeURIComponent(m[1]!) : null;
 }
 
-/**
- * Who may talk to the app:
- * - this PC itself (loopback, Host is 127.0.0.1/localhost/[::1], no proxy identity header, not arriving through Tailscale HTTPS),
- * - your own devices via Tailscale HTTPS (`tailscale serve` sets Tailscale-User-Login; tagged devices get none),
- * - anything presenting the pairing token (cookie, bearer, or ?token=).
- */
 export function authorized(req: Request, ip: string | undefined, ownerLogin: string | null, viaServe = false): boolean {
   const tsUser = req.headers.get("tailscale-user-login");
   if (isLoopback(ip)) {
