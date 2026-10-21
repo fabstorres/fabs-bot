@@ -6,7 +6,6 @@ const escapes = (root: string, full: string) => {
   return r === ".." || r.startsWith(`..${sep}`) || isAbsolute(r) || resolve(root, r) !== full;
 };
 
-/** Resolve `rel` to an existing path inside `root`, refusing paths that escape it, by `../` or through a symlink. */
 export function within(root: string, rel: string): string | null {
   const full = resolve(root, rel || ".");
   if (escapes(root, full)) return null;
