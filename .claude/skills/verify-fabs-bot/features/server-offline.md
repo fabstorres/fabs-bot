@@ -9,6 +9,8 @@ When a window loses its connection to the PC's Fabs Bot server, a banner above t
 - `offline-enter` refuses Enter with the toast `Not connected: message not sent` and keeps the draft.
 - `offline-recover` clears the banner on its own once the server answers. The kept draft then sends.
 - `offline-device` shows `<PC> is offline` with `This device is offline` and a `Reconnect` button as soon as the device loses its network, and reconnects as soon as it is back.
+- `offline-latest-wins` makes Reconnect, coming back online and going offline act at once even while an earlier attempt is still waiting. An older health check that fails late never drops a connection a newer check confirmed.
+- `offline-send-failed` puts a message whose send failed back in the composer ahead of any newer draft, with its attachments next to any new ones.
 - `offline-first-load` shows a full-screen `Fabs Bot is reconnecting` / `Fabs Bot did not answer` notice with `Reconnect` when the app opens while the server doesn't answer. It never tells the user to run a command.
 
 ## How to get to it (user POV)
@@ -29,6 +31,9 @@ Preconditions:
 - **Server comes back.** Run `$C server start`, then `$C browser wait --role alert --state hidden --timeout 60`. `$C browser click --role button --name "Send"` sends the kept draft, and it survives `$C browser open /`.
 - **Device offline.** In the script, `await context.setOffline(true)`. The page shows `--role alert` with `This device is offline` and a `Reconnect` button right away. `await context.setOffline(false)` clears it within a second.
 - **First load.** In the script, `await page.route("**/api/host", (r) => r.abort("connectionrefused"))` and reload. The page shows `Fabs Bot is reconnecting`, `Fabs Bot did not answer` and `Reconnect`, and no `bun run`. `await page.unroute("**/api/host")`, then click `Reconnect` straight away: the app loads.
+
+- **Latest attempt wins.** In the script, hold `**/api/host` requests with `page.route` (keep the `route` objects instead of answering them). Hold one automatic retry on the first-load notice, let later requests through, and click `Reconnect`: the app loads at once. While connected, dispatch `online` twice with the first probe held and the second answered, then abort the held one: no banner, and Attach stays enabled.
+- **Failed send.** In the script, hold the `POST` to `**/api/threads/*/messages`, type a newer draft and attach another file, then abort the held request. The composer shows the failed message, then the newer draft, with both attachments.
 
 ## Gotchas
 
