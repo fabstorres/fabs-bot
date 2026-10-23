@@ -3,7 +3,7 @@ import { Plug, Plus, Search } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
-import { openDirect, openModal, openNestedThread, openThread, startCreating, threadTitle, useStore } from "../store";
+import { isConnected, openDirect, openModal, openNestedThread, openThread, startCreating, threadTitle, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -227,7 +227,7 @@ function GroupRow({ thread }: { thread: Thread }) {
 }
 
 function HostChip() {
-  const connected = useStore((s) => s.connected);
+  const connected = useStore(isConnected);
   const statuses = useStore((s) => s.statuses);
   const busy = Object.values(statuses).filter((s) => s.state === "thinking" || s.state === "working").length;
   const host = useLoad(() => api.get<{ hostname: string }>("/api/host"), []).data?.hostname ?? "";

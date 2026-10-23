@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import { Check, ChevronDown, ChevronRight, Download, Zap } from "lucide-react";
 import type { Bot, Message, MessagePart } from "../../../shared/types";
 import { api, formatSize, formatTime } from "../api";
-import { openModal, openNestedThread, useStore } from "../store";
+import { isConnected, openModal, openNestedThread, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -197,6 +197,7 @@ export function FileChip({ fileId, name, size }: { fileId: string; name: string;
 }
 
 function QuestionCard({ part, index, message }: { part: Extract<MessagePart, { type: "question" }>; index: number; message: Message }) {
+  const online = useStore(isConnected);
   const [busy, setBusy] = useState(false);
   const answered = part.answered !== undefined;
   return (
@@ -206,7 +207,7 @@ function QuestionCard({ part, index, message }: { part: Extract<MessagePart, { t
         {part.options.map((o, i) => (
           <button
             key={i}
-            disabled={answered || busy}
+            disabled={answered || busy || !online}
             className={cn(
               "flex items-center gap-3 rounded-2xl bg-muted px-3 py-2.5 text-left transition-colors enabled:hover:bg-accent",
               answered && part.answered === i && "bg-foreground text-background",
@@ -228,6 +229,7 @@ function QuestionCard({ part, index, message }: { part: Extract<MessagePart, { t
 }
 
 function ApprovalCard({ part }: { part: Extract<MessagePart, { type: "approval" }> }) {
+  const online = useStore(isConnected);
   const [busy, setBusy] = useState(false);
   const decide = (decision: "allow" | "deny") => {
     setBusy(true);
@@ -252,10 +254,10 @@ function ApprovalCard({ part }: { part: Extract<MessagePart, { type: "approval" 
         </div>
       ) : (
         <div className="mt-3 flex justify-end gap-2">
-          <Button variant="secondary" className="rounded-full" disabled={busy} onClick={() => decide("deny")}>
+          <Button variant="secondary" className="rounded-full" disabled={busy || !online} onClick={() => decide("deny")}>
             Deny
           </Button>
-          <Button className="rounded-full" disabled={busy} onClick={() => decide("allow")}>
+          <Button className="rounded-full" disabled={busy || !online} onClick={() => decide("allow")}>
             Allow
           </Button>
         </div>

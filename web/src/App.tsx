@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useWindowEvent } from "./hooks";
-import { restoreView, useStore } from "./store";
+import { offlineReason, offlineTitle, reconnect, restoreView, showOffline, useStore } from "./store";
 import { BotAvatar } from "./components/BotAvatar";
 import { BotEditor } from "./components/BotEditor";
 import { Chat } from "./components/Chat";
@@ -8,12 +8,15 @@ import { DeskPanel } from "./components/DeskPanel";
 import { NewBot } from "./components/NewBot";
 import { ConnectorsPanel, FileViewer, SettingsPanel } from "./components/Panels";
 import { Sidebar } from "./components/Sidebar";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function App() {
   const loaded = useStore((s) => s.loaded);
   const unpaired = useStore((s) => s.unpaired);
-  const serverDown = useStore((s) => s.serverDown);
+  const offline = useStore(showOffline);
+  const offlineText = useStore(offlineTitle);
+  const reason = useStore(offlineReason);
   const noBots = useStore((s) => s.bots.length === 0);
   const creating = useStore((s) => s.creating) || noBots;
   const panelOpen = useStore((s) => s.panelOpen);
@@ -23,11 +26,20 @@ export function App() {
   useWindowEvent("popstate", restoreView);
 
   if (unpaired) return <Notice shape="square" color="#7A7A7A" state="waiting" title="Not paired yet">On your PC, open Fabs Bot → tap This PC at the bottom of the sidebar → scan the QR code with this device. Both need to be on your Tailscale network.</Notice>;
-  if (!loaded && serverDown)
+  if (!loaded && offline)
     return (
-      <Notice shape="drop" color="#FF5A00" state="error" title="Can't reach Fabs Bot">
-        The Fabs Bot server on your PC isn't answering. Start it with <code className="font-mono">bun run dev</code> (or{" "}
-        <code className="font-mono">bun run start</code>). This page reconnects on its own.
+      <Notice
+        shape="drop"
+        color="#FF5A00"
+        state="error"
+        title={offlineText}
+        action={
+          <Button variant="outline" className="rounded-full" onClick={reconnect}>
+            Reconnect
+          </Button>
+        }
+      >
+        {reason}
       </Notice>
     );
   if (!loaded)
@@ -77,13 +89,14 @@ function Empty() {
   );
 }
 
-function Notice({ title, children, ...avatar }: { title: string; children: ReactNode } & Parameters<typeof BotAvatar>[0]) {
+function Notice({ title, children, action, ...avatar }: { title: string; children: ReactNode; action?: ReactNode } & Parameters<typeof BotAvatar>[0]) {
   return (
     <div className="grid h-dvh place-items-center px-6">
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
         <BotAvatar {...avatar} size={112} />
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="text-muted-foreground">{children}</p>
+        {action}
       </div>
     </div>
   );
