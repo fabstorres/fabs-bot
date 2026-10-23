@@ -130,7 +130,7 @@ const RETRY_BASE_MS = 1_000;
 const RETRY_MAX_MS = 300_000;
 
 let socket: WebSocket | null = null;
-let probing = false;
+let latest = 0;
 let failures = 0;
 let openedAt = 0;
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -167,11 +167,15 @@ function dropped() {
 }
 
 async function open() {
-  if (socket || probing) return;
+  const id = ++latest;
   clearTimeout(retryTimer);
-  probing = true;
+  if (socket) {
+    socket.onclose = null;
+    socket.close();
+    socket = null;
+  }
   const host = await probe().catch((e: Error) => e);
-  probing = false;
+  if (id !== latest) return;
   if (host instanceof Unpaired) return set({ unpaired: true });
   if (host instanceof Error) return lose(host.name === "TimeoutError" ? "timeout" : "no-answer");
   set({ hostname: host.hostname });
@@ -186,18 +190,19 @@ async function open() {
   ws.onclose = () => socket === ws && dropped();
 }
 
+function check(ws: WebSocket) {
+  const id = ++latest;
+  probe().catch(() => {
+    if (id !== latest || socket !== ws) return;
+    ws.close();
+    dropped();
+  });
+}
+
 export function reconnect() {
-  const ws = socket;
-  if (!ws) {
-    failures = 0;
-    void open();
-  } else if (get().connection === "connected") {
-    probe().catch(() => {
-      if (socket !== ws) return;
-      ws.close();
-      dropped();
-    });
-  }
+  if (socket && get().connection === "connected") return check(socket);
+  failures = 0;
+  void open();
 }
 
 export function connect() {
