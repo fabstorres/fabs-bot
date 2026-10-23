@@ -1,0 +1,20 @@
+   0.1s  R2  superseded health probe must not drop a healthy socket
+   0.2s      probe A held (1 pending)
+   0.8s      probe B answered; now failing probe A
+   3.8s      3 s later: banners=0 Attach disabled=false Send label present=true
+   4.4s  shot race-2-stale-probe-ignored
+   4.4s  R1  Reconnect replaces an attempt that is still waiting
+   6.8s      first-load notice: "Fabs Bot is reconnecting\n\nFabs Bot did not answer\n\nReconnect"
+   8.4s      automatic retry is now held (1 pending)
+   8.4s      app loaded 79 ms after Reconnect, with the old retry still pending (1)
+  10.9s      old retry failed afterwards: banners=0 Attach disabled=false
+  10.9s  R1b going offline during a waiting attempt shows offline at once
+  16.7s      retry held (1 pending); notice says "Fabs Bot is reconnecting"
+  16.7s      3 ms after going offline: "Fabs Bot is offline\n\nThis device is offline\n\nReconnect"
+  17.2s  shot race-1b-offline-while-waiting
+  17.3s      back online: app loaded 41 ms later
+  17.3s  R3  a failed send keeps the newer draft and attachments
+  17.7s      send posted and held; composer now "", first.txt chip=0
+  18.0s      newer draft typed: "Newer draft"
+  18.5s      after the failed post: composer "First message\nNewer draft", chips ["first.txt","second.txt"]
+  19.1s  shot race-3-failed-send-merged

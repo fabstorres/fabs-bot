@@ -14,16 +14,17 @@
         - button "C Research and writing" [disabled]
         - button "D Something else" [disabled]
       - paragraph: Write a long story about a lighthouse keeper, at least 8 paragraphs.
-      - paragraph:
-        - strong: Chief here.
-        - text: "Here's your story:"
-      - separator
-      - paragraph:
-        - strong: The Keeper of Halden Point
-      - paragraph: For thirty-one years, Edith Varga climbed the one hundred and twelve iron steps of Halden Point lighthouse every evening at dusk. She carried a brass oil can in one hand and a rag in the other, and she never once looked down while climbing. Her father had taught her that the sea rewards people who keep their eyes on what is ahead. He had kept the light before her, and his father before him, all the way back to a year nobody in the village could quite agree on.
-      - paragraph: The lighthouse stood on a finger of black rock that jutted into the North Atlantic like a warning. From the gallery at the top, Edith could see three villages, a ruined chapel on the eastern cliffs, and on clear days the faint smudge of the mainland seventeen miles away. The village of Halden lay in the crook of the bay below, its slate roofs shining after rain. Most of the people there had known her since she was a girl, and most of them had st
       - paragraph: Are you still there?
-      - paragraph: Yes, I'm here. The story I sent earlier looks cut off on my end, so I can resend it in full or save it as a file you can open from your phone. Which would you like?
+      - group "Work log":
+        - button "2 steps"
+      - button "File lighthouse-keeper.md": M↓ lighthouse-keeper.md 5.7 KB
+      - group "Work log":
+        - button "1 step"
+      - paragraph: Yes, I'm still here. Sorry my last reply came through empty.
+      - paragraph:
+        - text: "The lighthouse story is done:"
+        - emphasis: The Keeper of Halvey Point
+        - text: ", nine paragraphs about Elin Marrow, who keeps the light for thirty-one years, through a gale, a daughter who leaves, and a return. I saved it to a file and shared it so you can open it on your phone."
     - alert:
       - text: <pc> is offline This device is offline
       - button "Reconnect"
