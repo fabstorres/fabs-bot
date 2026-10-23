@@ -245,8 +245,8 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     draft("");
     setFiles([]);
     await api.post(`/api/threads/${thread.id}/messages`, { text: body, fileIds: sending.map((f) => f.fileId) }).catch(() => {
-      draft(text);
-      setFiles(sending);
+      draft([body, sessionStorage.getItem(draftKey)].filter(Boolean).join("\n"));
+      setFiles((f) => [...sending, ...f]);
     });
   }
 
