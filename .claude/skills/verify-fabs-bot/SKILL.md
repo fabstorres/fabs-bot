@@ -78,7 +78,7 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`), `"Plugins"`, `"This PC"` |
 | phone favorites | `--role button --name "Open <Name>"` (big faces above the list, 430px only) |
 | new bot pane | `--role region --name "New bot"`; `--role radio` in groups `Color` / `Shape`; `--label "Name"`; suggestions `"Suggestion <Template>"`; `"Get started"` |
-| open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"`, `"Send"`, `"Stop"`, `"Attach"` |
+| open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"`, `"Send"` (`"Environment disconnected"` while offline), `"Stop"`, `"Attach"`; offline banner `--role alert` with `"Reconnect"` |
 | thread header | `"Back"` (phone, or desktop inside a backchannel), `"Open desk"`, `"More"`; menu `--role menu --name "Thread menu"` |
 | cards | `--role group --name "Question: <q>"` (options are buttons named `"<Letter> <option>"`); `--role group --name "Approval: <Tool>"` with buttons `Allow` / `Deny`; bot↔bot `--role button --name "Exchange with <Bot>"` (opens the backchannel) |
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
@@ -96,6 +96,7 @@ Other drivers:
 - `pair-check`: the remote-device auth matrix over the tailnet; needs `--tailnet`.
 - `serve-shim state|log|occupy <port>|fail <stderr>`: inspect or rig the simulated serve config.
 - `serve-check`: the Tailscale HTTPS auth matrix.
+- `server stop|start`: stop the run's server (and any bot CLI mid-turn) and start it again on the same port and data, for offline behavior.
 
 ### Desktop app
 
@@ -132,7 +133,7 @@ Proof standards:
 
 **Privacy.** The user's Tailscale hostname, tailnet IPs, and pairing token must never land in shared evidence, PRs, or chat.
 - The harness redacts them from everything it prints and snapshots.
-- Screenshots mask the PC-name chip, the pairing QR, and the pairing link by default (`--no-mask` to opt out locally).
+- Screenshots mask the PC-name chip, any text with this PC's own name (the offline banner shows it), the pairing QR, and the pairing link by default (`--no-mask` to opt out locally). Text output redacts this PC's name to `<pc>`.
 - `pair-check` and `browser pair` resolve the tailnet URL internally.
 - Don't screenshot the "This PC" panel unmasked.
 - Before anything leaves the machine, run `$C privacy-check`. It scans text artifacts and flags any PNG that lacks a clean `.aria.txt` twin.
