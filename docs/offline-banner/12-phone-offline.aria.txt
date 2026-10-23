@@ -1,0 +1,35 @@
+# http://127.0.0.1:4870/  viewport={"width":430,"height":932}
+- main:
+  - region "Thread with Chief":
+    - button "Back"
+    - text: Chief
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops" [disabled]
+        - button "B A specific project" [disabled]
+        - button "C Research and writing" [disabled]
+        - button "D Something else" [disabled]
+      - paragraph: Write a long story about a lighthouse keeper, at least 8 paragraphs.
+      - paragraph:
+        - strong: Chief here.
+        - text: "Here's your story:"
+      - separator
+      - paragraph:
+        - strong: The Keeper of Halden Point
+      - paragraph: For thirty-one years, Edith Varga climbed the one hundred and twelve iron steps of Halden Point lighthouse every evening at dusk. She carried a brass oil can in one hand and a rag in the other, and she never once looked down while climbing. Her father had taught her that the sea rewards people who keep their eyes on what is ahead. He had kept the light before her, and his father before him, all the way back to a year nobody in the village could quite agree on.
+      - paragraph: The lighthouse stood on a finger of black rock that jutted into the North Atlantic like a warning. From the gallery at the top, Edith could see three villages, a ruined chapel on the eastern cliffs, and on clear days the faint smudge of the mainland seventeen miles away. The village of Halden lay in the crook of the bay below, its slate roofs shining after rain. Most of the people there had known her since she was a girl, and most of them had st
+      - paragraph: Are you still there?
+      - paragraph: Yes, I'm here. The story I sent earlier looks cut off on my end, so I can resend it in full or save it as a file you can open from your phone. Which would you like?
+    - alert:
+      - text: <pc> is offline This device is offline
+      - button "Reconnect"
+    - button "Attach" [disabled]
+    - textbox "Message":
+      - /placeholder: Message Chief
+    - button "Dictate"
+    - button "Environment disconnected" [disabled]
+- region "Notifications alt+T"

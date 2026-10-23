@@ -1,0 +1,26 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Thread with Careful":
+  - text: Careful
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Careful. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops" [disabled]
+      - button "B A specific project" [disabled]
+      - button "C Research and writing" [disabled]
+      - button "D Something else" [disabled]
+    - paragraph: Create a file named hello.txt in your desk containing the word hi. Use your file writing tool.
+    - group "Work log":
+      - button "Write · /run/user/1000/fabs-verify-offline/run-20261023221103/work/careful/hello.txt"
+    - 'group "Approval: Write"':
+      - text: Wants to use Write /run/user/1000/fabs-verify-offline/run-20261023221103/work/careful/hello.txt
+      - button "Deny" [disabled]
+      - button "Allow" [disabled]
+  - alert: <pc> is reconnecting Fabs Bot on <pc> did not answer
+  - button "Attach" [disabled]
+  - textbox "Message":
+    - /placeholder: Message Careful
+  - button "Dictate"
+  - button "Stop" [disabled]
