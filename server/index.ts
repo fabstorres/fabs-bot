@@ -388,7 +388,9 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
     const f = db.getFile(url.pathname.slice(7));
     if (!f || !existsSync(f.path)) return new Response("not found", { status: 404 });
     const disposition = url.searchParams.has("download") ? "attachment" : "inline";
-    return new Response(Bun.file(f.path), {
+    const type = Bun.file(f.name.toLowerCase()).type;
+    const scriptable = /html|xml/.test(type);
+    return new Response(Bun.file(f.path, { type: scriptable ? "application/octet-stream" : type }), {
       headers: { "Content-Disposition": `${disposition}; filename="${encodeURIComponent(f.name)}"` },
     });
   }
