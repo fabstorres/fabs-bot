@@ -369,6 +369,7 @@ const commands: Record<string, () => Promise<void>> = {
     if (!s.tailnet) die("launch with --tailnet to check remote pairing");
     const host = (await api(s, "GET", "/api/host")).data;
     const base = host.tailscale.ip ? `http://${host.tailscale.ip}:${s.port}` : die("tailscale has no IPv4 address");
+    const login = host.tailscale.login ?? die("tailscale has no logged-in user");
     const token = readFileSync(join(s.dataDir, "access-token"), "utf8").trim();
     const unpaired = await fetch(base + "/api/bots");
     const bad = await fetch(base + "/pair?token=wrong", { redirect: "manual" });
@@ -378,6 +379,7 @@ const commands: Record<string, () => Promise<void>> = {
     const query = await fetch(base + `/api/host?token=${token}`);
     const bearer = await fetch(base + "/api/host", { headers: { authorization: `Bearer ${token}` } });
     const mcp = await fetch(base + "/mcp/anything", { method: "POST", body: "{}" });
+    const ownerHeader = await fetch(s.url + "/api/bots", { headers: { "tailscale-user-login": login } });
     const foreign = { origin: "https://unrelated.example" };
     const crossWs = await fetch(s.url + "/ws", { headers: { ...foreign, connection: "Upgrade", upgrade: "websocket" } });
     const crossPost = await fetch(s.url + "/api/bots", { method: "POST", headers: { ...foreign, "content-type": "text/plain" }, body: '{"name":"Probe"}' });
@@ -390,6 +392,7 @@ const commands: Record<string, () => Promise<void>> = {
       ["pairing token in ?token= is refused on the API", query.status === 401, query.status],
       ["pairing token as a bearer header can call the API", bearer.status === 200, bearer.status],
       ["bot MCP endpoint is loopback-only", mcp.status === 403, mcp.status],
+      ["your own Tailscale login on this PC's port is refused without pairing", ownerHeader.status === 401, ownerHeader.status],
       ["cross-origin WebSocket upgrade is refused", crossWs.status === 403, crossWs.status],
       ["cross-origin text/plain write is refused", crossPost.status === 403, crossPost.status],
       ["non-JSON write is refused", plainPost.status === 415, plainPost.status],
@@ -485,8 +488,9 @@ const commands: Record<string, () => Promise<void>> = {
     const rows = [
       ["no Tailscale identity (tagged device, Funnel) is refused", await get("/api/bots"), 401],
       ["another tailnet user is refused", await get("/api/bots", { "tailscale-user-login": "someone-else@example.com" }), 401],
-      ["your own Tailscale login is admitted", await get("/api/bots", { "tailscale-user-login": login }), 200],
+      ["your own Tailscale login without pairing is refused", await get("/api/bots", { "tailscale-user-login": login }), 401],
       ["a pairing cookie is admitted", await get("/api/bots", { cookie: `fabs_token=${token}` }), 200],
+      ["a pairing cookie with your Tailscale login is admitted", await get("/api/bots", { cookie: `fabs_token=${token}`, "tailscale-user-login": login }), 200],
       ["a pairing bearer token is admitted", await get("/api/host", { authorization: `Bearer ${token}` }), 200],
       ["a pairing token in ?token= is refused", await get(`/api/host?token=${token}`), 401],
       ["bot MCP endpoint refuses Tailscale HTTPS", await fetch(base + "/mcp/anything", { method: "POST", body: "{}", headers: { "tailscale-user-login": login } }).then((r) => r.status).catch(() => 0), 403],
