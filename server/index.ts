@@ -4,7 +4,7 @@ import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
 import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
-import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, WEB_DIST, WORK_ROOT } from "./config";
+import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
 import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin, timingSafeEqual } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
@@ -139,6 +139,7 @@ async function hostInfo(): Promise<HostInfo> {
   const base = ts.serveUrl ?? (ts.dnsName ? `http://${ts.dnsName}:${PORT}` : ts.ip ? `http://${ts.ip}:${PORT}` : null);
   return {
     hostname: hostname(),
+    version: VERSION,
     port: PORT,
     tailscale: ts,
     serve: { enabled: serveEnabled(), port: TAILSCALE_SERVE_PORT, problem: serveProblem },
@@ -462,7 +463,7 @@ function listen(hostname: string) {
 onboard();
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
-console.log("fabs-bot");
+console.log(`fabs-bot ${VERSION}`);
 if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {
   listen(process.env.FABS_HOST);

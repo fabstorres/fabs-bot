@@ -1,8 +1,11 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { mkdirSync } from "node:fs";
+import { version } from "../package.json";
 
 const home = homedir();
+
+export const VERSION = version;
 
 export const PORT = Number(process.env.FABS_PORT ?? 4800);
 /** HTTPS port `tailscale serve` uses when Tailscale HTTPS is on. 443 is left to other apps. */

@@ -6,7 +6,7 @@ import { copyFileSync, existsSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { Cron } from "croner";
 import type { MessagePart } from "../shared/types";
-import { FILES_DIR } from "./config";
+import { FILES_DIR, VERSION } from "./config";
 import * as db from "./db";
 import { getStatus, publish, setStatus } from "./bus";
 import { directThread, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
@@ -258,7 +258,7 @@ async function handleRpc(r: RpcRequest, ctx: TurnContext) {
       return ok({
         protocolVersion: r.params?.protocolVersion ?? "2025-06-18",
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "fabsbot", version: "0.1.0" },
+        serverInfo: { name: "fabsbot", version: VERSION },
         instructions: "Tools for working with the Fabs Bot team: message teammates, ask the user, share files, set status.",
       });
     case "ping":
