@@ -1,0 +1,15 @@
+## before stop
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4876
+saved setting tailscale.serve = 1
+
+## repeated signals, the way Ctrl+C under 'bun run dev' reaches the server
+server pid from state.json: 55615 (bun server/index.ts )
+kill -INT 55615
+kill -INT 55615
+kill -TERM 55615
+server exited after 104 ms
+
+## after stop
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 1

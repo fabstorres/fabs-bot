@@ -14,7 +14,7 @@ import { directThread, editMessageParts, greet, postUserMessage, stopTurns } fro
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
-import { disableServe, enableServe, tailscaleState, type ServeProblem } from "./tailscale";
+import { disableServe, enableServe, killRunningCommands, tailscaleState, type ServeProblem } from "./tailscale";
 
 db.closeDanglingMessages();
 reschedule();
@@ -55,6 +55,17 @@ function applyServe(): Promise<void> {
     await refreshTailscale();
   });
   return serveQueue;
+}
+
+let stopping = false;
+function shutdown() {
+  if (stopping) return;
+  stopping = true;
+  const off = serveQueue.then(() => (serveEnabled() ? disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT) : null));
+  Promise.race([off, Bun.sleep(5_000)]).finally(() => {
+    killRunningCommands();
+    process.exit(0);
+  });
 }
 
 const json = (data: unknown, status = 200) => Response.json(data, { status });
@@ -440,6 +451,8 @@ function listen(hostname: string) {
 }
 
 onboard();
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 console.log("fabs-bot");
 if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {

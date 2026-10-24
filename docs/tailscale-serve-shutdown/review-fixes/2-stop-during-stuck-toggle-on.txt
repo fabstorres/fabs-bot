@@ -1,0 +1,11 @@
+## finding 2: stop while a toggle-on is stuck
+before:
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 0
+clicked the switch on and paused the simulated 'tailscale serve --bg --https=8443' child (ps state: T)
+kill -TERM <server>
+server exited 5033 ms after SIGTERM
+the paused child is gone (killed at the deadline)
+2 s later:
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 1

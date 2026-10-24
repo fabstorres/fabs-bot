@@ -1,0 +1,12 @@
+## started on the saved setting from the previous step
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4872
+saved setting tailscale.serve = 1
+
+## plain SIGTERM
+kill -TERM 139945
+server exited after 104 ms
+
+## after stop
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 1
