@@ -48,6 +48,17 @@ To develop with hot reload: `bun run dev` (server + Vite together), then open `h
 | `FABS_HOST` | – | bind to a single address instead of loopback + tailnet |
 | `FABS_TAILSCALE_SERVE_PORT` | `8443` | HTTPS port for Tailscale HTTPS (never 443) |
 
+## Versions
+
+Fabs Bot is in alpha. Versions follow semver with an `alpha` pre-release, starting at `0.1.0-alpha.1`, and every release is a `v<version>` git tag. `package.json` holds the version. The server prints it on start, and *This PC* shows the version that PC is running.
+
+To release, start from an up-to-date `main` with a clean tree:
+
+```sh
+bun pm version prerelease --preid alpha -m "chore(release): v%s"   # 0.1.0-alpha.1 → 0.1.0-alpha.2, commits, tags v0.1.0-alpha.2
+git push origin main --follow-tags
+```
+
 ## How it works
 
 ```

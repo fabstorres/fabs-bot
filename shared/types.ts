@@ -132,6 +132,7 @@ export interface ProviderInfo {
 
 export interface HostInfo {
   hostname: string;
+  version: string;
   port: number;
   tailscale: {
     running: boolean;
