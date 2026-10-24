@@ -99,7 +99,7 @@ export function SettingsPanel() {
 
   return (
     <Modal wide title="This PC">
-      <div className="flex flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-4">
         <Card>
           <div className="flex items-center justify-between gap-3">
             <div className="host-line flex items-center gap-3">
