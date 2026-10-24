@@ -6,12 +6,17 @@ const escapes = (root: string, full: string) => {
   return r === ".." || r.startsWith(`..${sep}`) || isAbsolute(r) || resolve(root, r) !== full;
 };
 
-export function within(root: string, rel: string): string | null {
+export function realPathWithin(root: string, rel: string): string | null {
   const full = resolve(root, rel || ".");
   if (escapes(root, full)) return null;
   try {
-    return escapes(realpathSync(root), realpathSync(full)) ? null : full;
+    const real = realpathSync(full);
+    return escapes(realpathSync(root), real) ? null : real;
   } catch {
     return null;
   }
+}
+
+export function within(root: string, rel: string): string | null {
+  return realPathWithin(root, rel) ? resolve(root, rel || ".") : null;
 }
