@@ -209,9 +209,8 @@ function QuestionCard({ part, index, message }: { part: Extract<MessagePart, { t
             key={i}
             disabled={answered || busy || !online}
             className={cn(
-              "flex items-center gap-3 rounded-2xl bg-muted px-3 py-2.5 text-left transition-colors enabled:hover:bg-accent",
+              "flex items-center gap-3 rounded-2xl bg-muted px-3 py-2.5 text-left transition-colors enabled:hover:bg-accent disabled:pointer-events-none disabled:opacity-50",
               answered && part.answered === i && "bg-foreground text-background",
-              answered && part.answered !== i && "opacity-45",
             )}
             onClick={async () => {
               setBusy(true);
