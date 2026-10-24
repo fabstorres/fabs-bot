@@ -217,7 +217,9 @@ route("GET", "/api/bots/:id/file", (_r, p, url) => {
   const path = url.searchParams.get("path") ?? "";
   const real = bot && realPathWithin(bot.cwd, path);
   if (!real || !existsSync(real) || !statSync(real).isFile()) return bad("not found", 404);
-  return new Response(Bun.file(real), { headers: fileHeaders(basename(path), url.searchParams.has("download")) });
+  return new Response(Bun.file(real, { type: Bun.file(basename(path).toLowerCase()).type }), {
+    headers: fileHeaders(basename(path), url.searchParams.has("download")),
+  });
 });
 
 route("GET", "/api/threads", () => json(db.listThreads()));
