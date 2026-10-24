@@ -9,6 +9,7 @@ import type { ConnectorPreset } from "../../../shared/templates";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
 import { Modal } from "./Modal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,14 +101,17 @@ export function SettingsPanel() {
     <Modal wide title="This PC">
       <div className="flex flex-col gap-4">
         <Card>
-          <div className="host-line flex items-center gap-3">
-            <Led on={!!ts?.running} />
-            <div className="flex flex-col">
-              <b>{host?.hostname ?? "…"}</b>
-              <span className="text-sm text-muted-foreground">
-                {ts?.running ? `Tailscale · ${ts.dnsName ?? ts.ip}` : "Tailscale not running: only this PC can connect"}
-              </span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="host-line flex items-center gap-3">
+              <Led on={!!ts?.running} />
+              <div className="flex flex-col">
+                <b>{host?.hostname ?? "…"}</b>
+                <span className="text-sm text-muted-foreground">
+                  {ts?.running ? `Tailscale · ${ts.dnsName ?? ts.ip}` : "Tailscale not running: only this PC can connect"}
+                </span>
+              </div>
             </div>
+            {host && <Badge variant="secondary">v{host.version}</Badge>}
           </div>
           {ts && ts.peers.length > 0 && (
             <div className="host-peers mt-3 flex flex-wrap gap-1.5">
