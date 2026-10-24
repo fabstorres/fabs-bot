@@ -89,6 +89,18 @@ async function body<T = any>(req: Request): Promise<T> {
   }
 }
 
+function fileHeaders(name: string, download: boolean): Record<string, string> {
+  const type = Bun.file(name.toLowerCase()).type;
+  const headers: Record<string, string> = {
+    "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${encodeURIComponent(name)}"`,
+    "X-Content-Type-Options": "nosniff",
+  };
+  if (download) headers["Content-Security-Policy"] = "default-src 'none'; sandbox";
+  else if (type.startsWith("image/svg")) headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+  else if (/html|xml/.test(type)) headers["Content-Security-Policy"] = "sandbox allow-scripts allow-forms allow-popups allow-downloads";
+  return headers;
+}
+
 function sanitizeBot(input: Partial<Bot>, existing?: Bot): Omit<Bot, "createdAt"> {
   const name = String(input.name ?? existing?.name ?? "").trim() || "New Bot";
   return {
@@ -203,7 +215,7 @@ route("GET", "/api/bots/:id/file", (_r, p, url) => {
   const bot = db.getBot(p.id!);
   const full = bot && within(bot.cwd, url.searchParams.get("path") ?? "");
   if (!full || !existsSync(full) || !statSync(full).isFile()) return bad("not found", 404);
-  return new Response(Bun.file(full), { headers: { "Content-Disposition": `inline; filename="${encodeURIComponent(basename(full))}"` } });
+  return new Response(Bun.file(full), { headers: fileHeaders(basename(full), url.searchParams.has("download")) });
 });
 
 route("GET", "/api/threads", () => json(db.listThreads()));
@@ -398,11 +410,8 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   if (url.pathname.startsWith("/files/")) {
     const f = db.getFile(url.pathname.slice(7));
     if (!f || !existsSync(f.path)) return new Response("not found", { status: 404 });
-    const disposition = url.searchParams.has("download") ? "attachment" : "inline";
-    const type = Bun.file(f.name.toLowerCase()).type;
-    const scriptable = /html|xml/.test(type);
-    return new Response(Bun.file(f.path, { type: scriptable ? "application/octet-stream" : type }), {
-      headers: { "Content-Disposition": `${disposition}; filename="${encodeURIComponent(f.name)}"` },
+    return new Response(Bun.file(f.path, { type: Bun.file(f.name.toLowerCase()).type }), {
+      headers: fileHeaders(f.name, url.searchParams.has("download")),
     });
   }
 

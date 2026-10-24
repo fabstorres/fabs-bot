@@ -1,0 +1,11 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- dialog "logo.png":
+  - heading "logo.png" [level=2]
+  - paragraph: logo.png
+  - document "Preview of logo.png":
+    - img "logo.png"
+  - link "Download":
+    - /url: /files/e514e16f-2a74-46e2-b858-522b56108908?download
+  - link "Open":
+    - /url: /files/e514e16f-2a74-46e2-b858-522b56108908
+  - button "Close"
