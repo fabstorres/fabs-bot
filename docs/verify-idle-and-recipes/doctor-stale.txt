@@ -1,0 +1,12 @@
+$ touch web/src/main.tsx server/index.ts && control-fabs doctor
+ok    server pid 205905 running
+ok    port 4930 owned by our server
+ok    isolated work root confirmed
+ok    tailscale running, instance is loopback-only
+ok    Tailscale HTTPS is off
+warn  web build is older than web/src; relaunch to rebuild
+warn  server source changed since launch; relaunch to pick it up
+ok    agent CLIs installed: claude, codex, cursor, opencode, gemini
+ok    browser up (viewport 1440x900)
+run=run-issue32 url=http://127.0.0.1:4930 rev=e6c2c6e+dirty
+exit=0

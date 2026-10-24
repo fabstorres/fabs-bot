@@ -1,0 +1,9 @@
+$ control-fabs wait <Q> --for idle   (after tapping B Banana)
+ok  idle after 6s
+exit=0
+$ control-fabs thread <Q>
+#1 Chief (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Use ask_user to ask me which fruit to put on a smoothie: mango, banana or berries. Then wait."
+#3 Chief (done): [tool fabsbot · ask_user done] [question "Which fruit should go in the smoothie?" options=3 answered=1] "I've posted the question with the options mango, banana, and berries. I'll wait for your pick."
+#4 user (done): "B. Banana"
+#5 Chief (done): "Banana it is. Want me to suggest a simple banana smoothie recipe?"

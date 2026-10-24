@@ -1,0 +1,14 @@
+  0.0s  banner: (no banner)   composer button: Send
+  0.4s  banner: (no banner)   composer button: Environment disconnected
+  2.3s  GET /api/host
+  2.3s  GET /api/host failed
+  2.5s  banner: <pc> is reconnecting / Fabs Bot on <pc> did not answer / Reconnect   composer button: Environment disconnected
+  6.2s  GET /api/host
+  6.3s  banner: (no banner)   composer button: Send
+  6.6s  banner: (no banner)   composer button: Environment disconnected
+  8.6s  banner: <pc> is reconnecting / Reconnect   composer button: Environment disconnected
+ 14.3s  GET /api/host
+ 14.3s  GET /api/host failed
+ 14.3s  banner: <pc> is reconnecting / Fabs Bot on <pc> did not answer / Reconnect   composer button: Environment disconnected
+ 19.7s  GET /api/host
+ 19.8s  banner: (no banner)   composer button: Send

@@ -1,0 +1,11 @@
+  0.0s  banner: (no banner)   composer button: Send
+  0.4s  banner: (no banner)   composer button: Environment disconnected
+  1.4s  GET /api/host
+  1.4s  GET /api/host failed
+  2.5s  banner: <pc> is reconnecting / Fabs Bot on <pc> did not answer / Reconnect   composer button: Environment disconnected
+  4.3s  GET /api/host
+  4.3s  GET /api/host failed
+  5.8s  POST /api/routines/:id/run
+  5.8s  POST /api/routines/:id/run failed: net::ERR_CONNECTION_REFUSED
+  6.5s  banner: (no banner)   composer button: -
+  9.7s  GET /api/host
