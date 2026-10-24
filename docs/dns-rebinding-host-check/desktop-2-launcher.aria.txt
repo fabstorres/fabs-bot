@@ -1,0 +1,5 @@
+# fabs-app://launcher/desktop.html  viewport=window
+- region "PCs":
+  - group "PC This PC":
+    - text: This PC Bots running on this computer
+    - button "Open"

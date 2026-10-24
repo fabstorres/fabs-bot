@@ -1,0 +1,5 @@
+#1 Chief (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Hi Chief! Reply with exactly: loopback 127.0.0.1 works"
+#3 Chief (done): "loopback 127.0.0.1 works"
+#4 user (done): "Reply with exactly: desktop This PC works"
+#5 Chief (done): [tool Bash done] "desktop This PC works"
