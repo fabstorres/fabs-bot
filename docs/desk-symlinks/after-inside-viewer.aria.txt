@@ -1,0 +1,13 @@
+# http://127.0.0.1:4874/  viewport=1440x900
+- dialog "plan-link.md":
+  - heading "plan-link.md" [level=2]
+  - paragraph: plan-link.md
+  - document "Preview of plan-link.md":
+    - article:
+      - heading "Plan" [level=1]
+      - paragraph: Ship the desk fix.
+  - link "Download":
+    - /url: /api/bots/a16497b3-bf66-4aa1-8863-fcb5d3d63e0f/file?path=plan-link.md&download
+  - link "Open":
+    - /url: /api/bots/a16497b3-bf66-4aa1-8863-fcb5d3d63e0f/file?path=plan-link.md
+  - button "Close"

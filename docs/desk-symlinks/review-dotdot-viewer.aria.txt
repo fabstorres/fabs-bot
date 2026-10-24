@@ -1,0 +1,13 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- dialog "archive-link.md":
+  - heading "archive-link.md" [level=2]
+  - paragraph: archive-link.md
+  - document "Preview of archive-link.md":
+    - article:
+      - heading "Draft" [level=1]
+      - paragraph: Kept in the archive.
+  - link "Download":
+    - /url: /api/bots/5d99ea21-a3f2-46fb-9956-efa24fb852db/file?path=archive-link.md&download
+  - link "Open":
+    - /url: /api/bots/5d99ea21-a3f2-46fb-9956-efa24fb852db/file?path=archive-link.md
+  - button "Close"

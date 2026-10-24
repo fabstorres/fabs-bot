@@ -1,0 +1,96 @@
+## ls -l <desk>   (Design's desk after the bot's turns)
+total 4
+lrwxrwxrwx. 1 fabs fabs 15 Oct 18 15:10 draft.txt -> /etc/os-release
+lrwxrwxrwx. 1 fabs fabs  4 Oct 18 15:09 etc -> /etc
+lrwxrwxrwx. 1 fabs fabs 15 Oct 18 15:09 notes.txt -> /etc/os-release
+lrwxrwxrwx. 1 fabs fabs  7 Oct 18 15:09 plan-link.md -> plan.md
+-rw-r--r--. 1 fabs fabs 27 Oct 18 15:09 plan.md
+
+## ls -l <work>/linked-desk   (Linked bot's desk folder is a symlink)
+lrwxrwxrwx. 1 fabs fabs 65 Oct 18 15:10 <run>/work/linked-desk -> <run>/work/design
+
+## GET /api/bots/<design>/files
+{
+  "root": "<run>/work/design",
+  "path": "",
+  "entries": [
+    {
+      "name": "plan-link.md",
+      "dir": false,
+      "size": 27,
+      "mtime": 1792361348002,
+      "path": "plan-link.md"
+    },
+    {
+      "name": "plan.md",
+      "dir": false,
+      "size": 27,
+      "mtime": 1792361348002,
+      "path": "plan.md"
+    }
+  ]
+}
+
+## GET /api/bots/<linked>/files
+{
+  "root": "<run>/work/linked-desk",
+  "path": "",
+  "entries": [
+    {
+      "name": "plan-link.md",
+      "dir": false,
+      "size": 27,
+      "mtime": 1792361348002,
+      "path": "plan-link.md"
+    },
+    {
+      "name": "plan.md",
+      "dir": false,
+      "size": 27,
+      "mtime": 1792361348002,
+      "path": "plan.md"
+    }
+  ]
+}
+
+## GET /api/bots/<design>/file?path=notes.txt
+{
+  "error": "not found"
+}
+
+## GET /api/bots/<design>/file?path=draft.txt
+{
+  "error": "not found"
+}
+
+## GET /api/bots/<design>/file?path=etc/os-release
+{
+  "error": "not found"
+}
+
+## GET /api/bots/<design>/files?path=etc
+{
+  "error": "no such folder"
+}
+
+## GET /api/bots/<design>/file?path=plan-link.md
+# Plan
+
+Ship the desk fix.
+
+
+## HTTP status codes
+200 application/json;charset=utf-8  GET /api/bots/<design>/files
+404 application/json;charset=utf-8  GET /api/bots/<design>/files?path=etc            (etc -> /etc)
+404 application/json;charset=utf-8  GET /api/bots/<design>/file?path=notes.txt       (notes.txt -> /etc/os-release)
+404 application/json;charset=utf-8  GET /api/bots/<design>/file?path=draft.txt       (draft.txt -> /etc/os-release)
+404 application/json;charset=utf-8  GET /api/bots/<design>/file?path=etc/os-release
+200 text/markdown  GET /api/bots/<design>/file?path=plan-link.md    (plan-link.md -> plan.md)
+200 text/markdown  GET /api/bots/<design>/file?path=plan.md
+404 application/json;charset=utf-8  GET /api/bots/<design>/file?path=../chief
+404 application/json;charset=utf-8  GET /api/bots/<design>/file?path=missing.md
+200 text/markdown  GET /api/bots/<linked>/file?path=plan-link.md
+404 application/json;charset=utf-8  GET /api/bots/<linked>/file?path=notes.txt
+200 text/html;charset=utf-8  GET /   (web build)
+200 text/javascript;charset=utf-8  GET /assets/<first js asset>
+200 text/html;charset=utf-8  GET /%2e%2e/%2e%2e/package.json   (falls back to index.html)

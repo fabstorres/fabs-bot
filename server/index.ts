@@ -1,14 +1,15 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { hostname } from "node:os";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
 import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
-import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin } from "./auth";
+import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin, timingSafeEqual } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
+import { within } from "./paths";
 import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
@@ -46,7 +47,6 @@ function listenForServe(): boolean {
   }
 }
 
-/** Bring `tailscale serve` in line with the saved setting. One change at a time. */
 function applyServe(): Promise<void> {
   serveQueue = serveQueue.then(async () => {
     if (!serveEnabled()) serveProblem = await disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT);
@@ -88,13 +88,6 @@ async function body<T = any>(req: Request): Promise<T> {
   }
 }
 
-/** Resolve `rel` inside `root`, refusing paths that escape it. */
-function within(root: string, rel: string): string | null {
-  const full = resolve(root, rel || ".");
-  const r = relative(root, full);
-  return r.startsWith("..") || resolve(root, r) !== full ? null : full;
-}
-
 function sanitizeBot(input: Partial<Bot>, existing?: Bot): Omit<Bot, "createdAt"> {
   const name = String(input.name ?? existing?.name ?? "").trim() || "New Bot";
   return {
@@ -121,7 +114,6 @@ function createBot(input: Partial<Bot>): Bot {
   return bot;
 }
 
-/** A fresh install starts with one bot already waiting in its chat. */
 function onboard() {
   if (db.getSetting("onboarded")) return;
   if (db.listBots().length === 0) createBot(BOT_TEMPLATES.find((t) => t.key === "chief")!);
@@ -190,6 +182,7 @@ route("GET", "/api/bots/:id/files", (_r, p, url) => {
   if (!dir || !existsSync(dir)) return bad("no such folder", 404);
   const entries = readdirSync(dir, { withFileTypes: true })
     .filter((e) => !e.name.startsWith(".") || e.name === ".claude")
+    .filter((e) => within(bot.cwd, join(dir, e.name)))
     .map((e) => {
       const full = join(dir, e.name);
       let size = 0;
@@ -381,14 +374,13 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   const url = new URL(req.url);
   const ip = server.requestIP(req)?.address;
 
-  // Agents on this PC call back into the app; never exposed beyond loopback.
   if (url.pathname.startsWith("/mcp/")) {
     if (viaServe || !isLoopback(ip) || req.headers.get("tailscale-user-login")) return new Response("forbidden", { status: 403 });
     return handleMcp(req, url.pathname.slice(5));
   }
 
   if (url.pathname === "/pair") {
-    if (url.searchParams.get("token") !== ACCESS_TOKEN) return new Response("Invalid pairing link", { status: 403 });
+    if (!timingSafeEqual(url.searchParams.get("token") ?? "", ACCESS_TOKEN)) return new Response("Invalid pairing link", { status: 403 });
     return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": pairCookie() } });
   }
 
@@ -461,7 +453,6 @@ if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {
   listen(process.env.FABS_HOST);
 } else {
-  // Loopback for this PC (and `tailscale serve`), plus the tailnet IP for your other devices. Never the LAN.
   listen("127.0.0.1");
   let tailnetBound = false;
   const bindTailnet = async () => {
@@ -471,7 +462,7 @@ if (process.env.FABS_HOST) {
     try {
       listen(ts.ip);
       tailnetBound = true;
-      console.log(`  ↳ pair a device: http://${ts.dnsName ?? ts.ip}:${PORT}/pair?token=${ACCESS_TOKEN}`);
+      console.log("  ↳ pair a device from This PC");
     } catch (e) {
       console.warn(`  could not bind ${ts.ip}:${PORT}`, (e as Error).message);
     }

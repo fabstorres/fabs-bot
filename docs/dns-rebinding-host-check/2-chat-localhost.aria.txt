@@ -1,0 +1,20 @@
+# http://localhost:4872/  viewport=1440x900
+- region "Thread with Design":
+  - text: Design
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Design. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops" [disabled]
+      - button "B A specific project" [disabled]
+      - button "C Research and writing" [disabled]
+      - button "D Something else" [disabled]
+    - paragraph: "Hi Design! Reply with exactly: localhost works too"
+    - paragraph: localhost works too
+  - button "Attach"
+  - textbox "Message":
+    - /placeholder: Message Design
+  - button "Dictate"
+  - button "Send" [disabled]

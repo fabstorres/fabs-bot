@@ -1,0 +1,5 @@
+fabs-bot
+  ↳ listening on http://127.0.0.1:4930
+  ↳ listening on http://<tailnet-ip>:4930
+  ↳ pair a device from This PC
+
