@@ -1,0 +1,11 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- dialog "chart.svg":
+  - heading "chart.svg" [level=2]
+  - paragraph: chart.svg
+  - document "Preview of chart.svg":
+    - img "chart.svg"
+  - link "Download":
+    - /url: /api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=chart.svg&download
+  - link "Open":
+    - /url: /api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=chart.svg
+  - button "Close"

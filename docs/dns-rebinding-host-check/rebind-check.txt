@@ -1,0 +1,30 @@
+== rebinding: Host and Origin both the attacker's name (what a rebound page sends)
+GET  /api/host   Host: evil.example:4872  Origin: http://evil.example:4872     -> HTTP 401
+POST /api/bots   Host: evil.example:4872  Origin: http://evil.example:4872     -> HTTP 401
+GET  /files/x    Host: evil.example:4872  Origin: http://evil.example:4872     -> HTTP 401
+GET  /ws upgrade Host: evil.example:4872  Origin: http://evil.example:4872     -> HTTP 401
+-- rebound page body for GET /api/host:
+{"error":"unpaired"}
+
+== look-alike names are not loopback
+GET  /api/host   Host: localhost.evil.com:4872                                 -> HTTP 401
+GET  /api/host   Host: 127.0.0.1.evil.com:4872                                 -> HTTP 401
+GET  /api/host   Host: evil.localhost:4872                                     -> HTTP 401
+GET  /api/host   (no Host header)                                              -> HTTP 400
+
+== this PC by a loopback name still works without pairing (any port, any case)
+GET  /api/bots   Host: 127.0.0.1:4872                                          -> HTTP 200
+GET  /api/bots   Host: localhost:4872                                          -> HTTP 200
+GET  /api/bots   Host: localhost:5173                                          -> HTTP 200
+GET  /api/bots   Host: LOCALHOST:4872                                          -> HTTP 200
+GET  /api/bots   Host: [::1]:4872                                              -> HTTP 200
+
+== CSRF guard unchanged: a real cross-origin write to the loopback name is refused
+POST /api/bots   Host: 127.0.0.1:4872  Origin: http://evil.example:4872        -> HTTP 403
+
+== pairing token still admits a non-loopback Host
+GET  /api/bots   Host: evil.example:4872  Authorization: Bearer <token>        -> HTTP 200
+
+== side effect: no bot was created by the rebinding POST
+bots: Chief of Staff
+Rebind Probe present: false

@@ -1,0 +1,42 @@
+# http://<tailnet-ip>:4930/  viewport=1440x900
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief of Staff": Chief of Staff 3:09 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+  - button "Plugins"
+  - button "This PC": FE fedora All quiet
+- main:
+  - region "Thread with Chief of Staff":
+    - text: Chief of Staff
+    - button "Open desk" [pressed]
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops"
+        - button "B A specific project"
+        - button "C Research and writing"
+        - button "D Something else"
+    - button "Attach"
+    - textbox "Message":
+      - /placeholder: Message Chief of Staff
+    - button "Dictate"
+    - button "Send" [disabled]
+  - complementary "Chief of Staff's desk":
+    - button "Show desk" [disabled]
+    - heading "Desk" [level=2]
+    - button "Show settings"
+    - button "Close desk"
+    - button "chief-of-staff"
+    - group "Desk files":
+      - paragraph: Empty desk. Files the bot makes show up here.
+    - paragraph: Chief of Staff's desk
+    - heading "Routines" [level=3]
+    - paragraph:
+      - text: None yet. Ask Chief of Staff to do something on a schedule, or add one in
+      - button "settings"
+      - text: .

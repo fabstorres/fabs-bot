@@ -1,0 +1,34 @@
+thread 10327e24-f3f6-4f00-8b53-f369868d233c
+ok  idle after 9s
+--- status.html opened in a new tab: http://127.0.0.1:4870/api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=status.html
+page result:
+page address = http://127.0.0.1:4870
+document origin = null
+cookies blocked: SecurityError
+localStorage blocked: SecurityError
+app API blocked: Failed to fetch
+document.title = SANDBOXED
+document response: HTTP 200 http://127.0.0.1:4870/api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=status.html
+  content-disposition: inline; filename="status.html"
+  content-security-policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+  content-type: text/html;charset=utf-8
+  x-content-type-options: nosniff
+  content-length: 915
+/api/host from that page: [{"failed":"net::ERR_FAILED"}]
+chart.svg preview naturalWidth: 320
+logo.png preview naturalWidth: 512
+--- upload-check.html opened in a new tab: http://127.0.0.1:4870/files/272f0a7d-fcb3-4aa5-b392-c5211b6e5e8b
+page result:
+page address = http://127.0.0.1:4870
+document origin = null
+cookies blocked: SecurityError
+localStorage blocked: SecurityError
+app API blocked: Failed to fetch
+document.title = SANDBOXED
+document response: HTTP 200 http://127.0.0.1:4870/files/272f0a7d-fcb3-4aa5-b392-c5211b6e5e8b
+  content-disposition: inline; filename="upload-check.html"
+  content-security-policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+  content-type: text/html;charset=utf-8
+  x-content-type-options: nosniff
+  content-length: 922
+/api/host from that page: [{"failed":"net::ERR_FAILED"}]

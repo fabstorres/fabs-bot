@@ -1,0 +1,13 @@
+## bun run dev:server up (bun run pid 141389, server pid 141393)
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4872
+
+## edit a watched file so bun --watch reloads the server
+server started 3 times; server pid now 141393 (reload is in place, no signal)
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4872
+
+## Ctrl+C: SIGINT to the whole process group
+process group empty after 86 ms
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 1

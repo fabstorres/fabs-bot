@@ -1,0 +1,31 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- dialog "notes.md":
+  - heading "notes.md" [level=2]
+  - paragraph: notes.md
+  - document "Preview of notes.md":
+    - article:
+      - heading "Design notes" [level=1]
+      - list:
+        - listitem:
+          - strong: "Palette:"
+          - text: warm grey and coral
+        - listitem:
+          - text: The status page lives in
+          - code: status.html
+      - table:
+        - rowgroup:
+          - row "Item State":
+            - columnheader "Item"
+            - columnheader "State"
+        - rowgroup:
+          - row "Logo done":
+            - cell "Logo"
+            - cell "done"
+          - row "Icons in progress":
+            - cell "Icons"
+            - cell "in progress"
+  - link "Download":
+    - /url: /api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=notes.md&download
+  - link "Open":
+    - /url: /api/bots/274ef2e0-ba2e-4f6b-9ce5-4b4613858384/file?path=notes.md
+  - button "Close"

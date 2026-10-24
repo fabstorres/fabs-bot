@@ -1,0 +1,11 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- dialog "chart.png":
+  - heading "chart.png" [level=2]
+  - paragraph: chart.png
+  - document "Preview of chart.png":
+    - paragraph: No preview for this file type.
+  - link "Download":
+    - /url: /files/2f6230ab-5c9d-4b92-9922-ce1f3aa10d92?download
+  - link "Open":
+    - /url: /files/2f6230ab-5c9d-4b92-9922-ce1f3aa10d92
+  - button "Close"

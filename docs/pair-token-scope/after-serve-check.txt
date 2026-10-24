@@ -1,0 +1,8 @@
+ok    no Tailscale identity (tagged device, Funnel) is refused (HTTP 401)
+ok    another tailnet user is refused (HTTP 401)
+ok    your own Tailscale login is admitted (HTTP 200)
+ok    a pairing cookie is admitted (HTTP 200)
+ok    a pairing bearer token is admitted (HTTP 200)
+ok    a pairing token in ?token= is refused (HTTP 401)
+ok    bot MCP endpoint refuses Tailscale HTTPS (HTTP 403)
+ok    this PC's own loopback stays trusted (HTTP 200)

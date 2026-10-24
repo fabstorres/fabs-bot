@@ -1,0 +1,14 @@
+## before stop
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4876
+saved setting tailscale.serve = 1
+
+## stop
+server pid from state.json: 52338 (bun server/index.ts )
+kill -TERM 52338
+server exited after 104 ms
+
+## after stop
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 1
+127.0.0.1:4876 -> 000 (000 = nothing listening)

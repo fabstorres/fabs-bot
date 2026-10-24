@@ -1,0 +1,4 @@
+== bun run dev: Vite proxies /api to the server without changeOrigin, so Host is the Vite address
+GET http://127.0.0.1:5291/api/bots               -> HTTP 200
+GET http://localhost:5291/api/bots               -> HTTP 200
+POST http://localhost:5291/api/bots (Origin same) -> HTTP 200

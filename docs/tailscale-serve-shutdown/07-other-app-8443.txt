@@ -1,0 +1,18 @@
+## relaunched: our mapping is back
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4876
+
+## another app takes https :8443 while Fabs Bot runs
+another app now holds https :8443 (→ http://127.0.0.1:1)
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:1
+
+## stop
+server pid from state.json: 90824 (bun server/index.ts )
+kill -TERM 90824
+server exited after 52 ms
+
+## after stop: the other app's :8443 mapping is untouched
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:1
+saved setting tailscale.serve = 1

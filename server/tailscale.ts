@@ -2,6 +2,7 @@
  * Tailscale integration. Reads status freely; changes Tailscale only when you turn on
  * Tailscale HTTPS, and then only the one serve port Fabs Bot owns.
  */
+import type { Subprocess } from "bun";
 import { childEnv, which } from "./providers/spawn";
 
 export interface TailscaleState {
@@ -22,18 +23,26 @@ interface CliResult {
   stderr: string;
 }
 
+const running = new Set<Subprocess>();
+
 async function exec(args: string[], timeoutMs = 4000): Promise<CliResult | null> {
   const bin = which("tailscale");
   if (!bin) return null;
   try {
     const proc = Bun.spawn([bin, ...args], { env: childEnv, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+    running.add(proc);
     const timer = setTimeout(() => proc.kill(), timeoutMs);
     const [stdout, stderr, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
     clearTimeout(timer);
+    running.delete(proc);
     return { code, stdout, stderr };
   } catch {
     return null;
   }
+}
+
+export function killRunningCommands() {
+  for (const proc of running) proc.kill("SIGKILL");
 }
 
 async function run(args: string[]): Promise<string | null> {

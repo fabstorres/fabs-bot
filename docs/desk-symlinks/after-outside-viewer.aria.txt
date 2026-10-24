@@ -1,0 +1,10 @@
+# http://127.0.0.1:4874/  viewport=1440x900
+- dialog "draft.txt":
+  - heading "draft.txt" [level=2]
+  - paragraph: draft.txt
+  - document "Preview of draft.txt": "{\"error\":\"not found\"}"
+  - link "Download":
+    - /url: /api/bots/a16497b3-bf66-4aa1-8863-fcb5d3d63e0f/file?path=draft.txt&download
+  - link "Open":
+    - /url: /api/bots/a16497b3-bf66-4aa1-8863-fcb5d3d63e0f/file?path=draft.txt
+  - button "Close"

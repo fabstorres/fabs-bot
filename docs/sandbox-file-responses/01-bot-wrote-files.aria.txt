@@ -1,0 +1,50 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Thread with Design":
+  - text: Design
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Design. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops" [disabled]
+      - button "B A specific project" [disabled]
+      - button "C Research and writing" [disabled]
+      - button "D Something else" [disabled]
+    - paragraph: Use your Write tool to create these three files in your desk folder, with exactly this content. Then reply just "done".
+    - paragraph: "status.html:"
+    - text: "<!doctype html> <title>status</title> <body style=\"font:18px system-ui;padding:32px\"> <h1>Status check</h1> <pre id=\"out\">checking…</pre> <script> const lines = [\"page address = \" + location.origin, \"document origin = \" + self.origin]; try { lines.push(\"cookies = \" + (document.cookie ? \"readable\" : \"empty\")); } catch (e) { lines.push(\"cookies blocked: \" + e.name); } try { localStorage.length; lines.push(\"localStorage = readable\"); } catch (e) { lines.push(\"localStorage blocked: \" + e.name); } fetch(\"/api/host\").then((r) => r.json()).then((j) => { document.title = \"SAME-ORIGIN\"; lines.push(\"app API reachable from this page: \" + Object.keys(j).join(\",\")); }).catch((e) => { document.title = \"SANDBOXED\"; lines.push(\"app API blocked: \" + e.message); }).finally(() => { lines.push(\"document.title = \" + document.title); document.getElementById(\"out\").textContent = lines.join(\"\\n\"); }); </script>"
+    - paragraph: "notes.md:"
+    - heading "Design notes" [level=1]
+    - list:
+      - listitem:
+        - strong: "Palette:"
+        - text: warm grey and coral
+      - listitem:
+        - text: The status page lives in
+        - code: status.html
+    - table:
+      - rowgroup:
+        - row "Item State":
+          - columnheader "Item"
+          - columnheader "State"
+      - rowgroup:
+        - row "Logo done":
+          - cell "Logo"
+          - cell "done"
+        - row "Icons in progress":
+          - cell "Icons"
+          - cell "in progress"
+    - paragraph: "chart.svg: <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"320\" height=\"180\" viewBox=\"0 0 320 180\"><rect width=\"320\" height=\"180\" fill=\"#f4f1ea\"/><text x=\"160\" y=\"24\" font-family=\"sans-serif\" font-size=\"14\" text-anchor=\"middle\">Weekly tasks</text><rect x=\"40\" y=\"100\" width=\"60\" height=\"60\" fill=\"#e07a5f\"/><rect x=\"130\" y=\"64\" width=\"60\" height=\"96\" fill=\"#3d405b\"/><rect x=\"220\" y=\"40\" width=\"60\" height=\"120\" fill=\"#81b29a\"/></svg>"
+    - group "Work log":
+      - button "3 steps"
+      - list:
+        - listitem: Write /run/user/1000/fabs-verify-issue17/run-20261019021821/work/design/status.html
+        - listitem: Write /run/user/1000/fabs-verify-issue17/run-20261019021821/work/design/notes.md
+        - listitem: Write /run/user/1000/fabs-verify-issue17/run-20261019021821/work/design/chart.svg
+    - paragraph: done
+  - button "Attach"
+  - textbox "Message":
+    - /placeholder: Message Design
+  - button "Dictate"
+  - button "Send" [disabled]

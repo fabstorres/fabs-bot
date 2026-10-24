@@ -1,0 +1,4 @@
+# http://evil.example:4872/  viewport=1440x900
+- heading "Not paired yet" [level=1]
+- paragraph: On your PC, open Fabs Bot → tap This PC at the bottom of the sidebar → scan the QR code with this device. Both need to be on your Tailscale network.
+- text: "page origin: http://evil.example:4872 (evil.example resolves to 127.0.0.1, like a rebound DNS answer) fetch('/api/host') -> HTTP 401 {\"error\":\"unpaired\"} fetch('/api/bots', {method:'POST'}) -> HTTP 401 new WebSocket('/ws') -> refused"

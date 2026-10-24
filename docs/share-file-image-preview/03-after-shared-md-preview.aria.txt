@@ -1,0 +1,19 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- dialog "notes.md":
+  - heading "notes.md" [level=2]
+  - paragraph: notes.md
+  - document "Preview of notes.md":
+    - article:
+      - heading "Launch notes" [level=1]
+      - list:
+        - listitem:
+          - strong: Chart
+          - text: shared from the desk
+        - listitem: Preview should render this list
+      - blockquote:
+        - paragraph: Markdown still previews.
+  - link "Download":
+    - /url: /files/c458e573-a37b-496b-bdae-bb9d57d1ca6c?download
+  - link "Open":
+    - /url: /files/c458e573-a37b-496b-bdae-bb9d57d1ca6c
+  - button "Close"
