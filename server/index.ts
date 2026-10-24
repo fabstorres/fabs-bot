@@ -47,6 +47,7 @@ function listenForServe(): boolean {
   }
 }
 
+/** Bring `tailscale serve` in line with the saved setting. One change at a time. */
 function applyServe(): Promise<void> {
   serveQueue = serveQueue.then(async () => {
     if (!serveEnabled()) serveProblem = await disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT);
@@ -114,6 +115,7 @@ function createBot(input: Partial<Bot>): Bot {
   return bot;
 }
 
+/** A fresh install starts with one bot already waiting in its chat. */
 function onboard() {
   if (db.getSetting("onboarded")) return;
   if (db.listBots().length === 0) createBot(BOT_TEMPLATES.find((t) => t.key === "chief")!);
@@ -374,6 +376,7 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   const url = new URL(req.url);
   const ip = server.requestIP(req)?.address;
 
+  // Agents on this PC call back into the app; never exposed beyond loopback.
   if (url.pathname.startsWith("/mcp/")) {
     if (viaServe || !isLoopback(ip) || req.headers.get("tailscale-user-login")) return new Response("forbidden", { status: 403 });
     return handleMcp(req, url.pathname.slice(5));
@@ -453,6 +456,7 @@ if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {
   listen(process.env.FABS_HOST);
 } else {
+  // Loopback for this PC (and `tailscale serve`), plus the tailnet IP for your other devices. Never the LAN.
   listen("127.0.0.1");
   let tailnetBound = false;
   const bindTailnet = async () => {
