@@ -121,6 +121,43 @@ async function api(s: State, method: string, path: string, body?: unknown) {
   return { status: res.status, data };
 }
 
+async function startServer(s: State) {
+  const env = [
+    `FABS_PORT=${s.port}`,
+    `FABS_DATA_DIR=${s.dataDir}`,
+    `FABS_WORK_ROOT=${s.workRoot}`,
+    ...(s.tailnet ? [] : ["FABS_HOST=127.0.0.1"]),
+    ...(s.shimDir
+      ? [`PATH='${join(s.shimDir, "bin")}:${process.env.PATH}'`, `FABS_SHIM_DIR='${s.shimDir}'`, `FABS_SHIM_REAL='${readFileSync(join(s.shimDir, "real"), "utf8")}'`]
+      : []),
+  ];
+  const log = join(s.runDir, "server.log");
+  // setsid gives the server its own process group, so cleanup can stop it and every bot CLI it spawned.
+  const start = await sh(["sh", "-c", `env ${env.join(" ")} setsid bun server/index.ts >> '${log}' 2>&1 < /dev/null & echo $!`]);
+  s.pid = Number(start.out);
+  saveState(s);
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (!alive(s.pid)) die(`server exited; log:\n${redact(readFileSync(log, "utf8"))}`);
+    const ok = await fetch(s.url + "/api/host").then((r) => r.ok).catch(() => false);
+    if (ok) return;
+    await Bun.sleep(300);
+  }
+  die("server did not answer /api/host within 30s; see `control-fabs logs`");
+}
+
+async function stopServer(s: State) {
+  if (!alive(s.pid) || !cmdline(s.pid).includes("server/index.ts")) return false;
+  try {
+    process.kill(-s.pid, "SIGTERM"); // the server's process group: server + any bot CLIs mid-turn
+  } catch {
+    process.kill(s.pid, "SIGTERM");
+  }
+  for (let i = 0; i < 20 && alive(s.pid); i++) await Bun.sleep(150);
+  if (alive(s.pid)) process.kill(-s.pid, "SIGKILL");
+  return true;
+}
+
 const commands: Record<string, () => Promise<void>> = {
   async launch() {
     const existing = loadState(false);
@@ -164,37 +201,23 @@ const commands: Record<string, () => Promise<void>> = {
       shimDir,
     };
     mkdirSync(s.artifacts, { recursive: true });
-    const env = [
-      `FABS_PORT=${port}`,
-      `FABS_DATA_DIR=${s.dataDir}`,
-      `FABS_WORK_ROOT=${s.workRoot}`,
-      ...(tailnet ? [] : ["FABS_HOST=127.0.0.1"]),
-      ...(shimDir
-        ? [`PATH='${join(shimDir, "bin")}:${process.env.PATH}'`, `FABS_SHIM_DIR='${shimDir}'`, `FABS_SHIM_REAL='${readFileSync(join(shimDir, "real"), "utf8")}'`]
-        : []),
-    ];
-    // setsid gives the server its own process group, so cleanup can stop it and every bot CLI it spawned.
-    const start = await sh([
-      "sh",
-      "-c",
-      `env ${env.join(" ")} setsid bun server/index.ts > '${join(runDir, "server.log")}' 2>&1 < /dev/null & echo $!`,
-    ]);
-    s.pid = Number(start.out);
-    saveState(s);
     writeFileSync(join(HOME, "current"), runId);
+    await startServer(s);
+    console.log(`ready  run=${runId}  url=${s.url}  pid=${s.pid}  rev=${s.rev}${tailnet ? "  (+tailnet bind)" : ""}${shimDir ? "  (tailscale serve simulated)" : ""}`);
+    console.log(`artifacts → ${s.artifacts}`);
+  },
 
-    const deadline = Date.now() + 30_000;
-    while (Date.now() < deadline) {
-      if (!alive(s.pid)) die(`server exited; log:\n${redact(readFileSync(join(runDir, "server.log"), "utf8"))}`);
-      const ok = await fetch(s.url + "/api/host").then((r) => r.ok).catch(() => false);
-      if (ok) {
-        console.log(`ready  run=${runId}  url=${s.url}  pid=${s.pid}  rev=${s.rev}${tailnet ? "  (+tailnet bind)" : ""}${shimDir ? "  (tailscale serve simulated)" : ""}`);
-        console.log(`artifacts → ${s.artifacts}`);
-        return;
-      }
-      await Bun.sleep(300);
-    }
-    die("server did not answer /api/host within 30s; see `control-fabs logs`");
+  async server() {
+    const s = loadState()!;
+    const action = positional[1];
+    if (action === "stop") {
+      console.log((await stopServer(s)) ? `stopped server ${s.pid}; run data kept` : "server was not running");
+    } else if (action === "start") {
+      if (alive(s.pid)) die(`server ${s.pid} is still running`);
+      if ((await freePort(s.port)) !== s.port) die(`port ${s.port} was taken by another process while the server was stopped; cleanup and launch again with --port`);
+      await startServer(s);
+      console.log(`ready  run=${s.runId}  url=${s.url}  pid=${s.pid}`);
+    } else die("usage: control-fabs server stop|start");
   },
 
   async doctor() {
@@ -524,16 +547,7 @@ const commands: Record<string, () => Promise<void>> = {
       return;
     }
     await browserStop(s, false);
-    if (alive(s.pid) && cmdline(s.pid).includes("server/index.ts")) {
-      try {
-        process.kill(-s.pid, "SIGTERM"); // the server's process group: server + any bot CLIs mid-turn
-      } catch {
-        process.kill(s.pid, "SIGTERM");
-      }
-      for (let i = 0; i < 20 && alive(s.pid); i++) await Bun.sleep(150);
-      if (alive(s.pid)) process.kill(-s.pid, "SIGKILL");
-      console.log(`stopped server ${s.pid}`);
-    }
+    if (await stopServer(s)) console.log(`stopped server ${s.pid}`);
     rmSync(s.runDir, { recursive: true, force: true });
     if (currentRunId() === s.runId) rmSync(join(HOME, "current"), { force: true });
     const kept = existsSync(s.artifacts) ? readdirSync(s.artifacts, { recursive: true }).length : 0;
@@ -552,6 +566,7 @@ const commands: Record<string, () => Promise<void>> = {
   wait <threadId> --for idle|question|approval|file|text:<s> [--timeout 180]
   paths                                                        print run, data, work-root and artifacts dirs (for side-effect checks)
   logs [--n 60]                                                tail the server log (redacted)
+  server stop|start                                            stop this run's server (and any bot CLI mid-turn) or start it again on the same port and data
   pair-check [--path pairing/pair-check.txt]                   remote-device auth checks over the tailnet (needs --tailnet)
   browser start [--viewport 1440x900|430x932]                  headless Chromium on CDP (restart to change viewport)
   browser open [/path] [--via tailnet] | browser pair

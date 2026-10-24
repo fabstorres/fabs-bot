@@ -1,0 +1,5 @@
+# http://127.0.0.1:4987/  viewport={"width":1440,"height":900}
+- heading "Fabs Bot is reconnecting" [level=1]
+- paragraph: Fabs Bot did not answer
+- button "Reconnect"
+- region "Notifications alt+T"

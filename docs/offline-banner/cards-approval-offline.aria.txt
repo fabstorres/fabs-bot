@@ -1,0 +1,51 @@
+# http://127.0.0.1:4987/  viewport={"width":1440,"height":900}
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief":
+      - text: Chief 5:56 PM Waiting for your answer
+      - img "Needs you"
+    - button "Bot Careful":
+      - text: "Careful 5:56 PM Needs your OK: Write"
+      - img "Needs you"
+    - button "Bot Design": Design 5:56 PM Hey, I'm Design. What's the main thing you want me on?
+    - button "Bot Engineer":
+      - text: Engineer 5:56 PM Hey, I'm Engineer. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 5:56 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+  - button "Plugins"
+  - button "This PC": FE <pc> Reconnecting…
+- main:
+  - region "Thread with Careful":
+    - text: Careful
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Careful. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops" [disabled]
+        - button "B A specific project" [disabled]
+        - button "C Research and writing" [disabled]
+        - button "D Something else" [disabled]
+      - paragraph: Create a file named hello.txt in your desk containing the word hi. Use your file writing tool.
+      - group "Work log":
+        - button "Write · /run/user/1000/fabs-verify-offline/run-20261024005638/work/careful/hello.txt"
+      - 'group "Approval: Write"':
+        - text: Wants to use Write /run/user/1000/fabs-verify-offline/run-20261024005638/work/careful/hello.txt
+        - button "Deny" [disabled]
+        - button "Allow" [disabled]
+    - alert:
+      - text: <pc> is reconnecting Fabs Bot on <pc> did not answer
+      - button "Reconnect"
+    - button "Attach" [disabled]
+    - textbox "Message":
+      - /placeholder: Message Careful
+    - button "Dictate"
+    - button "Stop" [disabled]
+- region "Notifications alt+T"

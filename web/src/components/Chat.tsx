@@ -2,11 +2,13 @@ import { type RefObject, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, Ellipsis, Mic, Monitor, Paperclip, Pencil, Plus, Square, Trash2, UserPlus, X } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api } from "../api";
-import { goBack, openModal, threadTitle, togglePanel, useStore } from "../store";
+import { toast } from "sonner";
+import { goBack, isConnected, openModal, threadTitle, togglePanel, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
 import { Modal } from "./Modal";
+import { OfflineBanner } from "./OfflineBanner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -200,6 +202,7 @@ type Attachment = { fileId: string; name: string; size: number };
 
 function Composer({ thread, members, working }: { thread: Thread; members: Bot[]; working: boolean }) {
   const bots = useStore((s) => s.bots);
+  const online = useStore(isConnected);
   const draftKey = `draft:${thread.id}`;
   const [text, setText] = useState(() => sessionStorage.getItem(draftKey) ?? "");
   const [files, setFiles] = useState<Attachment[]>([]);
@@ -213,7 +216,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
   }
 
   async function attach(list: FileList | File[]) {
-    if (!list.length) return;
+    if (!list.length || !online) return;
     setUploading(true);
     try {
       const up = await api.upload([...list]);
@@ -226,14 +229,25 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
   async function send() {
     const body = text.trim();
     if (!body && !files.length) return;
+    if (!online) {
+      toast.warning("Not connected: message not sent", {
+        id: "send-offline",
+        description: "Reconnecting to the environment. Try again once it is connected.",
+      });
+      return;
+    }
     if (thread.kind !== "backchannel") {
       for (const b of mentionedBots(body, bots)) {
         if (!thread.memberIds.includes(b.id)) await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
       }
     }
+    const sending = files;
     draft("");
     setFiles([]);
-    await api.post(`/api/threads/${thread.id}/messages`, { text: body, fileIds: files.map((f) => f.fileId) });
+    await api.post(`/api/threads/${thread.id}/messages`, { text: body, fileIds: sending.map((f) => f.fileId) }).catch(() => {
+      draft([body, sessionStorage.getItem(draftKey)].filter(Boolean).join("\n"));
+      setFiles((f) => [...sending, ...f]);
+    });
   }
 
   const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
@@ -258,6 +272,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => (e.preventDefault(), attach(e.dataTransfer.files))}
     >
+      <OfflineBanner />
       <div className="mx-auto max-w-3xl rounded-[26px] border bg-background p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
         {files.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-1">
@@ -272,7 +287,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
           </div>
         )}
         <div className="flex items-end gap-1">
-          <Button variant="secondary" size="icon" className="rounded-full" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading}>
+          <Button variant="secondary" size="icon" className="rounded-full" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading || !online}>
             <Plus className="size-5" />
           </Button>
           <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && attach(e.target.files)} />
@@ -292,11 +307,11 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
             </Button>
           )}
           {working && !ready ? (
-            <Button size="icon" className="rounded-full" onClick={() => api.post(`/api/threads/${thread.id}/stop`)} aria-label="Stop">
+            <Button size="icon" className="rounded-full" onClick={() => api.post(`/api/threads/${thread.id}/stop`)} aria-label="Stop" disabled={!online}>
               <Square className="size-3.5 fill-current" />
             </Button>
           ) : (
-            <Button size="icon" className="rounded-full" onClick={send} disabled={!ready} aria-label="Send">
+            <Button size="icon" className="rounded-full" onClick={send} disabled={!ready || !online} aria-label={online ? "Send" : "Environment disconnected"}>
               <ArrowUp className="size-5" strokeWidth={2.4} />
             </Button>
           )}

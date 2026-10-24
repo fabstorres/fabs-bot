@@ -1,0 +1,13 @@
+Careful ("ask" autonomy) thread, real approval card for a file write:
+  online:  Approval Deny disabled=false, Approval Allow disabled=false
+  $ control-fabs server stop  -> banner shown
+  offline: Approval Deny disabled=true,  Approval Allow disabled=true
+
+Design thread, real ask_user question (mango / banana / berries):
+  online:  Question A Mango, B Banana, C Berries disabled=false
+  $ control-fabs server stop  -> banner shown
+  offline: Question A Mango, B Banana, C Berries disabled=true
+  $ control-fabs server start -> banner cleared on its own
+  online:  Question A Mango, B Banana, C Berries disabled=false
+
+The greeting card (A–D) was already closed by a typed reply, so it stays disabled in every state.

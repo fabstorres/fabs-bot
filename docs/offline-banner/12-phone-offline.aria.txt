@@ -1,0 +1,36 @@
+# http://127.0.0.1:4870/  viewport={"width":430,"height":932}
+- main:
+  - region "Thread with Chief":
+    - button "Back"
+    - text: Chief
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops" [disabled]
+        - button "B A specific project" [disabled]
+        - button "C Research and writing" [disabled]
+        - button "D Something else" [disabled]
+      - paragraph: Write a long story about a lighthouse keeper, at least 8 paragraphs.
+      - paragraph: Are you still there?
+      - group "Work log":
+        - button "2 steps"
+      - button "File lighthouse-keeper.md": M↓ lighthouse-keeper.md 5.7 KB
+      - group "Work log":
+        - button "1 step"
+      - paragraph: Yes, I'm still here. Sorry my last reply came through empty.
+      - paragraph:
+        - text: "The lighthouse story is done:"
+        - emphasis: The Keeper of Halvey Point
+        - text: ", nine paragraphs about Elin Marrow, who keeps the light for thirty-one years, through a gale, a daughter who leaves, and a return. I saved it to a file and shared it so you can open it on your phone."
+    - alert:
+      - text: <pc> is offline This device is offline
+      - button "Reconnect"
+    - button "Attach" [disabled]
+    - textbox "Message":
+      - /placeholder: Message Chief
+    - button "Dictate"
+    - button "Environment disconnected" [disabled]
+- region "Notifications alt+T"

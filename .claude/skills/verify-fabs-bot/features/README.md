@@ -52,5 +52,6 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Pairing and access](./pairing-and-access.md): unpaired devices are refused, a pairing link admits a browser over Tailscale, and the bot MCP endpoint stays loopback-only.
 - [Tailscale HTTPS](./tailscale-https.md): the This PC switch that serves the app over HTTPS on its own port, leaves other apps' serve ports alone, and trusts only the owner's Tailscale login or pairing.
 - [Desktop app](./desktop-app.md): the Electron launcher, opening This PC or a remote PC by pairing link, staying signed in across restarts, Switch PC, forgetting a PC, and keeping PC pages away from the launcher's controls.
+- [Server offline](./server-offline.md): the banner above the composer when the PC's server stops answering or the device goes offline, what it blocks, the refused-send toast, recovery, and the first-load notice.
 
 Not yet mapped: running routines (settings → Routines → "Run now", or the desk panel's play button), plugins (sidebar → Plugins), and sidebar search.

@@ -1,0 +1,5 @@
+# http://127.0.0.1:4870/  viewport={"width":1440,"height":900}
+- heading "Fabs Bot is offline" [level=1]
+- paragraph: This device is offline
+- button "Reconnect"
+- region "Notifications alt+T"

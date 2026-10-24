@@ -1,0 +1,40 @@
+# http://127.0.0.1:4870/  viewport={"width":1440,"height":900}
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief": Chief 3:27 PM Thinking…
+    - button "Bot Engineer": Engineer 3:26 PM Hey, I'm Engineer. What's the main thing you want me on?
+    - button "Bot Design":
+      - text: Design 3:26 PM Hey, I'm Design. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Careful":
+      - text: Careful 3:26 PM Hey, I'm Careful. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 3:26 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+  - button "Plugins"
+  - button "This PC": FE <pc> Reconnecting…
+- main:
+  - region "Thread with Chief":
+    - text: Chief
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops" [disabled]
+        - button "B A specific project" [disabled]
+        - button "C Research and writing" [disabled]
+        - button "D Something else" [disabled]
+      - paragraph: Write a long story about a lighthouse keeper, at least 8 paragraphs.
+    - button "Attach" [disabled]
+    - textbox "Message":
+      - /placeholder: Message Chief
+    - button "Dictate"
+    - button "Stop" [disabled]
+- region "Notifications alt+T"

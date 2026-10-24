@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import { createRequire } from "node:module";
-import { redact } from "./privacy.mjs";
+import { PC_NAME, redact } from "./privacy.mjs";
 
 const job = JSON.parse(process.env.FABS_BROWSER_JOB ?? "{}");
 const require = createRequire(join(job.repo, "package.json"));
@@ -102,7 +102,14 @@ try {
       await page.evaluate(() => document.fonts.ready);
       await sleep(Number(flag("settle") ?? 700));
       const out = artifactPath(flag("path") ?? die("--path required (relative to the run's artifacts)"));
-      const mask = flags["no-mask"] === true ? [] : [page.getByRole("button", { name: "This PC", exact: true, includeHidden: true }), page.locator(".pair-qr, .mono-box, .host-line, .host-peers")];
+      const mask =
+        flags["no-mask"] === true
+          ? []
+          : [
+              page.getByRole("button", { name: "This PC", exact: true, includeHidden: true }),
+              page.locator(".pair-qr, .mono-box, .host-line, .host-peers"),
+              ...(PC_NAME ? [page.getByText(PC_NAME)] : []),
+            ];
       await page.screenshot({ path: out, fullPage: flags["full-page"] === true, mask, maskColor: "#d9d9d4" });
       console.log(`→ ${out}`);
       break;

@@ -1,0 +1,32 @@
+   7.3s  shot 1-replying
+   8.3s  $ control-fabs server stop
+          stopped server 33188; run data kept
+   8.3s  Stop disabled 29ms after the server stopped
+   9.2s  banners visible at 931ms: 0
+   9.8s  shot 2-grace
+  10.5s  banner shown 2289ms after the server stopped
+  12.1s  banner text: "<pc> is reconnecting\nFabs Bot on <pc> did not answer"
+  12.1s  disabled: Attach=true Stop=true
+  12.6s  shot 3-banner
+  14.2s  draft typed: "Are you still there?"
+  14.2s  disabled: Attach=true "Environment disconnected"=true
+  14.7s  shot 4-draft
+  14.8s  toast: "Not connected: message not sent\nReconnecting to the environment. Try again once it is connected."
+  14.8s  draft after Enter: "Are you still there?"
+  16.0s  shot 5-toast
+  17.9s  $ control-fabs server start
+          ready  run=run-20261023222651  url=http://127.0.0.1:4870  pid=34053
+  30.3s  banner cleared on its own 12383ms after the server answered again
+  30.3s  draft kept: "Are you still there?", Send disabled=false
+  30.9s  shot 6-reconnected
+  31.9s  sent: draft now ""
+  35.0s  shot 7-sent
+  54.5s  device-offline banner 14ms after going offline: "<pc> is offline\nThis device is offline\nReconnect"
+  56.6s  shot 8-device-offline
+  57.4s  banner cleared 30ms after the device came back online
+  59.2s  shot 9-back-online
+  62.4s  first-load notice: "Fabs Bot is reconnecting\n\nFabs Bot did not answer\n\nReconnect"  mentions "bun run": false
+  64.4s  shot 10-first-load
+  65.1s  Reconnect loaded the app
+  67.6s  shot 11-first-load-reconnected
+  68.2s  shot 12-phone-offline
