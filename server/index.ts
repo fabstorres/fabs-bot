@@ -19,12 +19,7 @@ import { disableServe, enableServe, killRunningCommands, tailscaleState, type Se
 db.closeDanglingMessages();
 reschedule();
 
-let ownerLogin: string | null = null;
-async function refreshTailscale() {
-  const ts = await tailscaleState(SERVE_TARGET_PORT);
-  ownerLogin = ts.login;
-  return ts;
-}
+const refreshTailscale = () => tailscaleState(SERVE_TARGET_PORT);
 
 let serveProblem: ServeProblem | null = null;
 let serveListener: Server<WsData> | null = null;
@@ -401,7 +396,7 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   }
 
   const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws";
-  if (isApi && !authorized(req, ip, ownerLogin, viaServe)) return json({ error: "unpaired" }, 401);
+  if (isApi && !authorized(req, ip, viaServe)) return json({ error: "unpaired" }, 401);
   if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
 
   if (url.pathname === "/ws") {
