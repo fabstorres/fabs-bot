@@ -1,0 +1,30 @@
+## stand-in server: logs signals, takes 1.5 s to clean up, then exits
+import { appendFileSync } from "node:fs";
+const log = (m: string) => appendFileSync("/tmp/issue21-sigtest/events.log", `${process.pid} ${m}\n`);
+log("start");
+let stopping = false;
+async function shutdown(sig: string) {
+  log(`got ${sig}`);
+  if (stopping) return;
+  stopping = true;
+  await Bun.sleep(1500);
+  log("cleanup done");
+  process.exit(0);
+}
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+setInterval(() => {}, 1000);
+
+## scripts/dev.ts (dev:web removed) -> bun run dev:server -> bun --watch app.ts
+== case A: SIGTERM to dev.ts only
+96135 start
+96135 got SIGTERM
+96135 cleanup done
+group empty
+== case B: SIGINT to whole group (Ctrl+C)
+96209 start
+96209 got SIGINT
+96209 got SIGINT
+96209 got SIGTERM
+96209 cleanup done
+group empty

@@ -1,0 +1,9 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- group "Tailscale HTTPS":
+  - text: Tailscale HTTPS
+  - switch "Tailscale HTTPS" [checked]
+  - paragraph:
+    - text: On at
+    - link "https://<pc>.<tailnet>.ts.net:8443":
+      - /url: https://<pc>.<tailnet>.ts.net:8443
+    - text: . Your own devices sign in automatically.

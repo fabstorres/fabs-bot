@@ -1,0 +1,14 @@
+## finding 1: stop while a toggle-off is in flight
+before:
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4872
+saved setting tailscale.serve = 1
+clicked the switch off and paused the simulated 'tailscale serve --https=8443 off' child (ps state: T)
+saved setting tailscale.serve = 0
+kill -TERM <server>
+1 s later the server is still running: it waits for the pending toggle-off
+resumed the child
+server exited 1105 ms after SIGTERM
+after:
+https :443  →  http://127.0.0.1:3773
+saved setting tailscale.serve = 0

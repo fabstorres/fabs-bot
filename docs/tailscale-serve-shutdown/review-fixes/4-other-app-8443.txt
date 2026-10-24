@@ -1,0 +1,22 @@
+## relaunched: our mapping is back
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:4872
+
+## another app takes https :8443 while Fabs Bot runs
+another app now holds https :8443 (→ http://127.0.0.1:1)
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:1
+
+## stop
+kill -TERM 141032
+server exited after 53 ms
+
+## after stop: the other app's :8443 mapping is untouched
+https :443  →  http://127.0.0.1:3773
+https :8443  →  http://127.0.0.1:1
+saved setting tailscale.serve = 1
+
+## last shim calls
+tailscale status --json
+tailscale serve status --json
+tailscale serve status --json
