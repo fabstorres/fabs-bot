@@ -4,8 +4,8 @@ When a window loses its connection to the PC's Fabs Bot server, a banner above t
 
 ## Sub-features
 
-- `offline-reconnecting` shows `<PC> is reconnecting` with `Fabs Bot on <PC> did not answer` above the composer, held back 2 s so a blip doesn't flash it.
-- `offline-blocked` disables Send (named `Environment disconnected` while offline), Attach, Stop, question options and Allow / Deny at once, with no grace. The message box and Dictate keep working.
+- `offline-reconnecting` shows `<PC> is reconnecting` with `Fabs Bot on <PC> did not answer` and a `Reconnect` button above the composer, held back 2 s so a blip doesn't flash it. `Reconnect` skips the remaining backoff and retries at once.
+- `offline-blocked` disables Send (named `Environment disconnected` while offline), Attach, Stop, question options and Allow / Deny at once, with no grace. Disabled question options are dimmed like a disabled button, and so are answered ones. The message box and Dictate keep working.
 - `offline-enter` refuses Enter with the toast `Not connected: message not sent` and keeps the draft.
 - `offline-recover` clears the banner on its own once the server answers. The kept draft then sends.
 - `offline-device` shows `<PC> is offline` with `This device is offline` and a `Reconnect` button as soon as the device loses its network, and reconnects as soon as it is back.
@@ -28,6 +28,7 @@ Preconditions:
 
 - **Server goes away.** Run `$C server stop`. Right away `$C browser wait --role button --name "Environment disconnected"` passes and `--role alert` is absent. About 2 s later `$C browser wait --role alert` passes and `$C browser text --role alert` reads `<pc> is reconnecting` / `Fabs Bot on <pc> did not answer`.
 - **Enter is refused.** Run `$C browser fill --label "Message" --value "Are you still there?"` and `$C browser press --label "Message" --key Enter`. `$C browser wait --text "Not connected: message not sent"` passes, and `$C browser eval "document.querySelector('textarea[aria-label=Message]').value"` still prints the draft.
+- **Reconnect while reconnecting.** With the server still stopped, `$C browser click --role button --name "Reconnect"` sends a new `/api/host` request at once and the banner stays. Run `$C server start` and click `Reconnect` again: the banner clears right away instead of waiting for the next retry.
 - **Server comes back.** Run `$C server start`, then `$C browser wait --role alert --state hidden --timeout 60`. `$C browser click --role button --name "Send"` sends the kept draft, and it survives `$C browser open /`.
 - **Device offline.** In the script, `await context.setOffline(true)`. The page shows `--role alert` with `This device is offline` and a `Reconnect` button right away. `await context.setOffline(false)` clears it within a second.
 - **First load.** In the script, `await page.route("**/api/host", (r) => r.abort("connectionrefused"))` and reload. The page shows `Fabs Bot is reconnecting`, `Fabs Bot did not answer` and `Reconnect`, and no `bun run`. `await page.unroute("**/api/host")`, then click `Reconnect` straight away: the app loads.
@@ -37,6 +38,7 @@ Preconditions:
 
 ## Gotchas
 
+- While the server is stopped, its port is free, and another run's `$C launch` can take it. Launch with `--port N`, choosing a high N where N and N+1 are free, so the port sits outside the range other runs pick from. `$C server start` refuses a port that is already taken.
 - `$C server stop` also kills any bot CLI mid-turn. After `$C server start` the cut-off reply shows as failed.
 - Retries back off (1–2 s, 2–4 s, 4–8 s … up to 5 min) and only reset after 30 s of stable connection. Keep the server down briefly, or the banner can take a while to clear after `server start`.
 - A scheduled retry can load the app before a delayed `Reconnect` click on the first-load notice. Click it right after `unroute`.
