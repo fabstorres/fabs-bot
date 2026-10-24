@@ -46,6 +46,8 @@ Read-only. Exit code 1 on any `FAIL`. It checks:
 - which agent CLIs are installed;
 - the browser's CDP port answers.
 
+A stale web build or changed server source is only a `warn`, so `doctor` still exits 0. Read the lines: exit 0 doesn't prove the instance runs your latest code.
+
 Run it first, after any surprising result, and after any failed drive. If it fails, `cleanup` and `launch` again rather than driving a sick instance.
 
 ## Drive

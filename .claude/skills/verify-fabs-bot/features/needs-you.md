@@ -43,7 +43,7 @@ Preconditions:
 - After Stop, the last message is the user's queued one, so `wait --for idle` never passes. Wait for `text:Stopped` instead.
 - Option buttons are named `<Letter> <option text>`. Read the snapshot for the exact text the bot chose.
 - A new bot's greeting card is a question too, but it never raises `Needs you`. Count dots knowing that.
-- The `Needs you` dot sits on the bot's row, not on a thread. A bot with several chats shows one dot if any of them waits.
+- A question in a direct chat or a backchannel puts the `Needs you` dot on the bot's row. A question in a group chat puts it on that group's `Thread: <title>` row instead. A bot with several chats shows one dot if any of them waits.
 - While a question is pending, clicking that bot's row opens the pending thread, not its usual direct chat. Answer it (or use the desk's `Chats`) before driving the direct chat.
 - History survives `browser open /`. `Back` after a reload can land in a chat from before it; `browser start` gives a clean history.
 - Approval cards only come from Claude bots in "ask" mode. A Codex bot in that mode is sandboxed to its desk instead and never shows a card.

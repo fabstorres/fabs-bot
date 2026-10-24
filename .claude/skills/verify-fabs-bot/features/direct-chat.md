@@ -45,4 +45,4 @@ Preconditions:
 - The file card in chat and the desk entry share the name `File haiku.md`. Scope desk assertions to `--role complementary --name "Chief's desk"`.
 - `browser start` restarts Chromium. Switching to the phone viewport drops the open chat; reopen it.
 - Clicking a bot opens its direct thread (the most recent one if a routine made others). Other threads with the bot are listed under `Chats` in its desk panel.
-- The desk panel only lists routines; add or delete them in the bot's full editor (`Show settings` → `More settings`).
+- Each routine in the desk panel has a `Run <name> now` button that shows on hover or focus. It starts a run at once, even for a paused routine. Add or delete routines in the bot's full editor (`Show settings` → `More settings`).
