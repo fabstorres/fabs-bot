@@ -1,0 +1,28 @@
+   0.1s  options online: ["A Mango disabled=false opacity=1","B Banana disabled=false opacity=1","C Berries disabled=false opacity=1"]
+   1.8s  $ control-fabs server stop
+          stopped server 14169; run data kept
+   4.1s  banner 2307 ms after stop: "<pc> is reconnecting\nFabs Bot on <pc> did not answer\nReconnect"
+   4.1s  Reconnect visible while reconnecting: true
+   4.1s  options offline: ["A Mango disabled=true opacity=0.5","B Banana disabled=true opacity=0.5","C Berries disabled=true opacity=0.5"]
+   6.2s  shot 3-banner
+   7.7s  shot 4-draft
+   7.7s  draft after Enter: "Mango, please"
+   9.0s  shot 5-toast
+  10.6s  click → /api/host request in 51 ms; banner still shown: true
+  12.1s  approval buttons offline: ["Deny disabled=true","Allow disabled=true"]
+  12.7s  shot cards-approval-offline
+  14.2s  $ control-fabs browser screenshot --path offline-banner/harness-mask.png
+          → /home/fabs/.t3/worktrees/fabs-bot/t3-bad757ee/.verify/artifacts/run-20261024005638/offline-banner/harness-mask.png
+  14.8s  $ control-fabs browser snapshot --selector [data-slot=alert] --path offline-banner/harness-mask.aria.txt
+          → /home/fabs/.t3/worktrees/fabs-bot/t3-bad757ee/.verify/artifacts/run-20261024005638/offline-banner/harness-mask.aria.txt
+  27.2s  $ control-fabs server start
+          ready  run=run-20261024005638  url=http://127.0.0.1:4987  pid=15832
+  27.2s  server answering; banner still shown: true; last automatic attempt 7240 ms ago
+  27.3s  banner cleared 69 ms after Reconnect
+  27.3s  options back online: ["A Mango disabled=false opacity=1","B Banana disabled=false opacity=1","C Berries disabled=false opacity=1"]
+  29.4s  shot 13-reconnect-clicked
+  29.5s  options answered: ["A Mango disabled=true opacity=0.5","B Banana disabled=true opacity=0.5","C Berries disabled=true opacity=0.5"]
+  31.6s  shot question-answered
+  34.7s  first-load notice: "Fabs Bot is reconnecting\n\nFabs Bot did not answer\n\nReconnect"
+  36.5s  shot 10-first-load
+  37.2s  Reconnect loaded the app

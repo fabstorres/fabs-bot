@@ -1,0 +1,49 @@
+# http://127.0.0.1:4987/  viewport={"width":1440,"height":900}
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief": Chief 5:57 PM Mango it is. I've noted it for the smoothie.
+    - button "Bot Careful": Careful 5:56 PM Create a file named hello.txt in your desk containing the word hi. Use your file writing tool.
+    - button "Bot Design": Design 5:56 PM Hey, I'm Design. What's the main thing you want me on?
+    - button "Bot Engineer":
+      - text: Engineer 5:56 PM Hey, I'm Engineer. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 5:56 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+  - button "Plugins"
+  - button "This PC": FE <pc> All quiet
+- main:
+  - region "Thread with Chief":
+    - text: Chief
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops" [disabled]
+        - button "B A specific project" [disabled]
+        - button "C Research and writing" [disabled]
+        - button "D Something else" [disabled]
+      - paragraph: Use ask_user to ask me which fruit to put on a smoothie, with the options Mango, Banana and Berries. Then wait.
+      - group "Work log":
+        - button "1 step"
+      - 'group "Question: Which fruit should go in the smoothie?"':
+        - text: Which fruit should go in the smoothie?
+        - button "A Mango" [disabled]
+        - button "B Banana" [disabled]
+        - button "C Berries" [disabled]
+      - paragraph: "I've posted the question to your phone: which fruit goes in the smoothie, with Mango, Banana, or Berries as the options. I'll wait for your pick before going further."
+      - paragraph: A. Mango
+      - paragraph: Mango it is. I've noted it for the smoothie.
+    - button "Attach"
+    - textbox "Message":
+      - /placeholder: Message Chief
+      - text: Mango, please
+    - button "Dictate"
+    - button "Send"
+- region "Notifications alt+T"
