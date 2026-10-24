@@ -1,0 +1,3 @@
+#1 Design (done): "Hey, I'm Design. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "In your desk folder, run exactly these shell commands and nothing else: mkdir ..archive && printf '# Draft\\n\\nKept in the archive.\\n' > ..archive/draft.md && ln"
+#3 Design (done): [tool Bash done] "Done. The archive folder, draft file, and both symlinks were created in the design folder without errors."

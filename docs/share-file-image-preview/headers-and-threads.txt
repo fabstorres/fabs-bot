@@ -1,0 +1,60 @@
+# Before (origin/main): bot-shared chart.png
+$ curl -s -D - -o /dev/null /files/<id of chart.png>
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="chart.png"
+Content-Type: application/octet-stream
+content-length: 22207
+Date: Sun, 18 Oct 2026 22:07:20 GMT
+
+
+# After: bot-shared files (share_file)
+== GET /files/<id of chart.png>
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="chart.png"
+Content-Type: image/png
+content-length: 22207
+Date: Sun, 18 Oct 2026 22:09:46 GMT
+
+== GET /files/<id of notes.md>
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="notes.md"
+Content-Type: text/markdown
+content-length: 111
+Date: Sun, 18 Oct 2026 22:09:46 GMT
+
+== GET /files/<id of chart.png>?download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="chart.png"
+Content-Type: image/png
+content-length: 22207
+Date: Sun, 18 Oct 2026 22:09:46 GMT
+
+
+# After: files attached with Attach (/api/upload)
+== GET /files/<id of snapshot.png> (Attach upload)
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="snapshot.png"
+Content-Type: image/png
+content-length: 22207
+Date: Sun, 18 Oct 2026 22:10:22 GMT
+
+== GET /files/<id of SCREENSHOT.PNG> (Attach upload)
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="SCREENSHOT.PNG"
+Content-Type: image/png
+content-length: 22207
+Date: Sun, 18 Oct 2026 22:10:22 GMT
+
+
+# Threads (after)
+#1 Design (done): "Hey, I'm Design. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Your desk folder has chart.png and notes.md. Use the share_file tool to share chart.png, then use share_file again to share notes.md. Then reply with one short "
+#3 Design (done): [tool fabsbot · share_file done] [tool fabsbot · share_file done] "Both calls failed because I guessed the parameter name. I'll load the schema to get it right." [tool fabsbot · share_file done] [file chart.png 22207B id=8b36e430-aee1-4c4a-9b96-9a6ae687f7e7] [tool fabsbot · share_file done] [file notes.md 111B id=c458e573-a37b-496b-bdae-bb9d57d1ca6c] "Shared both files: chart.png and notes.md."
+#1 Chief (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): [file snapshot.png 22207B id=ffe11898-18c8-4407-b9ee-906fe0087bc8] [file SCREENSHOT.PNG 22207B id=a0ad178f-4625-4e72-8267-6c28fc3814d0] "Two screenshots attached. Reply with only: got it."
+#3 Chief (done): "got it."
+
+# Thread (before)
+#1 Design (done): "Hey, I'm Design. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "There is a file named chart.png in your desk folder. Use the share_file tool to share chart.png with me, then reply with one short sentence."
+#3 Design (done): [tool Bash done] [tool fabsbot · share_file done] [file chart.png 22207B id=2f6230ab-5c9d-4b92-9922-ce1f3aa10d92] "I shared chart.png with you."

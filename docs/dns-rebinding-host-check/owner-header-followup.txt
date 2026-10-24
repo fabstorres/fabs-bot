@@ -1,0 +1,4 @@
+GET /api/host on 127.0.0.1:4872  Host: evil.example:4872  Origin: http://evil.example:4872       -> HTTP 401
+  + Tailscale-User-Login: <owner-login>                                                          -> HTTP 200
+GET /api/host on 127.0.0.1:4873  Host: evil.example:4873  Origin: http://evil.example:4873       -> HTTP 401
+  + Tailscale-User-Login: <owner-login>                                                          -> HTTP 200

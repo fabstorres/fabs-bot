@@ -1,0 +1,11 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- dialog "SCREENSHOT.PNG":
+  - heading "SCREENSHOT.PNG" [level=2]
+  - paragraph: SCREENSHOT.PNG
+  - document "Preview of SCREENSHOT.PNG":
+    - img "SCREENSHOT.PNG"
+  - link "Download":
+    - /url: /files/a0ad178f-4625-4e72-8267-6c28fc3814d0?download
+  - link "Open":
+    - /url: /files/a0ad178f-4625-4e72-8267-6c28fc3814d0
+  - button "Close"

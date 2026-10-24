@@ -1,0 +1,6 @@
+ok    ?token= on /files/<id> is refused (HTTP 401)
+ok    ?token= on /ws upgrade is refused (HTTP 401)
+ok    ?token= on /api/bots is refused (HTTP 401)
+ok    /pair with no token is refused (HTTP 403)
+ok    /pair with an empty token is refused (HTTP 403)
+ok    /pair with the right token still redirects (HTTP 302)

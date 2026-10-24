@@ -1,0 +1,10 @@
+# http://127.0.0.1:4871/  viewport=1440x900
+- dialog "probe.html":
+  - heading "probe.html" [level=2]
+  - paragraph: probe.html
+  - document "Preview of probe.html": "<!doctype html><title>NOT_RUN</title><p>probe</p> <script>fetch(\"/api/bots\").then(r => { document.title = \"API_STATUS_\" + r.status; });</script>"
+  - link "Download":
+    - /url: /files/97c12942-fa55-4437-8ee9-8d29be6cbc3e?download
+  - link "Open":
+    - /url: /files/97c12942-fa55-4437-8ee9-8d29be6cbc3e
+  - button "Close"

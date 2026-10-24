@@ -1,0 +1,32 @@
+## ls -la <desk>   (after f5fedc4)
+total 0
+drwxr-xr-x. 3 fabs fabs 100 Oct 18 19:08 .
+drwxr-xr-x. 8 fabs fabs 160 Oct 18 19:07 ..
+drwxr-xr-x. 2 fabs fabs  60 Oct 18 19:08 ..archive
+lrwxrwxrwx. 1 fabs fabs  18 Oct 18 19:08 archive-link.md -> ..archive/draft.md
+lrwxrwxrwx. 1 fabs fabs  15 Oct 18 19:08 notes.txt -> /etc/os-release
+
+## GET /api/bots/<design>/files
+{
+  "root": "<run>/work/design",
+  "path": "",
+  "entries": [
+    {
+      "name": "archive-link.md",
+      "dir": false,
+      "size": 30,
+      "mtime": 1792375688607,
+      "path": "archive-link.md"
+    }
+  ]
+}
+
+## HTTP status codes
+200  GET /api/bots/<design>/file?path=archive-link.md      (-> ..archive/draft.md)
+200  GET /api/bots/<design>/file?path=..archive/draft.md
+404  GET /api/bots/<design>/file?path=notes.txt            (-> /etc/os-release)
+404  GET /api/bots/<design>/file?path=..
+404  GET /api/bots/<design>/files?path=..
+404  GET /api/bots/<design>/file?path=../chief
+200  GET /
+200  GET /assets/<first js asset>
