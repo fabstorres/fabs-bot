@@ -37,8 +37,7 @@ export function authorized(req: Request, ip: string | undefined, ownerLogin: str
     if (ownerLogin && tsUser === ownerLogin) return true;
   }
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const query = new URL(req.url).searchParams.get("token");
-  return [cookieToken(req), bearer, query].some((t) => t && timingSafeEqual(t, ACCESS_TOKEN));
+  return [cookieToken(req), bearer].some((t) => t && timingSafeEqual(t, ACCESS_TOKEN));
 }
 
 /**
@@ -61,7 +60,7 @@ export function pairCookie(): string {
   return `${COOKIE}=${encodeURIComponent(ACCESS_TOKEN)}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`;
 }
 
-function timingSafeEqual(a: string, b: string) {
+export function timingSafeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);

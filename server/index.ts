@@ -6,7 +6,7 @@ import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
-import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin } from "./auth";
+import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin, timingSafeEqual } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
@@ -377,7 +377,7 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   }
 
   if (url.pathname === "/pair") {
-    if (url.searchParams.get("token") !== ACCESS_TOKEN) return new Response("Invalid pairing link", { status: 403 });
+    if (!timingSafeEqual(url.searchParams.get("token") ?? "", ACCESS_TOKEN)) return new Response("Invalid pairing link", { status: 403 });
     return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": pairCookie() } });
   }
 
@@ -458,7 +458,7 @@ if (process.env.FABS_HOST) {
     try {
       listen(ts.ip);
       tailnetBound = true;
-      console.log(`  ↳ pair a device: http://${ts.dnsName ?? ts.ip}:${PORT}/pair?token=${ACCESS_TOKEN}`);
+      console.log("  ↳ pair a device from This PC");
     } catch (e) {
       console.warn(`  could not bind ${ts.ip}:${PORT}`, (e as Error).message);
     }
