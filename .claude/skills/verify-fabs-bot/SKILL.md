@@ -67,9 +67,11 @@ $C browser wait  --role region --name "Thread with Chief"
 $C browser fill  --label "Message" --value "…"
 $C browser press --label "Message" --key Enter
 $C browser eval  "document.querySelector('[role=region][data-thread-id]').dataset.threadId"
-$C wait <threadId> --for file|question|approval|idle|text:<substring> [--timeout 180]
+$C wait <threadId> --for file|question|approval|idle|blocked|text:<substring> [--timeout 180]
 $C thread <threadId>                        # compact dump: authors, tool steps, files, cards
 ```
+
+`--for idle` passes once the bot's turn has ended with a finished reply and stayed that way for 2.5 s. It exits 1 instead when the turn ended in an error or left a question or approval waiting on you. `--for blocked` passes on that last case and exits 1 on the other two. A timeout exits 2.
 
 Targets are ARIA roles and names that the app sets on purpose. Prefer them over CSS:
 
