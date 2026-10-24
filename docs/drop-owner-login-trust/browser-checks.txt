@@ -1,0 +1,8 @@
+# headless Chromium and the desktop app (Electron in a virtual kwin), fixed build
+browser, this PC  http://127.0.0.1:PORT        sidebar loads, composer shows "Send", 0 offline alerts, no pairing
+browser, HTTPS    http://127.0.0.1:PORT+1      "Not paired yet" until /pair?token=<token>, then the app loads
+                                               reload stays paired; "Reply with exactly the word: paired" -> bot replied "paired" live (5-https-thread.txt)
+browser, tailnet  http://<tailnet-ip>:PORT     "Not paired yet" -> browser pair -> app loads; reload stays paired
+desktop, This PC  --fresh profile              sidebar loads at http://127.0.0.1:PORT, 0 "Not paired yet", 0 offline alerts
+desktop, launcher File -> Switch PC... -> Open  This PC opens again with no pairing; new Add a PC copy (8-desktop-add-pc.aria.txt)
+tailscale-https   on -> serve-check 9/9 ok -> off restores the serve config; CLI error and port taken unchanged
