@@ -7,7 +7,6 @@ export function OfflineBanner() {
   const shown = useStore(showOffline);
   const title = useStore(offlineTitle);
   const reason = useStore(offlineReason);
-  const reconnecting = useStore((s) => s.connection === "reconnecting");
   if (!shown) return null;
   return (
     <Alert className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-2xl border-amber-300 bg-amber-50 [&>svg]:translate-y-0 [&>svg]:text-amber-600">
@@ -16,11 +15,9 @@ export function OfflineBanner() {
         <AlertTitle>{title}</AlertTitle>
         {reason && <AlertDescription>{reason}</AlertDescription>}
       </div>
-      {!reconnecting && (
-        <Button size="xs" variant="ghost" onClick={reconnect}>
-          Reconnect
-        </Button>
-      )}
+      <Button size="xs" variant="ghost" onClick={reconnect}>
+        Reconnect
+      </Button>
     </Alert>
   );
 }
