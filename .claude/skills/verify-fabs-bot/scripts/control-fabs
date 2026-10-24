@@ -213,6 +213,7 @@ const commands: Record<string, () => Promise<void>> = {
       console.log((await stopServer(s)) ? `stopped server ${s.pid}; run data kept` : "server was not running");
     } else if (action === "start") {
       if (alive(s.pid)) die(`server ${s.pid} is still running`);
+      if ((await freePort(s.port)) !== s.port) die(`port ${s.port} was taken by another process while the server was stopped; cleanup and launch again with --port`);
       await startServer(s);
       console.log(`ready  run=${s.runId}  url=${s.url}  pid=${s.pid}`);
     } else die("usage: control-fabs server stop|start");
