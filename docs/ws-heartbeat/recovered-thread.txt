@@ -1,0 +1,3 @@
+#1 Chief (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Are you still there?"
+#3 Chief (done): "Yes, I'm still here. What should I take on for you?\n\nA) Day-to-day ops\nB) A specific project\nC) Research and writing\nD) Something else\n\nPick a letter, or tell m"

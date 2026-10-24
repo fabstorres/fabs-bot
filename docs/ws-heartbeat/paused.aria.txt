@@ -1,0 +1,22 @@
+# http://127.0.0.1:4910/  viewport=1440x900
+- region "Thread with Chief":
+  - text: Chief
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops" [disabled]
+      - button "B A specific project" [disabled]
+      - button "C Research and writing" [disabled]
+      - button "D Something else" [disabled]
+  - alert:
+    - text: <pc> is reconnecting <pc> did not answer in time
+    - button "Reconnect"
+  - button "Attach" [disabled]
+  - textbox "Message":
+    - /placeholder: Message Chief
+    - text: Are you still there?
+  - button "Dictate"
+  - button "Environment disconnected" [disabled]

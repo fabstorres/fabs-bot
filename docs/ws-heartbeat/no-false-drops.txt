@@ -1,0 +1,16 @@
++  0s phase 1: healthy server, app idle
++ 10s healthy: alerts=0 send=1 disconnected=0
++ 20s healthy: alerts=0 send=1 disconnected=0
++ 30s healthy: alerts=0 send=1 disconnected=0
++ 40s healthy: alerts=0 send=1 disconnected=0
++ 50s healthy: alerts=0 send=1 disconnected=0
++ 50s healthy: new /ws connections during watch = 0
++ 50s phase 2: heartbeats stripped from /ws, as an older server would send
++ 60s no-heartbeat: alerts=0 send=1 disconnected=0
++ 70s no-heartbeat: alerts=0 send=1 disconnected=0
++ 80s no-heartbeat: alerts=0 send=1 disconnected=0
++ 90s no-heartbeat: alerts=0 send=1 disconnected=0
++100s no-heartbeat: alerts=0 send=1 disconnected=0
++100s no-heartbeat: new /ws connections during watch = 0
++100s heartbeats stripped = 4
++100s route removed and page reloaded: alerts=0 send=1 disconnected=0
