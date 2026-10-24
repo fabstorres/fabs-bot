@@ -1,0 +1,13 @@
+# http://127.0.0.1:4920/  viewport=1440x900
+- dialog "idea.md":
+  - heading "idea.md" [level=2]
+  - paragraph: idea.md
+  - document "Preview of idea.md":
+    - article:
+      - heading "Idea" [level=1]
+      - paragraph: Try it.
+  - link "Download":
+    - /url: /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=drafts%2Fidea.md&download
+  - link "Open":
+    - /url: /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=drafts%2Fidea.md
+  - button "Close"

@@ -1,0 +1,144 @@
+$ ls -l <work>/design <work>/linked-desk
+total 4
+drwxr-xr-x. 2 fabs fabs 60 Oct 24 09:36 drafts
+lrwxrwxrwx. 1 fabs fabs  6 Oct 24 09:36 drafts-link -> drafts
+lrwxrwxrwx. 1 fabs fabs 15 Oct 24 09:36 notes.txt -> /etc/os-release
+lrwxrwxrwx. 1 fabs fabs  7 Oct 24 09:36 plan-link.md -> plan.md
+-rw-r--r--. 1 fabs fabs 26 Oct 24 09:36 plan.md
+lrwxrwxrwx. 1 fabs fabs 6 Oct 24 09:36 <work>/linked-desk -> design
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/files?path=
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=utf-8
+Content-Length: 417
+
+{"root":"<work>/design","path":"","entries":[{"name":"drafts","dir":true,"size":60,"mtime":1792859773939,"path":"drafts"},{"name":"drafts-link","dir":false,"size":60,"mtime":1792859773939,"path":"drafts-link"},{"name":"plan-link.md","dir":false,"size":26,"mtime":1792859773936,"path":"plan-link.md"},{"name":"plan.md","dir":false,"size":26,"mtime":1792859773936,"path":"plan.md"}]}
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/files?path=drafts
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=utf-8
+Content-Length: 175
+
+{"root":"<work>/design","path":"drafts","entries":[{"name":"idea.md","dir":false,"size":15,"mtime":1792859773939,"path":"drafts/idea.md"}]}
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/files?path=drafts-link
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=utf-8
+Content-Length: 185
+
+{"root":"<work>/design","path":"drafts-link","entries":[{"name":"idea.md","dir":false,"size":15,"mtime":1792859773939,"path":"drafts-link/idea.md"}]}
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=plan.md
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="plan.md"
+X-Content-Type-Options: nosniff
+Content-Type: text/markdown
+content-length: 26
+
+# Plan
+Ship the desk fix.
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=plan-link.md
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="plan-link.md"
+X-Content-Type-Options: nosniff
+Content-Type: text/markdown
+content-length: 26
+
+# Plan
+Ship the desk fix.
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=plan-link.md&download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="plan-link.md"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'; sandbox
+Content-Type: text/markdown
+content-length: 26
+
+# Plan
+Ship the desk fix.
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=drafts-link%2Fidea.md
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="idea.md"
+X-Content-Type-Options: nosniff
+Content-Type: text/markdown
+content-length: 15
+
+# Idea
+Try it.
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=notes.txt
+HTTP/1.1 404 Not Found
+Content-Type: application/json;charset=utf-8
+Content-Length: 21
+
+{"error":"not found"}
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=drafts
+HTTP/1.1 404 Not Found
+Content-Type: application/json;charset=utf-8
+Content-Length: 21
+
+{"error":"not found"}
+
+
+$ GET /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=..%2Fchief%2Fplan.md
+HTTP/1.1 404 Not Found
+Content-Type: application/json;charset=utf-8
+Content-Length: 21
+
+{"error":"not found"}
+
+
+$ GET /api/bots/72426b05-feb6-4ff8-853c-61e071957cd9/files?path=
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=utf-8
+Content-Length: 422
+
+{"root":"<work>/linked-desk","path":"","entries":[{"name":"drafts","dir":true,"size":60,"mtime":1792859773939,"path":"drafts"},{"name":"drafts-link","dir":false,"size":60,"mtime":1792859773939,"path":"drafts-link"},{"name":"plan-link.md","dir":false,"size":26,"mtime":1792859773936,"path":"plan-link.md"},{"name":"plan.md","dir":false,"size":26,"mtime":1792859773936,"path":"plan.md"}]}
+
+
+$ GET /api/bots/72426b05-feb6-4ff8-853c-61e071957cd9/file?path=plan-link.md
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="plan-link.md"
+X-Content-Type-Options: nosniff
+Content-Type: text/markdown
+content-length: 26
+
+# Plan
+Ship the desk fix.
+
+
+$ GET /api/bots/72426b05-feb6-4ff8-853c-61e071957cd9/file?path=notes.txt
+HTTP/1.1 404 Not Found
+Content-Type: application/json;charset=utf-8
+Content-Length: 21
+
+{"error":"not found"}
+
+
+$ GET /files/0cbbcb9b-032d-45bb-a7e9-569d70a5cf0e
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="plan-link.md"
+X-Content-Type-Options: nosniff
+Content-Type: text/markdown
+content-length: 26
+
+# Plan
+Ship the desk fix.
+
+
+$ web app (serveStatic, still uses within())
+/ -> 200 text/html;charset=utf-8 <!doctype html>
+/assets/desktop-Pdxyo2fO.js -> 200 text/javascript;charset=utf-8 import{B as e,G
+/%2e%2e/%2e%2e/package.json -> 200 text/html;charset=utf-8 <!doctype html>
