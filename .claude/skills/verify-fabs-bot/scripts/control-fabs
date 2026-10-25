@@ -328,13 +328,15 @@ const commands: Record<string, () => Promise<void>> = {
     const want = flag("for") ?? "idle";
     const timeout = Number(flag("timeout") ?? 180) * 1000;
     const deadline = Date.now() + timeout;
+    const kind = ((await api(s, "GET", "/api/threads")).data as any[]).find((t) => t.id === id)?.kind;
+    const isRequest = (m: any) => (kind === "backchannel" ? m.fromBotId !== null : m.author !== "bot");
     let seen = "";
     let stableSince = 0;
     while (Date.now() < deadline) {
       const msgs = (await api(s, "GET", `/api/threads/${id}/messages`)).data as any[];
       const parts = msgs.flatMap((m) => m.parts);
       const running = msgs.some((m) => m.status === "streaming" && !m.parts.some((p: any) => p.type === "approval" && !p.decision));
-      const replies = msgs.slice(msgs.findLastIndex((m) => m.author !== "bot") + 1);
+      const replies = msgs.slice(msgs.findLastIndex(isRequest) + 1);
       const needsYou = parts.some((p) => (p.type === "question" && p.answered === undefined && !p.greeting) || (p.type === "approval" && !p.decision));
       let hit = false;
       if (want === "idle" || want === "blocked") {
