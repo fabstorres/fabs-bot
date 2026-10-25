@@ -328,18 +328,19 @@ const commands: Record<string, () => Promise<void>> = {
     const want = flag("for") ?? "idle";
     const timeout = Number(flag("timeout") ?? 180) * 1000;
     const deadline = Date.now() + timeout;
-    let ended: "" | "idle" | "error" | "blocked" = "";
+    let seen = "";
     let stableSince = 0;
     while (Date.now() < deadline) {
       const msgs = (await api(s, "GET", `/api/threads/${id}/messages`)).data as any[];
       const parts = msgs.flatMap((m) => m.parts);
-      const streaming = msgs.some((m) => m.status === "streaming");
+      const running = msgs.some((m) => m.status === "streaming" && !m.parts.some((p: any) => p.type === "approval" && !p.decision));
       const last = msgs[msgs.length - 1];
       const needsYou = parts.some((p) => (p.type === "question" && p.answered === undefined && !p.greeting) || (p.type === "approval" && !p.decision));
       let hit = false;
       if (want === "idle" || want === "blocked") {
-        const now = streaming || last?.author !== "bot" ? "" : last.status === "error" ? "error" : needsYou ? "blocked" : "idle";
-        if (now !== ended) [ended, stableSince] = [now, Date.now()];
+        const ended = running || last?.author !== "bot" ? "" : last.status === "error" ? "error" : needsYou ? "blocked" : "idle";
+        const snapshot = JSON.stringify(msgs);
+        if (snapshot !== seen) [seen, stableSince] = [snapshot, Date.now()];
         if (ended && Date.now() - stableSince > 2500) {
           const how = { idle: "idle", error: "in an error", blocked: "waiting on you" }[ended];
           if (ended !== want) die(`the turn in ${id} ended ${how}, not ${want}; see \`control-fabs thread ${id}\``);
