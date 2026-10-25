@@ -73,7 +73,7 @@ $C wait <threadId> --for file|question|approval|idle|blocked|text:<substring> [-
 $C thread <threadId>                        # compact dump: authors, tool steps, files, cards
 ```
 
-`--for idle` passes once the bot's turn has ended with a finished reply and stayed that way for 2.5 s. It exits 1 instead when the turn ended in an error or left a question or approval waiting on you. `--for blocked` passes on that last case and exits 1 on the other two. A timeout exits 2.
+`--for idle` passes once every bot reply to the latest user or routine message has finished and the thread hasn't changed for 2.5 s. It exits 1 instead when any of those replies ended in an error (in a group, one failed bot is enough) or a question or approval is left waiting on you. An open approval counts even while its reply is still streaming, because the bot can't go on until you decide; an open question counts once its reply has finished. `--for blocked` passes when a question or approval is waiting on you, and exits 1 on an error or a plain finish. A timeout exits 2.
 
 Targets are ARIA roles and names that the app sets on purpose. Prefer them over CSS:
 
