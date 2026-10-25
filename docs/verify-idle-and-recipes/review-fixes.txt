@@ -1,0 +1,50 @@
+Finding 1: an unanswered approval while its reply is still streaming
+$ control-fabs wait <A> --for approval
+ok  approval after 3s
+exit=0
+$ control-fabs wait <A> --for blocked --timeout 5   (before, 6dc2109)
+control-fabs: timed out after 5s waiting for blocked in <A>
+exit=2
+$ control-fabs wait <A> --for idle --timeout 5   (before, 6dc2109)
+control-fabs: timed out after 5s waiting for idle in <A>
+exit=2
+$ control-fabs wait <A> --for blocked --timeout 5   (after)
+ok  blocked after 3s
+exit=0
+$ control-fabs wait <A> --for idle --timeout 5   (after)
+control-fabs: the turn in <A> ended waiting on you, not idle; see `control-fabs thread <A>`
+exit=1
+$ control-fabs thread <A> | tail -1
+#5 Careful (streaming): "The last attempt's outcome was never recorded, so I'll run the exact command again and then confirm the file exists." [tool Bash running] [approval Bash pending id=…]
+$ control-fabs api POST /api/approvals/<id> '{"decision":"allow"}'; control-fabs wait <A> --for idle   (after)
+ok  idle after 6s
+exit=0
+#3 Careful (error), a stopped turn for an earlier message, did not fail this wait. careful/approved.txt exists.
+
+Finding 2: a group where one bot fails and the other replies
+$ control-fabs thread <G>
+#1 user (done): "Each of you reply with only GROUP_OK."
+#2 Faulty (error): "⚠️ {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'no-such-model-xyz' model is not supported when using Codex with a ChatGP"
+#3 Chief (done): "GROUP_OK"
+$ control-fabs wait <G> --for idle   (before, 6dc2109)
+ok  idle after 3s
+exit=0
+$ control-fabs wait <G> --for idle   (after)
+control-fabs: the turn in <G> ended in an error, not idle; see `control-fabs thread <G>`
+exit=1
+$ control-fabs wait <G> --for blocked   (after)
+control-fabs: the turn in <G> ended in an error, not blocked; see `control-fabs thread <G>`
+exit=1
+Then "@Chief reply with only SECOND_OK." in the same group; Faulty's earlier error no longer counts:
+$ control-fabs wait <G> --for idle   (after)
+ok  idle after 6s
+exit=0
+#4 user (done): "@Chief reply with only SECOND_OK."
+#5 Chief (done): "SECOND_OK"
+
+Re-checks (after)
+"Reply with only OK." to Chief: wait <T> --for idle → ok idle after 6s, exit=0
+ask_user left open: wait <T> --for idle → ended waiting on you, exit=1; wait <T> --for blocked → ok blocked after 3s, exit=0
+1000-word essay, still streaming: wait <T> --for idle --timeout 4 → timed out, exit=2; --for blocked --timeout 4 → timed out, exit=2; then --for idle → ok idle after 18s, exit=0
+ask_user plus an essay, question open while streaming: wait <T> --for blocked --timeout 4 → timed out, exit=2; after the essay, --for blocked → ok blocked after 16s, exit=0; --for idle → ended waiting on you, exit=1
+"Reply with only OK." to Faulty alone: wait <E> --for idle → ended in an error, exit=1; --for blocked → ended in an error, exit=1
