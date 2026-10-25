@@ -334,11 +334,11 @@ const commands: Record<string, () => Promise<void>> = {
       const msgs = (await api(s, "GET", `/api/threads/${id}/messages`)).data as any[];
       const parts = msgs.flatMap((m) => m.parts);
       const running = msgs.some((m) => m.status === "streaming" && !m.parts.some((p: any) => p.type === "approval" && !p.decision));
-      const last = msgs[msgs.length - 1];
+      const replies = msgs.slice(msgs.findLastIndex((m) => m.author !== "bot") + 1);
       const needsYou = parts.some((p) => (p.type === "question" && p.answered === undefined && !p.greeting) || (p.type === "approval" && !p.decision));
       let hit = false;
       if (want === "idle" || want === "blocked") {
-        const ended = running || last?.author !== "bot" ? "" : last.status === "error" ? "error" : needsYou ? "blocked" : "idle";
+        const ended = running || !replies.length ? "" : replies.some((m) => m.status === "error") ? "error" : needsYou ? "blocked" : "idle";
         const snapshot = JSON.stringify(msgs);
         if (snapshot !== seen) [seen, stableSince] = [snapshot, Date.now()];
         if (ended && Date.now() - stableSince > 2500) {
