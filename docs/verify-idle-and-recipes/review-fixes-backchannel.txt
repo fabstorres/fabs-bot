@@ -1,0 +1,23 @@
+Second review follow-up: backchannel errors are scoped to the latest bot-to-bot request.
+Isolated instance, Chief (Claude haiku) messaging Faulty (Codex) via message_bot; Faulty's model was switched between an unsupported one and the default.
+
+== backchannel after a recovered exchange (#2 error, #3 request, #4 RECOVERED)
+-- bd44f92: wait --for idle
+control-fabs: the turn in <backchannel> ended in an error, not idle; see `control-fabs thread <backchannel>`
+exit=1
+-- this fix: wait --for idle
+ok  idle after 3s
+exit=0
+-- this fix: wait --for blocked
+control-fabs: the turn in <backchannel> ended idle, not blocked; see `control-fabs thread <backchannel>`
+exit=1
+
+== Chief's direct thread (normal reply)
+-- this fix: wait --for idle
+ok  idle after 3s
+exit=0
+
+== backchannel whose latest exchange errored (#5 request, #6 error)
+-- this fix: wait --for idle
+control-fabs: the turn in <backchannel> ended in an error, not idle; see `control-fabs thread <backchannel>`
+exit=1
