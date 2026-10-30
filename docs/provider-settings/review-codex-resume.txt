@@ -1,0 +1,12 @@
+# Review fix: Codex launch arguments go before 'resume <id>'
+# Codex settings set through the Providers dialog: binary path = <run>/bin/codex-wrapper, launch arguments = --color never (exec-only flag)
+
+## Engineer (Codex) thread
+
+## codex-wrapper.log (bot runs only; first 7 arguments)
+codex wrapper: exec --color never --json --skip-git-repo-check -c mcp_servers.fabsbot.url="http://127.0.0.1:4870/mcp/<id>"
+codex wrapper: exec --color never resume <id> --json --skip-git-repo-check
+
+## Codex CLI parsing check (--help, no model call)
+codex exec --color never resume <id> --json --help -> exit 0
+codex exec resume <id> --color never --json --help (old order) -> exit 2
