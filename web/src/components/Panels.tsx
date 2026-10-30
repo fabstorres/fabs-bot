@@ -100,6 +100,10 @@ function PairDevice({ host, onChange }: { host?: HostInfo; onChange: () => void 
     setError(null);
     newPairingLink().then(setLink, (e: Error) => setError(e.message));
   };
+  const httpsChanged = () => {
+    setLink(null);
+    onChange();
+  };
   return (
     <Card className="flex flex-col gap-4 sm:flex-row">
       {link && <div className="pair-qr size-40 flex-none self-center [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: link.qr }} />}
@@ -129,7 +133,7 @@ function PairDevice({ host, onChange }: { host?: HostInfo; onChange: () => void 
             {error}
           </p>
         )}
-        {host && <TailscaleHttps host={host} onChange={onChange} />}
+        {host && <TailscaleHttps host={host} onChange={httpsChanged} />}
       </div>
     </Card>
   );
