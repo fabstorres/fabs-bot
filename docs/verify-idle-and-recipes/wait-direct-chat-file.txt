@@ -1,0 +1,9 @@
+$ control-fabs wait <T> --for file
+ok  file after 4s
+exit=0
+$ control-fabs wait <T> --for idle
+ok  idle after 4s
+exit=0
+$ control-fabs thread <T> | tail -2
+#6 user (done): "Write a file named haiku.md in your desk with a 3-line haiku about coffee, share it with share_file, then reply with one short sentence."
+#7 Chief (done): [tool Write done] [tool fabsbot · share_file done] [file haiku.md 80B id=92ec063a-735f-4d49-a87f-bdfd9f646745] "I wrote the coffee haiku to haiku.md and shared it with you."

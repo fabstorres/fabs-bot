@@ -1,0 +1,13 @@
+$ control-fabs wait <E> --for idle   (this branch)
+control-fabs: the turn in <E> ended in an error, not idle; see `control-fabs thread <E>`
+exit=1
+$ control-fabs wait <E> --for blocked   (this branch)
+control-fabs: the turn in <E> ended in an error, not blocked; see `control-fabs thread <E>`
+exit=1
+$ control-fabs wait <E> --for idle   (main)
+ok  idle after 3s
+exit=0
+$ control-fabs thread <E>
+#1 Faulty (done): "Hey, I'm Faulty. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Reply with only OK."
+#3 Faulty (error): "⚠️ {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'no-such-model-xyz' model is not supported when using Codex with a ChatGP"

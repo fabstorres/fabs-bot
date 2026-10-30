@@ -1,0 +1,7 @@
+  0.0s  context.setOffline(true)
+  0.0s  GET /api/host
+  0.0s  GET /api/host failed
+  0.0s  banner: <pc> is offline / This device is offline / Reconnect   composer button: Environment disconnected
+  4.0s  context.setOffline(false)
+  4.0s  GET /api/host
+  4.1s  banner: (no banner)   composer button: Send

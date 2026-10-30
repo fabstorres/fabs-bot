@@ -1,0 +1,16 @@
+$ control-fabs wait <Q> --for question
+ok  question after 10s
+exit=0
+$ control-fabs wait <Q> --for blocked   (this branch)
+ok  blocked after 5s
+exit=0
+$ control-fabs wait <Q> --for idle   (this branch)
+control-fabs: the turn in <Q> ended waiting on you, not idle; see `control-fabs thread <Q>`
+exit=1
+$ control-fabs wait <Q> --for idle   (main)
+ok  idle after 3s
+exit=0
+$ control-fabs thread <Q>
+#1 Chief (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Use ask_user to ask me which fruit to put on a smoothie: mango, banana or berries. Then wait."
+#3 Chief (done): [tool fabsbot · ask_user done] [question "Which fruit should go in the smoothie?" options=3 answered=-] "I've posted the question with the options mango, banana, and berries. I'll wait for your pick."

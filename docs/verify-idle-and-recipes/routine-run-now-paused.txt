@@ -1,0 +1,11 @@
+$ threads before
+8
+clicked
+routine thread created: yes
+ok  idle after 6s
+exit=0
+#1 system (done): "⏰ Scheduled run of \"Paused check\":\nReply with only ROUTINE_RAN."
+#2 Chief (done): "ROUTINE_RAN"
+    "name": "Paused check",
+    "enabled": false,
+    "lastRunAt": 1792885420765,

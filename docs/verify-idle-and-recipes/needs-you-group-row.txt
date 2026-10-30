@@ -1,0 +1,16 @@
+7-  - navigation "Chats":
+8:    - 'button "Thread: Design, Careful"':
+9-      - text: "Design, Careful 4:44 PM I posted the question to you: red or blue. I'm waiting for your answer."
+10-      - img "Needs you"
+11-    - button "Bot Chief":
+12-      - text: Chief 4:43 PM ROUTINERAN
+--
+18-      - img "Unread"
+19:    - button "Bot Careful":
+20-      - text: Careful 4:41 PM Hey, I'm Careful. What's the main thing you want me on?
+21-      - img "Unread"
+22:    - button "Bot Design":
+23-      - text: Design 4:41 PM Waiting for your answer
+24-      - img "Unread"
+25-    - button "Bot Verifier": Verifier 9:40 AM Hey, I'm Verifier. What's the main thing you want me on?
+26-    - button "Bot Chief of Staff":

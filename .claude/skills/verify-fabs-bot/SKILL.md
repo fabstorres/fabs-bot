@@ -46,6 +46,8 @@ Read-only. Exit code 1 on any `FAIL`. It checks:
 - which agent CLIs are installed;
 - the browser's CDP port answers.
 
+A stale web build or changed server source is only a `warn`, so `doctor` still exits 0. Read the lines: exit 0 doesn't prove the instance runs your latest code.
+
 Run it first, after any surprising result, and after any failed drive. If it fails, `cleanup` and `launch` again rather than driving a sick instance.
 
 ## Drive
@@ -67,9 +69,11 @@ $C browser wait  --role region --name "Thread with Chief"
 $C browser fill  --label "Message" --value "…"
 $C browser press --label "Message" --key Enter
 $C browser eval  "document.querySelector('[role=region][data-thread-id]').dataset.threadId"
-$C wait <threadId> --for file|question|approval|idle|text:<substring> [--timeout 180]
+$C wait <threadId> --for file|question|approval|idle|blocked|text:<substring> [--timeout 180]
 $C thread <threadId>                        # compact dump: authors, tool steps, files, cards
 ```
+
+`--for idle` passes once every bot reply to the latest user or routine message (in a backchannel, the latest bot-to-bot request) has finished and the thread hasn't changed for 2.5 s. It exits 1 instead when any of those replies ended in an error (in a group, one failed bot is enough) or a question or approval is left waiting on you. An open approval counts even while its reply is still streaming, because the bot can't go on until you decide; an open question counts once its reply has finished. `--for blocked` passes when a question or approval is waiting on you, and exits 1 on an error or a plain finish. A timeout exits 2.
 
 Targets are ARIA roles and names that the app sets on purpose. Prefer them over CSS:
 
