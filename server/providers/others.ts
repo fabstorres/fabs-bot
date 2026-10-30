@@ -20,7 +20,7 @@ export const cursor: Provider = {
   models: ["", "auto", "sonnet-4.5", "gpt-5"],
 
   async run(o, emit) {
-    const cmd = ["cursor-agent", "-p", "--output-format", "stream-json", "--trust", "--workspace", o.cwd];
+    const cmd = [o.launch.bin, ...o.launch.args, "-p", "--output-format", "stream-json", "--trust", "--workspace", o.cwd];
     if (o.bot.autonomy === "full") cmd.push("--force", "--approve-mcps");
     if (o.bot.model) cmd.push("--model", o.bot.model);
     if (o.sessionId) cmd.push("--resume", o.sessionId);
@@ -29,6 +29,7 @@ export const cursor: Provider = {
     const { code, stderr } = await spawnLines({
       cmd,
       cwd: o.cwd,
+      env: o.launch.env,
       signal: o.signal,
       onLine(line) {
         const ev = parseJson(line);
@@ -73,7 +74,7 @@ export const opencode: Provider = {
   models: ["", "anthropic/claude-sonnet-5-5", "openai/gpt-5.5"],
 
   async run(o, emit) {
-    const cmd = ["opencode", "run", "--format", "json", "--dir", o.cwd];
+    const cmd = [o.launch.bin, "run", ...o.launch.args, "--format", "json", "--dir", o.cwd];
     if (o.bot.autonomy === "full") cmd.push("--dangerously-skip-permissions");
     if (o.bot.model) cmd.push("-m", o.bot.model);
     if (o.sessionId) cmd.push("-s", o.sessionId);
@@ -83,6 +84,7 @@ export const opencode: Provider = {
     const { code, stderr } = await spawnLines({
       cmd,
       cwd: o.cwd,
+      env: o.launch.env,
       signal: o.signal,
       onLine(line) {
         const ev = parseJson(line);
@@ -121,13 +123,14 @@ export const gemini: Provider = {
   models: ["", "gemini-2.5-pro", "gemini-2.5-flash"],
 
   async run(o, emit) {
-    const cmd = ["gemini"];
+    const cmd = [o.launch.bin, ...o.launch.args];
     if (o.bot.autonomy === "full") cmd.push("-y");
     if (o.bot.model) cmd.push("-m", o.bot.model);
     emit({ type: "text.break" });
     const { code, stderr } = await spawnLines({
       cmd,
       cwd: o.cwd,
+      env: o.launch.env,
       stdin: withPersona({ ...o, sessionId: null }),
       signal: o.signal,
       onLine: (line) => emit({ type: "text", text: line + "\n" }),

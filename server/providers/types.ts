@@ -10,8 +10,15 @@ export type ProviderEvent =
   | { type: "error"; message: string }
   | { type: "done"; costUsd?: number };
 
+export interface Launch {
+  bin: string;
+  args: string[];
+  env: Record<string, string>;
+}
+
 export interface RunOptions {
   bot: Bot;
+  launch: Launch;
   prompt: string;
   systemPrompt: string;
   sessionId: string | null;

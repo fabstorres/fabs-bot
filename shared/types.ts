@@ -120,14 +120,28 @@ export interface Connector {
   createdAt: number;
 }
 
+export const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+export interface ProviderSettings {
+  enabled: boolean;
+  displayName: string;
+  binaryPath: string;
+  launchArgs: string;
+  env: Record<string, string>;
+}
+
 export interface ProviderInfo {
   id: ProviderId;
   label: string;
+  bin: string;
+  path: string | null;
   installed: boolean;
   version: string;
   supportsTools: boolean;
   note: string;
   models: string[];
+  settings: ProviderSettings;
+  checkedAt: number;
 }
 
 export interface HostInfo {

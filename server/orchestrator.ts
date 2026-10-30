@@ -4,7 +4,7 @@ import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { LOCAL_BASE, MAX_HOPS, SHARED_DIR } from "./config";
 import * as db from "./db";
 import { endLink, getStatus, publish, setStatus, startLink } from "./bus";
-import { providers } from "./providers";
+import { launchFor, providers } from "./providers";
 import type { ProviderEvent } from "./providers/types";
 import { clip } from "./providers/spawn";
 
@@ -286,6 +286,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
     await provider.run(
       {
         bot,
+        launch: launchFor(bot.provider),
         prompt: buildPrompt(thread, bot, pending, fresh),
         systemPrompt: systemPrompt(bot, thread),
         sessionId: resume,
