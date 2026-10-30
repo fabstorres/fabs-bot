@@ -1,0 +1,11 @@
+# fabs-app://launcher/desktop.html  viewport=window
+- form "Add a PC":
+  - heading "Add a PC" [level=2]
+  - paragraph: On the other PC, open This PC, choose Pair a device, and copy the link. It works once, within 5 minutes. If that PC has Tailscale HTTPS on, the link uses its https address.
+  - text: Pairing link or address
+  - textbox "Pairing link or address":
+    - /placeholder: Paste the link from the other PC
+  - text: Name (optional)
+  - textbox "Name (optional)":
+    - /placeholder: <pc>
+  - button "Connect" [disabled]

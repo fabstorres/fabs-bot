@@ -1,0 +1,3 @@
+paired again from the launcher with a new link: app loads at "<tailnet-ip>"
+devices on the PC: 1
+forgot the PC, added it back by bare address: Not paired yet

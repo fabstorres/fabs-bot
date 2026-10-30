@@ -1,0 +1,10 @@
+ok    unpaired tailnet client cannot create a pairing link (HTTP 401)
+ok    unpaired tailnet client cannot list devices (HTTP 401)
+ok    unpaired tailnet client cannot remove a device (HTTP 401)
+ok    a cross-site page cannot create a pairing link through this PC's browser (HTTP 403)
+ok    a rebound Host cannot create a pairing link (HTTP 401)
+ok    /pair with no code is refused (HTTP 403)
+ok    removing a device that does not exist answers 404 (HTTP 404)
+ok    this PC creates a link that expires in 5 minutes (HTTP 200)
+ok    the link's expiresAt is 5.00 minutes away
+ok    the link is /pair?code=<one-time code>

@@ -1,0 +1,5 @@
+before: GET /api/bots with the device cookie -> HTTP 200
+socket open
+socket closed by the server: code 1008 reason "device removed" after 2 events
+after: GET /api/bots with the device cookie -> HTTP 401
+after: a new WebSocket with the device cookie -> refused
