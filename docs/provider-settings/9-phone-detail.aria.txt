@@ -1,0 +1,26 @@
+# http://127.0.0.1:4870/  viewport=430x932
+- region "OpenCode settings":
+  - heading "OpenCode" [level=3]
+  - code: v1.17.11
+  - text: Status
+  - paragraph:
+    - text: Found at
+    - code: /home/fabs/.bun/bin/opencode
+    - text: · chat + workspace
+  - paragraph: Model format is provider/model. App tools aren't wired in yet.
+  - text: Display name
+  - textbox "Display name":
+    - /placeholder: OpenCode
+  - heading "Runtime" [level=4]
+  - text: Binary path Path to the OpenCode binary bots run. Leave empty to use opencode from PATH.
+  - textbox "Binary path":
+    - /placeholder: opencode
+  - text: Launch arguments Extra arguments added to every run, before Fabs Bot's own flags.
+  - textbox "Launch arguments"
+  - heading "Environment" [level=4]
+  - group "Environment variables":
+    - text: Variables API keys, base URLs, and other settings this CLI reads from its environment. Stored on this PC only.
+    - button "Add variable"
+  - heading "Models" [level=4]
+  - paragraph: Suggested in the bot editor. A bot can use any model the CLI accepts.
+  - text: anthropic/claude-sonnet-5-5 openai/gpt-5.5

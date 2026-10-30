@@ -79,7 +79,7 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 
 | UI | handle |
 |---|---|
-| sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`), `"Plugins"`, `"This PC"` |
+| sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`), `"Plugins"`, `"Providers"`, `"This PC"` |
 | phone favorites | `--role button --name "Open <Name>"` (big faces above the list, 430px only) |
 | new bot pane | `--role region --name "New bot"`; `--role radio` in groups `Color` / `Shape`; `--label "Name"`; suggestions `"Suggestion <Template>"`; `"Get started"` |
 | open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"`, `"Send"` (`"Environment disconnected"` while offline), `"Stop"`, `"Attach"`; offline banner `--role alert` with `"Reconnect"` |
@@ -88,6 +88,7 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
 | bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` in groups `Shape` / `Color` / `Brain` / `Autonomy` |
+| providers dialog | `--role dialog --name "Providers"`; list `--role group --name "Agent CLIs"` with a button per CLI (`"<Name> v<version> <status>"`) and `--role switch --name "Enable <Name>"`; details `--role region --name "<Name> settings"` with `--label "Display name"`, `"Binary path"`, `"Launch arguments"`; `--role group --name "Environment variables"` with `"Add variable"`, `--label "Variable <n> name"` / `"Variable <n> value"`, `"Remove <NAME>"`; `"Refresh"` |
 | This PC panel | `--role group --name "Pair your phone or laptop"` with `"Pair a device"`, then `"New link"` / `"Copy pairing link"`; `--role region --name "Paired devices"` with `"Remove <label>"` per device (`This device` marks your own); `--role switch --name "Tailscale HTTPS"` inside `--role group --name "Tailscale HTTPS"`; version badge `--text "v<version>"` beside the PC name |
 | desktop launcher | `--role region --name "PCs"`; rows `--role group --name "PC <name>"` with `"Open"` / `"Forget <name>"`; form `--role form --name "Add a PC"` with `--label "Pairing link or address"`, `--label "Name (optional)"`, `"Connect"`; errors `--role alert` |
 

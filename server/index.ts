@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node
 import { hostname } from "node:os";
 import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
-import type { Bot, HostInfo, MessagePart, PairingLink, ServerEvent } from "../shared/types";
+import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, type ProviderSettings, type ServerEvent } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
@@ -11,7 +11,7 @@ import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { realPathWithin, within } from "./paths";
 import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
-import { providerInfo } from "./providers";
+import { isProviderId, launchFor, providerInfo, updateProvider } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
 import { disableServe, enableServe, killRunningCommands, tailscaleState, type ServeProblem } from "./tailscale";
@@ -177,6 +177,14 @@ route("DELETE", "/api/devices/:id", (_r, p) => {
   return json({ ok: true });
 });
 route("GET", "/api/providers", (_r, _p, url) => providerInfo(url.searchParams.has("refresh")).then(json));
+route("PUT", "/api/providers/:id", async (req, p) => {
+  const id = p.id!;
+  if (!isProviderId(id)) return bad("not found", 404);
+  const patch = await body<Partial<ProviderSettings>>(req);
+  const badName = Object.keys(patch.env ?? {}).find((name) => !ENV_NAME.test(name));
+  if (badName) return bad(`"${badName}" isn't a valid variable name. Use letters, digits and _, and don't start with a digit.`);
+  return json(await updateProvider(id, patch));
+});
 
 route("GET", "/api/bots", () => json(db.listBots()));
 route("POST", "/api/bots", async (req) => json(createBot(await body(req))));
@@ -370,7 +378,7 @@ route("DELETE", "/api/connectors/:id", (_r, p) => {
 route("GET", "/api/connectors/inherited", async (_r, _p, url) => {
   const cached = db.getSetting("claude.inherited");
   if (cached && !url.searchParams.has("refresh")) return json(JSON.parse(cached));
-  const servers = await scanClaudeInventory(SHARED_DIR).catch(() => []);
+  const servers = await scanClaudeInventory(SHARED_DIR, launchFor("claude")).catch(() => []);
   const value = { scannedAt: Date.now(), servers };
   db.setSetting("claude.inherited", JSON.stringify(value));
   return json(value);

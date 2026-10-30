@@ -1,6 +1,6 @@
 import type { Connector } from "../../shared/types";
 import { parseJson, spawnLines, summarizeToolInput } from "./spawn";
-import type { Provider } from "./types";
+import type { Launch, Provider } from "./types";
 
 export function prettyToolName(name: string): string {
   const m = name.match(/^mcp__(.+?)__(.+)$/);
@@ -41,7 +41,8 @@ export const claude: Provider = {
 
   async run(o, emit) {
     const cmd = [
-      "claude",
+      o.launch.bin,
+      ...o.launch.args,
       "-p",
       "--output-format",
       "stream-json",
@@ -66,6 +67,7 @@ export const claude: Provider = {
     const { code, stderr } = await spawnLines({
       cmd,
       cwd: o.cwd,
+      env: o.launch.env,
       stdin: o.prompt,
       signal: o.signal,
       onLine(line) {
@@ -127,14 +129,15 @@ export interface InheritedServer {
  * See which MCP servers / claude.ai connectors a Claude bot inherits from your own setup.
  * Starts claude and stops it as soon as it reports its init event, before any model call.
  */
-export async function scanClaudeInventory(cwd: string): Promise<InheritedServer[]> {
+export async function scanClaudeInventory(cwd: string, launch: Launch): Promise<InheritedServer[]> {
   const ctrl = new AbortController();
   let servers: InheritedServer[] = [];
   const timer = setTimeout(() => ctrl.abort(), 30_000);
   try {
     await spawnLines({
-      cmd: ["claude", "-p", "--output-format", "stream-json", "--verbose", "--model", "haiku"],
+      cmd: [launch.bin, ...launch.args, "-p", "--output-format", "stream-json", "--verbose", "--model", "haiku"],
       cwd,
+      env: launch.env,
       stdin: "ok",
       signal: ctrl.signal,
       onLine(line) {

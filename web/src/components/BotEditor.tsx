@@ -7,6 +7,7 @@ import { useLoad } from "../hooks";
 import { closeModal, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Modal } from "./Modal";
+import { providerName } from "./Providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,7 +73,9 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
   const [error, setError] = useState("");
   const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
   const provider = providers.find((p) => p.id === draft.provider);
-  const brains = providers.length ? providers : [{ id: "claude", label: "Claude Code", installed: true } as ProviderInfo];
+  const brains = providers.length
+    ? providers.filter((p) => p.settings.enabled || p.id === existing.provider)
+    : [{ id: "claude", label: "Claude Code", installed: true, settings: { displayName: "" } } as ProviderInfo];
 
   async function save() {
     if (!draft.name.trim()) return setError("Give your bot a name.");
@@ -150,7 +153,7 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
                 role="radio"
                 aria-checked={draft.provider === p.id}
                 tabIndex={radioTabIndex(p.id, draft.provider, brains.filter((b) => b.installed).map((b) => b.id))}
-                aria-label={p.label}
+                aria-label={providerName(p)}
                 className={cn(
                   "flex flex-col rounded-xl border px-3 py-2 text-left transition-colors enabled:hover:bg-muted disabled:opacity-45",
                   draft.provider === p.id && "border-foreground bg-muted",
@@ -159,7 +162,7 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
                 disabled={!p.installed}
                 title={p.installed ? p.version : "Not installed"}
               >
-                <span className="text-sm font-medium">{p.label}</span>
+                <span className="text-sm font-medium">{providerName(p)}</span>
                 <small className="text-xs text-muted-foreground">{p.installed ? (p.supportsTools ? "full team tools" : "chat + workspace") : "not installed"}</small>
               </button>
             ))}

@@ -1,0 +1,3 @@
+#1 Chief (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Use your Bash tool to run: echo \"probe=$FABS_PROBE\". Reply with exactly the line it prints, nothing else."
+#3 Chief (done): [tool Bash done] "probe=providers-ok"

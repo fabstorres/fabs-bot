@@ -1,0 +1,27 @@
+# http://127.0.0.1:4870/  viewport=430x932
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - button "Open Chief of Staff": Chief of Staff
+  - button "Open Chief": Chief
+  - button "Open Design": Design
+  - navigation "Chats":
+    - button "Bot Careful": Careful 2:47 PM Hey, I'm Careful. What's the main thing you want me on?
+    - button "Bot Engineer":
+      - text: Engineer 2:47 PM Hey, I'm Engineer. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief":
+      - text: Chief 2:47 PM Hey, I'm Chief. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Design":
+      - text: Design 2:47 PM Hey, I'm Design. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 2:47 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+  - button "Plugins"
+  - button "Providers"
+  - button "This PC": FE <pc> All quiet
+- region "Notifications alt+T"

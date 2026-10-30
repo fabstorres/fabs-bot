@@ -32,7 +32,7 @@ export const codex: Provider = {
     if (o.bot.autonomy === "ask") cfg.push(`sandbox_mode="workspace-write"`, `approval_policy="never"`);
     if (o.addDirs.length) cfg.push(`sandbox_workspace_write.writable_roots=${toml(o.addDirs)}`);
 
-    const cmd = ["codex", "exec"];
+    const cmd = [o.launch.bin, "exec", ...o.launch.args];
     if (o.sessionId) cmd.push("resume", o.sessionId);
     cmd.push("--json", "--skip-git-repo-check");
     for (const c of cfg) cmd.push("-c", c);
@@ -45,6 +45,7 @@ export const codex: Provider = {
     const { code, stderr } = await spawnLines({
       cmd,
       cwd: o.cwd,
+      env: o.launch.env,
       stdin: o.prompt,
       signal: o.signal,
       onLine(line) {

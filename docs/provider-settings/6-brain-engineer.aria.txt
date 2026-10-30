@@ -1,0 +1,6 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- radiogroup "Brain":
+  - radio "Claude (probe)": Claude (probe) full team tools
+  - radio "Codex" [checked]: Codex full team tools
+  - radio "Cursor Agent": Cursor Agent chat + workspace
+  - radio "OpenCode": OpenCode chat + workspace

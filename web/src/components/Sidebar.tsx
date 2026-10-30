@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Plug, Plus, Search } from "lucide-react";
+import { Plug, Plus, Search, SquareTerminal } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
@@ -94,6 +94,12 @@ export function Sidebar() {
             <Plug className="size-4" />
           </span>
           <span className="font-medium">Plugins</span>
+        </button>
+        <button className="flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-sidebar-accent" onClick={() => openModal({ kind: "providers" })}>
+          <span className="grid size-8 place-items-center rounded-full border bg-background">
+            <SquareTerminal className="size-4" />
+          </span>
+          <span className="font-medium">Providers</span>
         </button>
         <HostChip />
       </footer>

@@ -5,6 +5,7 @@ import { api, Unpaired } from "./api";
 export type Modal =
   | { kind: "bot"; botId: string }
   | { kind: "connectors" }
+  | { kind: "providers" }
   | { kind: "settings" }
   | { kind: "file"; url: string; name: string }
   | null;

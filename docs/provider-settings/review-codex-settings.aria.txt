@@ -1,0 +1,27 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Codex settings":
+  - heading "Codex" [level=3]
+  - code: v0.165.0
+  - text: Status
+  - paragraph:
+    - text: Found at
+    - code: <run>/bin/codex-wrapper
+    - text: · full team tools
+  - paragraph: "\"Ask\" autonomy runs Codex sandboxed to its workspace (Codex can't relay approvals headlessly)."
+  - text: Display name
+  - textbox "Display name":
+    - /placeholder: Codex
+  - heading "Runtime" [level=4]
+  - text: Binary path Path to the Codex binary bots run. Leave empty to use codex from PATH.
+  - textbox "Binary path":
+    - /placeholder: codex
+    - text: <run>/bin/codex-wrapper
+  - text: Launch arguments Extra arguments added to every run, before Fabs Bot's own flags.
+  - textbox "Launch arguments": "--color never"
+  - heading "Environment" [level=4]
+  - group "Environment variables":
+    - text: Variables API keys, base URLs, and other settings this CLI reads from its environment. Stored on this PC only.
+    - button "Add variable"
+  - heading "Models" [level=4]
+  - paragraph: Suggested in the bot editor. A bot can use any model the CLI accepts.
+  - text: gpt-5.5 gpt-5.5-codex gpt-5.4-mini

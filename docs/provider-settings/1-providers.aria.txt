@@ -1,0 +1,58 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- dialog "Providers":
+  - heading "Providers" [level=2]
+  - paragraph: Providers
+  - paragraph: The agent CLIs bots run on this PC, with your existing logins. Settings here are passed on each run. Fabs Bot never edits the CLIs' own configs.
+  - button "Refresh Checked 1:57 PM"
+  - group "Agent CLIs":
+    - button "Claude Code v2.1.314 Ready · full team tools" [pressed]:
+      - text: Claude Code
+      - code: v2.1.314
+      - text: Ready · full team tools
+    - switch "Enable Claude Code" [checked]
+    - button "Codex v0.165.0 Ready · full team tools":
+      - text: Codex
+      - code: v0.165.0
+      - text: Ready · full team tools
+    - switch "Enable Codex" [checked]
+    - button "Cursor Agent v2026.03.20-44cb435 Ready · chat + workspace":
+      - text: Cursor Agent
+      - code: v2026.03.20-44cb435
+      - text: Ready · chat + workspace
+    - switch "Enable Cursor Agent" [checked]
+    - button "OpenCode v1.17.11 Ready · chat + workspace":
+      - text: OpenCode
+      - code: v1.17.11
+      - text: Ready · chat + workspace
+    - switch "Enable OpenCode" [checked]
+    - button "Gemini CLI v0.1.3 Ready · chat + workspace":
+      - text: Gemini CLI
+      - code: v0.1.3
+      - text: Ready · chat + workspace
+    - switch "Enable Gemini CLI" [checked]
+  - region "Claude Code settings":
+    - heading "Claude Code" [level=3]
+    - code: v2.1.314
+    - text: Status
+    - paragraph:
+      - text: Found at
+      - code: /home/fabs/.local/bin/claude
+      - text: · full team tools
+    - paragraph: Inherits your Claude Code MCP servers and claude.ai connectors (Notion, Google Drive, …).
+    - text: Display name
+    - textbox "Display name":
+      - /placeholder: Claude Code
+    - heading "Runtime" [level=4]
+    - text: Binary path Path to the Claude Code binary bots run. Leave empty to use claude from PATH.
+    - textbox "Binary path":
+      - /placeholder: claude
+    - text: Launch arguments Extra arguments added to every run, before Fabs Bot's own flags.
+    - textbox "Launch arguments"
+    - heading "Environment" [level=4]
+    - group "Environment variables":
+      - text: Variables API keys, base URLs, and other settings this CLI reads from its environment. Stored on this PC only.
+      - button "Add variable"
+    - heading "Models" [level=4]
+    - paragraph: Suggested in the bot editor. A bot can use any model the CLI accepts.
+    - text: opus sonnet haiku claude-opus-5-5 claude-sonnet-5-5 claude-fable-5-1
+  - button "Close"
