@@ -34,6 +34,7 @@ interface State {
   /** The control focus returns to once the modal closes. */
   modalOpener: HTMLElement | null;
   search: string;
+  devicesVersion: number;
 }
 
 export const useStore = create<State>(() => ({
@@ -54,6 +55,7 @@ export const useStore = create<State>(() => ({
   modal: null,
   modalOpener: null,
   search: "",
+  devicesVersion: 0,
 }));
 
 const set = useStore.setState;
@@ -77,6 +79,7 @@ function apply(e: ServerEvent) {
         threads: e.threads,
         links: e.links,
         loaded: true,
+        devicesVersion: get().devicesVersion + 1,
       });
       if (get().openThreadId) void loadMessages(get().openThreadId!);
       else if (firstLoad) land(e.threads);
@@ -119,6 +122,9 @@ function apply(e: ServerEvent) {
       break;
     case "link.end":
       set({ links: get().links.filter((l) => l.id !== e.linkId) });
+      break;
+    case "devices":
+      set({ devicesVersion: get().devicesVersion + 1 });
       break;
   }
 }

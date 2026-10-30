@@ -1,18 +1,33 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { chmodSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Device } from "../shared/types";
 import { DATA_DIR } from "./config";
 
-const tokenFile = join(DATA_DIR, "access-token");
-
-/** Long-lived secret that pairs a phone/laptop with this PC. Rotate by deleting the file. */
-export const ACCESS_TOKEN: string = (() => {
-  if (existsSync(tokenFile)) return readFileSync(tokenFile, "utf8").trim();
-  const t = Buffer.from(crypto.getRandomValues(new Uint8Array(24))).toString("base64url");
-  writeFileSync(tokenFile, t, { mode: 0o600 });
-  return t;
-})();
-
 const COOKIE = "fabs_token";
+const CODE_LIFETIME_MS = 5 * 60_000;
+const SEEN_EVERY_MS = 60_000;
+const devicesFile = join(DATA_DIR, "devices.json");
+
+type StoredDevice = Omit<Device, "current"> & { tokenHash: string };
+
+const newSecret = () => randomBytes(24).toString("base64url");
+const hash = (secret: string) => createHash("sha256").update(secret).digest("hex");
+
+function loadDevices(): StoredDevice[] {
+  try {
+    return JSON.parse(readFileSync(devicesFile, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+const codes = new Map<string, number>();
+const devices = loadDevices();
+function saveDevices() {
+  writeFileSync(devicesFile, JSON.stringify(devices, null, 2), { mode: 0o600 });
+  chmodSync(devicesFile, 0o600);
+}
 
 export function isLoopback(ip: string | undefined) {
   return !!ip && (ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1");
@@ -30,11 +45,22 @@ function cookieToken(req: Request): string | null {
   return m ? decodeURIComponent(m[1]!) : null;
 }
 
+export function deviceId(req: Request): string | null {
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const presented = [cookieToken(req), bearer].filter((t): t is string => !!t).map(hash);
+  const device = devices.find((d) => presented.includes(d.tokenHash));
+  if (!device) return null;
+  if (Date.now() - device.lastSeenAt > SEEN_EVERY_MS) {
+    device.lastSeenAt = Date.now();
+    saveDevices();
+  }
+  return device.id;
+}
+
 export function authorized(req: Request, ip: string | undefined, viaServe = false): boolean {
   const tsUser = req.headers.get("tailscale-user-login");
   if (isLoopback(ip) && !tsUser && !viaServe && loopbackHost(req)) return true;
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  return [cookieToken(req), bearer].some((t) => t && timingSafeEqual(t, ACCESS_TOKEN));
+  return deviceId(req) !== null;
 }
 
 /**
@@ -53,13 +79,66 @@ export function sameOrigin(req: Request): boolean {
   return [req.headers.get("host"), req.headers.get("x-forwarded-host")].includes(host);
 }
 
-export function pairCookie(): string {
-  return `${COOKIE}=${encodeURIComponent(ACCESS_TOKEN)}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`;
+export function newPairingCode() {
+  const now = Date.now();
+  for (const [key, expiresAt] of codes) if (expiresAt <= now) codes.delete(key);
+  const code = newSecret();
+  codes.set(hash(code), now + CODE_LIFETIME_MS);
+  return { code, expiresAt: now + CODE_LIFETIME_MS };
 }
 
-export function timingSafeEqual(a: string, b: string) {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+export function redeemPairingCode(code: string): boolean {
+  const key = hash(code);
+  const expiresAt = codes.get(key);
+  codes.delete(key);
+  return expiresAt !== undefined && expiresAt > Date.now();
+}
+
+const BROWSERS: [RegExp, string][] = [
+  [/Electron\//, "Desktop app"],
+  [/Edg/, "Edge"],
+  [/Firefox\/|FxiOS\//, "Firefox"],
+  [/Chrome\/|CriOS\//, "Chrome"],
+  [/Safari\//, "Safari"],
+];
+
+const SYSTEMS: [RegExp, string][] = [
+  [/iPhone/, "iPhone"],
+  [/iPad/, "iPad"],
+  [/Android/, "Android"],
+  [/CrOS/, "ChromeOS"],
+  [/Macintosh/, "Mac"],
+  [/Windows/, "Windows"],
+  [/Linux/, "Linux"],
+];
+
+function deviceLabel(userAgent: string) {
+  const browser = BROWSERS.find(([re]) => re.test(userAgent))?.[1] ?? "Browser";
+  const system = SYSTEMS.find(([re]) => re.test(userAgent))?.[1];
+  return system ? `${browser} on ${system}` : browser;
+}
+
+export function pairDevice(userAgent: string): string {
+  const token = newSecret();
+  const now = Date.now();
+  devices.push({ id: randomUUID(), label: deviceLabel(userAgent), tokenHash: hash(token), createdAt: now, lastSeenAt: now });
+  saveDevices();
+  return token;
+}
+
+export function listDevices(req: Request): Device[] {
+  const current = deviceId(req);
+  return devices.map(({ id, label, createdAt, lastSeenAt }) => ({ id, label, createdAt, lastSeenAt, current: id === current }));
+}
+
+export function removeDevice(id: string): boolean {
+  const index = devices.findIndex((d) => d.id === id);
+  if (index < 0) return false;
+  devices.splice(index, 1);
+  saveDevices();
+  return true;
+}
+
+export function pairCookie(token: string): string {
+  return `${COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`;
 }

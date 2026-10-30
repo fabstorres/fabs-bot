@@ -146,6 +146,29 @@ async function startServer(s: State) {
   die("server did not answer /api/host within 30s; see `control-fabs logs`");
 }
 
+async function pairingLink(s: State, base: string) {
+  const { status, data } = await api(s, "POST", "/api/pairing-links", {});
+  if (status !== 200) die(`could not create a pairing link (HTTP ${status}${data?.error ? `: ${data.error}` : ""})`);
+  return `${base}/pair?code=${new URL(data.url).searchParams.get("code")}`;
+}
+
+function retiredToken(s: State) {
+  const file = join(s.dataDir, "access-token");
+  return existsSync(file) ? readFileSync(file, "utf8").trim() : "retired-shared-token-stand-in";
+}
+
+const cookieValue = (cookie: string) => decodeURIComponent(cookie.slice(cookie.indexOf("=") + 1));
+
+function openSocket(url: string, cookie: string) {
+  return new Promise<{ opened: boolean; closed: Promise<number> }>((resolve) => {
+    const ws = new WebSocket(url, { headers: { cookie } } as any);
+    const closed = new Promise<number>((done) => ws.addEventListener("close", (e) => done(e.code)));
+    ws.addEventListener("open", () => resolve({ opened: true, closed }));
+    ws.addEventListener("error", () => resolve({ opened: false, closed }));
+    setTimeout(() => resolve({ opened: false, closed }), 5000);
+  });
+}
+
 async function stopServer(s: State) {
   if (!alive(s.pid) || !cmdline(s.pid).includes("server/index.ts")) return false;
   try {
@@ -379,42 +402,83 @@ const commands: Record<string, () => Promise<void>> = {
     const host = (await api(s, "GET", "/api/host")).data;
     const base = host.tailscale.ip ? `http://${host.tailscale.ip}:${s.port}` : die("tailscale has no IPv4 address");
     const login = host.tailscale.login ?? die("tailscale has no logged-in user");
-    const token = readFileSync(join(s.dataDir, "access-token"), "utf8").trim();
+    const retired = retiredToken(s);
+    const expiring = flags.expiry === true ? { link: await pairingLink(s, base), at: Date.now() } : null;
+    const pairOnce = async () => {
+      const link = await pairingLink(s, base);
+      const first = await fetch(link, { redirect: "manual" });
+      const again = await fetch(link, { redirect: "manual" });
+      const cookie = first.headers.get("set-cookie")?.split(";")[0] ?? "";
+      return { first: first.status, again: again.status, cookie, token: cookieValue(cookie) };
+    };
+    const currentId = async (cookie: string) => (await (await fetch(base + "/api/devices", { headers: { cookie } })).json()).find((d: any) => d.current)?.id;
+
     const unpaired = await fetch(base + "/api/bots");
-    const bad = await fetch(base + "/pair?token=wrong", { redirect: "manual" });
-    const pair = await fetch(base + `/pair?token=${token}`, { redirect: "manual" });
-    const cookie = pair.headers.get("set-cookie")?.split(";")[0] ?? "";
-    const paired = await fetch(base + "/api/bots", { headers: { cookie } });
-    const query = await fetch(base + `/api/host?token=${token}`);
-    const bearer = await fetch(base + "/api/host", { headers: { authorization: `Bearer ${token}` } });
+    const wrong = await fetch(base + "/pair?code=wrong", { redirect: "manual" });
+    const oldLink = await fetch(base + `/pair?token=${retired}`, { redirect: "manual" });
+    const a = await pairOnce();
+    const b = await pairOnce();
+    const paired = await fetch(base + "/api/bots", { headers: { cookie: a.cookie } });
+    const query = await fetch(base + `/api/host?token=${a.token}`);
+    const bearer = await fetch(base + "/api/host", { headers: { authorization: `Bearer ${a.token}` } });
+    const retiredCookie = await fetch(base + "/api/bots", { headers: { cookie: `fabs_token=${retired}` } });
+    const retiredBearer = await fetch(base + "/api/bots", { headers: { authorization: `Bearer ${retired}` } });
+    const hostText = await (await fetch(base + "/api/host", { headers: { cookie: a.cookie } })).text();
+    const listText = await (await fetch(base + "/api/devices", { headers: { cookie: a.cookie } })).text();
+    const stored = readFileSync(join(s.dataDir, "devices.json"), "utf8");
+    const storedMode = statSync(join(s.dataDir, "devices.json")).mode & 0o777;
+    const aId = await currentId(a.cookie);
+    const bId = await currentId(b.cookie);
+    const socket = await openSocket(base.replace(/^http/, "ws") + "/ws", b.cookie);
+    const removal = await api(s, "DELETE", `/api/devices/${bId}`);
+    const closeCode = await Promise.race([socket.closed, Bun.sleep(5000).then(() => 0)]);
+    const removedApi = await fetch(base + "/api/bots", { headers: { cookie: b.cookie } });
+    const keptApi = await fetch(base + "/api/bots", { headers: { cookie: a.cookie } });
     const mcp = await fetch(base + "/mcp/anything", { method: "POST", body: "{}" });
     const ownerHeader = await fetch(s.url + "/api/bots", { headers: { "tailscale-user-login": login } });
     const foreign = { origin: "https://unrelated.example" };
     const crossWs = await fetch(s.url + "/ws", { headers: { ...foreign, connection: "Upgrade", upgrade: "websocket" } });
     const crossPost = await fetch(s.url + "/api/bots", { method: "POST", headers: { ...foreign, "content-type": "text/plain" }, body: '{"name":"Probe"}' });
     const plainPost = await fetch(s.url + "/api/bots", { method: "POST", headers: { "content-type": "text/plain" }, body: '{"name":"Probe"}' });
-    const rows = [
-      ["unpaired API call is refused", unpaired.status === 401, unpaired.status],
-      ["wrong pairing token is refused", bad.status === 403, bad.status],
-      ["pairing link sets a cookie and redirects", pair.status === 302 && cookie.startsWith("fabs_token="), pair.status],
-      ["paired cookie can call the API", paired.status === 200, paired.status],
-      ["pairing token in ?token= is refused on the API", query.status === 401, query.status],
-      ["pairing token as a bearer header can call the API", bearer.status === 200, bearer.status],
-      ["bot MCP endpoint is loopback-only", mcp.status === 403, mcp.status],
-      ["your own Tailscale login on this PC's port is refused without pairing", ownerHeader.status === 401, ownerHeader.status],
-      ["cross-origin WebSocket upgrade is refused", crossWs.status === 403, crossWs.status],
-      ["cross-origin text/plain write is refused", crossPost.status === 403, crossPost.status],
-      ["non-JSON write is refused", plainPost.status === 415, plainPost.status],
-    ] as const;
-    let ok = true;
-    for (const [label, pass, status] of rows) {
-      ok &&= pass;
-      console.log(`${pass ? "ok  " : "FAIL"}  ${label} (HTTP ${status})`);
+    const http = (r: Response | { status: number }) => `HTTP ${r.status}`;
+    const rows: [string, boolean, string][] = [
+      ["unpaired API call is refused", unpaired.status === 401, http(unpaired)],
+      ["wrong pairing code is refused", wrong.status === 403, http(wrong)],
+      ["an old pairing link carrying the retired shared token is refused", oldLink.status === 403, http(oldLink)],
+      ["pairing link sets a device cookie and redirects", a.first === 302 && a.cookie.startsWith("fabs_token="), `HTTP ${a.first}`],
+      ["the same pairing link is refused the second time", a.again === 403, `HTTP ${a.again}`],
+      ["a second device gets its own token", b.first === 302 && !!b.token && b.token !== a.token, b.token !== a.token ? "different" : "same"],
+      ["paired cookie can call the API", paired.status === 200, http(paired)],
+      ["device token in ?token= is refused on the API", query.status === 401, http(query)],
+      ["device token as a bearer header can call the API", bearer.status === 200, http(bearer)],
+      ["the retired shared token is refused as a cookie", retiredCookie.status === 401, http(retiredCookie)],
+      ["the retired shared token is refused as a bearer header", retiredBearer.status === 401, http(retiredBearer)],
+      ["/api/host carries no pairing link or token", !/pairUrl|code=|token=/.test(hostText), "checked"],
+      ["the device list carries no token or token hash", !listText.includes(a.token) && !listText.includes(b.token) && !/token/i.test(listText), `${JSON.parse(listText).length} devices`],
+      ["devices.json keeps no token and only its owner can read it", !stored.includes(a.token) && !stored.includes(b.token) && storedMode === 0o600, `mode ${storedMode.toString(8)}`],
+      ["a paired device's WebSocket opens", socket.opened, socket.opened ? "open" : "refused"],
+      ["removing a device closes its open WebSocket", removal.status === 200 && closeCode === 1008, closeCode ? `close ${closeCode}` : "still open"],
+      ["a removed device's cookie is refused", removedApi.status === 401, http(removedApi)],
+      ["the other paired device stays signed in", keptApi.status === 200, http(keptApi)],
+      ["bot MCP endpoint is loopback-only", mcp.status === 403, http(mcp)],
+      ["your own Tailscale login on this PC's port is refused without pairing", ownerHeader.status === 401, http(ownerHeader)],
+      ["cross-origin WebSocket upgrade is refused", crossWs.status === 403, http(crossWs)],
+      ["cross-origin text/plain write is refused", crossPost.status === 403, http(crossPost)],
+      ["non-JSON write is refused", plainPost.status === 415, http(plainPost)],
+    ];
+    await api(s, "DELETE", `/api/devices/${aId}`);
+    if (expiring) {
+      console.log("waiting for a pairing link to pass 5 minutes…");
+      await Bun.sleep(Math.max(0, expiring.at + 5 * 60_000 + 2_000 - Date.now()));
+      const expired = await fetch(expiring.link, { redirect: "manual" });
+      rows.push(["a pairing link is refused after 5 minutes", expired.status === 403, http(expired)]);
     }
+    const lines = rows.map(([label, pass, detail]) => `${pass ? "ok  " : "FAIL"}  ${label} (${detail})`);
+    console.log(lines.join("\n"));
     const out = artifactPath(s, flag("path") ?? "pairing/pair-check.txt");
-    writeFileSync(out, rows.map(([l, p, st]) => `${p ? "ok" : "FAIL"}  ${l} (HTTP ${st})`).join("\n") + "\n");
+    writeFileSync(out, lines.join("\n") + "\n");
     console.log(`→ ${out}`);
-    if (!ok) process.exit(1);
+    if (rows.some(([, pass]) => !pass)) process.exit(1);
   },
 
   async browser() {
@@ -434,12 +498,12 @@ const commands: Record<string, () => Promise<void>> = {
       url: s.url,
       artifacts: s.artifacts,
     };
-    if (s.tailnet && (action === "pair" || flag("via") === "tailnet" || flag("value") === "@pair-link" || flag("value") === "@tailnet-url")) {
-      // Resolved here and handed over in the environment so it never appears in commands or output.
+    const wantsPairLink = action === "pair" || flag("value") === "@pair-link";
+    if (s.tailnet && (wantsPairLink || flag("via") === "tailnet" || flag("value") === "@tailnet-url")) {
       const host = (await api(s, "GET", "/api/host")).data;
       if (host.tailscale.ip) {
         job.tailnetBase = `http://${host.tailscale.ip}:${s.port}`;
-        job.pairUrl = `${job.tailnetBase}/pair?token=${readFileSync(join(s.dataDir, "access-token"), "utf8").trim()}`;
+        if (wantsPairLink) job.pairUrl = await pairingLink(s, job.tailnetBase as string);
       }
     }
     const node = Bun.which("node") ?? die("node is required for browser actions (Playwright's CDP client hangs under Bun)");
@@ -491,20 +555,31 @@ const commands: Record<string, () => Promise<void>> = {
     const s = loadState()!;
     const host = (await api(s, "GET", "/api/host")).data;
     const login = host.tailscale.login ?? die("tailscale has no logged-in user");
-    const token = readFileSync(join(s.dataDir, "access-token"), "utf8").trim();
+    const retired = retiredToken(s);
     const base = `http://127.0.0.1:${s.port + 1}`;
     const get = (path: string, headers: Record<string, string> = {}) => fetch(base + path, { headers }).then((r) => r.status).catch(() => 0);
+    const link = await pairingLink(s, base);
+    const pair = await fetch(link, { redirect: "manual" }).catch(() => null);
+    const again = await fetch(link, { redirect: "manual" }).then((r) => r.status).catch(() => 0);
+    const cookie = pair?.headers.get("set-cookie")?.split(";")[0] ?? "";
+    const token = cookieValue(cookie);
     const rows = [
       ["no Tailscale identity (tagged device, Funnel) is refused", await get("/api/bots"), 401],
       ["another tailnet user is refused", await get("/api/bots", { "tailscale-user-login": "someone-else@example.com" }), 401],
       ["your own Tailscale login without pairing is refused", await get("/api/bots", { "tailscale-user-login": login }), 401],
-      ["a pairing cookie is admitted", await get("/api/bots", { cookie: `fabs_token=${token}` }), 200],
-      ["a pairing cookie with your Tailscale login is admitted", await get("/api/bots", { cookie: `fabs_token=${token}`, "tailscale-user-login": login }), 200],
-      ["a pairing bearer token is admitted", await get("/api/host", { authorization: `Bearer ${token}` }), 200],
-      ["a pairing token in ?token= is refused", await get(`/api/host?token=${token}`), 401],
+      ["a pairing link opened over HTTPS pairs the device", pair?.status ?? 0, 302],
+      ["the same pairing link is refused the second time", again, 403],
+      ["a device cookie is admitted", await get("/api/bots", { cookie }), 200],
+      ["a device cookie with your Tailscale login is admitted", await get("/api/bots", { cookie, "tailscale-user-login": login }), 200],
+      ["a device bearer token is admitted", await get("/api/host", { authorization: `Bearer ${token}` }), 200],
+      ["a device token in ?token= is refused", await get(`/api/host?token=${token}`), 401],
+      ["the retired shared token is refused", await get("/api/bots", { cookie: `fabs_token=${retired}` }), 401],
       ["bot MCP endpoint refuses Tailscale HTTPS", await fetch(base + "/mcp/anything", { method: "POST", body: "{}", headers: { "tailscale-user-login": login } }).then((r) => r.status).catch(() => 0), 403],
       ["this PC's own loopback stays trusted", await fetch(s.url + "/api/bots").then((r) => r.status), 200],
     ] as const;
+    const devices = await fetch(base + "/api/devices", { headers: { cookie } }).then((r) => r.json()).catch(() => []);
+    const id = devices.find?.((d: any) => d.current)?.id;
+    if (id) await api(s, "DELETE", `/api/devices/${id}`);
     let ok = true;
     const lines = rows.map(([label, status, want]) => {
       ok &&= status === want;
@@ -580,11 +655,11 @@ const commands: Record<string, () => Promise<void>> = {
   paths                                                        print run, data, work-root and artifacts dirs (for side-effect checks)
   logs [--n 60]                                                tail the server log (redacted)
   server stop|start                                            stop this run's server (and any bot CLI mid-turn) or start it again on the same port and data
-  pair-check [--path pairing/pair-check.txt]                   remote-device auth checks over the tailnet (needs --tailnet)
+  pair-check [--expiry] [--path pairing/pair-check.txt]        remote-device auth checks over the tailnet (needs --tailnet; --expiry waits 5 min for a link to expire)
   browser start [--viewport 1440x900|430x932]                  headless Chromium on CDP (restart to change viewport)
   browser open [/path] [--via tailnet] | browser pair
   browser click|fill|press|wait|count|text  --role R --name N | --label L | --text T | --selector S [--nth i] [--exact]
-          fill: --value V (@pair-link / @tailnet-url type the tailnet link unseen)   press: --key K   wait: --state visible|hidden [--timeout s]
+          fill: --value V (@pair-link mints a one-time link; @pair-link / @tailnet-url type the tailnet link unseen)   press: --key K   wait: --state visible|hidden [--timeout s]
           click --accept-dialog [--dialog-text T]   accept the confirm()/prompt() the click opens
   browser snapshot --path rel.aria.txt [target] | screenshot --path rel.png [--full-page] [--no-mask] | eval '<js>'
   browser stop

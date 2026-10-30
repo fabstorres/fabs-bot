@@ -1,0 +1,12 @@
+== old build (main) on this data dir
+access-token file written by the old build: true
+/pair?token=<shared token> over the tailnet -> HTTP 302
+the old cookie calls the API over the tailnet -> HTTP 200
+bots on this PC: 1
+== new build started on the same data dir
+access-token file still on disk, unread: true
+the old device cookie over the tailnet -> HTTP 401
+the shared token as a bearer header -> HTTP 401
+the old pairing link /pair?token=<shared token> -> HTTP 403
+bots on this PC (data kept): 1
+devices.json before anyone pairs again: absent

@@ -1,0 +1,12 @@
+# http://<tailnet-ip>:4960/  viewport=1440x900
+- group "Pair your phone or laptop":
+  - heading "Pair your phone or laptop" [level=3]
+  - paragraph: Scan with a device on your tailnet. Each link works once and expires after 5 minutes. The device stays signed in until you remove it.
+  - code: http://<pc>.<tailnet>.ts.net:4960/pair?code=•••••
+  - paragraph: Works once, until 9:29 AM.
+  - button "New link"
+  - button "Copy pairing link"
+  - group "Tailscale HTTPS":
+    - text: Tailscale HTTPS
+    - switch "Tailscale HTTPS"
+    - paragraph: Serves this PC over HTTPS on port 8443 of your tailnet. It turns on the mic and install-to-home-screen. Each device still pairs once with the QR code. Other apps using Tailscale HTTPS are left alone.

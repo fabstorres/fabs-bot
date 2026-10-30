@@ -148,8 +148,20 @@ export interface HostInfo {
     port: number;
     problem: "not-installed" | "not-logged-in" | "permission-denied" | "port-taken" | "target-busy" | "failed" | null;
   };
-  pairUrl: string | null;
   workRoot: string;
+}
+
+export interface Device {
+  id: string;
+  label: string;
+  createdAt: number;
+  lastSeenAt: number;
+  current: boolean;
+}
+
+export interface PairingLink {
+  url: string;
+  expiresAt: number;
 }
 
 /** Live link between two bots (one bot messaging another). */
@@ -171,6 +183,7 @@ export type ServerEvent =
   | { type: "message"; message: Message }
   | { type: "link.start"; link: Link }
   | { type: "link.end"; linkId: string }
+  | { type: "devices" }
   | { type: "heartbeat"; everyMs: number };
 
 /** A PC the desktop app can open: a name and the web origin its Fabs Bot answers on. */

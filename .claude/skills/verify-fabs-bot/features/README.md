@@ -49,7 +49,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Teamwork](./teamwork.md): bot↔bot messaging shown as inline exchange cards that open the private backchannel, and group chats (sidebar rows, member switcher) driven by @mentions.
 - [Needs you](./needs-you.md): tap-to-answer question cards, Allow/Deny approval cards, and the sidebar's `Needs you` dot.
 - [Bots](./bots.md): the starter bot on a fresh install, create a bot in the New Bot pane (from scratch or a suggestion), the greeting card, inline settings with a label, the full editor, and retiring.
-- [Pairing and access](./pairing-and-access.md): unpaired devices are refused, a pairing link admits a browser over Tailscale, and the bot MCP endpoint stays loopback-only.
+- [Pairing and access](./pairing-and-access.md): unpaired devices are refused, a one-time pairing link signs in one device over Tailscale, This PC lists paired devices and removes any one of them, and the bot MCP endpoint stays loopback-only.
 - [Tailscale HTTPS](./tailscale-https.md): the This PC switch that serves the app over HTTPS on its own port, leaves other apps' serve ports alone, and trusts only pairing.
 - [Desktop app](./desktop-app.md): the Electron launcher, opening This PC or a remote PC by pairing link, staying signed in across restarts, Switch PC, forgetting a PC, and keeping PC pages away from the launcher's controls.
 - [Server offline](./server-offline.md): the banner above the composer when the PC's server stops answering or the device goes offline, what it blocks, the refused-send toast, recovery, and the first-load notice.

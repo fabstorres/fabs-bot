@@ -1,0 +1,5 @@
+# http://<tailnet-ip>:4960/  viewport=window
+- region "Paired devices":
+  - heading "Paired devices" [level=3]
+  - text: Desktop app on Linux This device Paired 9:22 AM · last seen 9:22 AM
+  - button "Remove Desktop app on Linux": Remove

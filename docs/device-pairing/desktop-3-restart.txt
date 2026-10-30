@@ -1,0 +1,1 @@
+after restart: signed in at "<tailnet-ip>"

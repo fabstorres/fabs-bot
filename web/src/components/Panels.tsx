@@ -4,10 +4,11 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import QRCode from "qrcode";
 import { Check, Copy as CopyIcon, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
-import type { Connector, HostInfo, ProviderInfo } from "../../../shared/types";
+import type { Connector, Device, HostInfo, PairingLink, ProviderInfo } from "../../../shared/types";
 import type { ConnectorPreset } from "../../../shared/templates";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
+import { useStore } from "../store";
 import { Modal } from "./Modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,10 +42,12 @@ function Card({ className, children }: { className?: string; children: ReactNode
 
 const Led = ({ on }: { on: boolean }) => <i className={cn("inline-block size-2 flex-none rounded-full", on ? "bg-working" : "bg-muted-foreground/40")} />;
 
-async function loadHost() {
-  const host = await api.get<HostInfo>("/api/host");
-  const qr = host.pairUrl ? await QRCode.toString(host.pairUrl, { type: "svg", margin: 1, color: { dark: "#111111", light: "#00000000" } }) : "";
-  return { host, qr };
+type ShownLink = PairingLink & { qr: string };
+
+async function newPairingLink(): Promise<ShownLink> {
+  const link = await api.post<PairingLink>("/api/pairing-links");
+  const qr = await QRCode.toString(link.url, { type: "svg", margin: 1, color: { dark: "#111111", light: "#00000000" } });
+  return { ...link, qr };
 }
 
 const SERVE_PROBLEMS: Record<NonNullable<HostInfo["serve"]["problem"]>, string> = {
@@ -90,9 +93,85 @@ function TailscaleHttps({ host, onChange }: { host: HostInfo; onChange: () => vo
   );
 }
 
+function PairDevice({ host, onChange }: { host?: HostInfo; onChange: () => void }) {
+  const [link, setLink] = useState<ShownLink | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pair = () => {
+    setError(null);
+    newPairingLink().then(setLink, (e: Error) => setError(e.message));
+  };
+  const httpsChanged = () => {
+    setLink(null);
+    onChange();
+  };
+  return (
+    <Card className="flex flex-col gap-4 sm:flex-row">
+      {link && <div className="pair-qr size-40 flex-none self-center [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: link.qr }} />}
+      <div role="group" aria-label="Pair your phone or laptop" className="flex min-w-0 flex-1 flex-col gap-2">
+        <h3 className="font-semibold">Pair your phone or laptop</h3>
+        <p className="text-sm text-muted-foreground">
+          Scan with a device on your tailnet. Each link works once and expires after 5 minutes. The device stays signed in until you remove it.
+        </p>
+        {link && (
+          <>
+            <code className="mono-box block truncate rounded-lg bg-muted px-2 py-1.5 font-mono text-xs">{link.url.replace(/code=.*/, "code=•••••")}</code>
+            <p className="text-xs text-muted-foreground">Works once, until {formatTime(link.expiresAt)}.</p>
+          </>
+        )}
+        {host?.tailscale.running ? (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" className="rounded-full" onClick={pair}>
+              {link ? "New link" : "Pair a device"}
+            </Button>
+            {link && <Copy text={link.url} label="Copy pairing link" />}
+          </div>
+        ) : (
+          host && <p className="text-sm text-muted-foreground">Start Tailscale on this PC to pair a device.</p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        {host && <TailscaleHttps host={host} onChange={httpsChanged} />}
+      </div>
+    </Card>
+  );
+}
+
+function PairedDevices() {
+  const devicesVersion = useStore((s) => s.devicesVersion);
+  const devices = useLoad(() => api.get<Device[]>("/api/devices"), [devicesVersion]);
+  const list = devices.data ?? [];
+  return (
+    <section aria-label="Paired devices">
+      <h3 className="mb-2 font-semibold">Paired devices</h3>
+      <div className="flex flex-col divide-y rounded-2xl border">
+        {list.length === 0 && <p className="px-4 py-2.5 text-sm text-muted-foreground">No devices yet.</p>}
+        {list.map((d) => (
+          <div key={d.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="flex items-center gap-2">
+                <b className="truncate">{d.label}</b>
+                {d.current && <Badge variant="secondary">This device</Badge>}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Paired {formatTime(d.createdAt)} · last seen {formatTime(d.lastSeenAt)}
+              </span>
+            </div>
+            <Button variant="secondary" size="sm" className="rounded-full" aria-label={`Remove ${d.label}`} onClick={() => api.del(`/api/devices/${d.id}`).then(devices.reload)}>
+              Remove
+            </Button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function SettingsPanel() {
-  const hostLoad = useLoad(loadHost, []);
-  const { host, qr = "" } = hostLoad.data ?? {};
+  const hostLoad = useLoad(() => api.get<HostInfo>("/api/host"), []);
+  const host = hostLoad.data;
   const reload = hostLoad.reload;
   const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []).data ?? [];
   const ts = host?.tailscale;
@@ -124,26 +203,8 @@ export function SettingsPanel() {
           )}
         </Card>
 
-        <Card className="flex flex-col gap-4 sm:flex-row">
-          <div className="pair-qr size-40 flex-none self-center [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: qr }} />
-          <div className="flex min-w-0 flex-col gap-2">
-            <h3 className="font-semibold">Pair your phone or laptop</h3>
-            <p className="text-sm text-muted-foreground">
-              Scan with a device on your tailnet. The link carries this PC's access key; it's remembered on that device.
-            </p>
-            {host?.pairUrl ? (
-              <>
-                <code className="mono-box block truncate rounded-lg bg-muted px-2 py-1.5 font-mono text-xs">{host.pairUrl.replace(/token=.*/, "token=•••••")}</code>
-                <div>
-                  <Copy text={host.pairUrl} label="Copy pairing link" />
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Start Tailscale on this PC to get a link.</p>
-            )}
-            {host && <TailscaleHttps host={host} onChange={reload} />}
-          </div>
-        </Card>
+        <PairDevice host={host} onChange={reload} />
+        <PairedDevices />
 
         <section>
           <h3 className="mb-2 font-semibold">Agent CLIs on this PC</h3>

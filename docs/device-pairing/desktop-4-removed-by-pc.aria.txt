@@ -1,0 +1,4 @@
+# http://<tailnet-ip>:4960/  viewport=window
+- heading "Not paired yet" [level=1]
+- paragraph: On your PC, open Fabs Bot → tap This PC at the bottom of the sidebar → Pair a device, then scan the QR code with this device. Both need to be on your Tailscale network.
+- region "Notifications alt+T"

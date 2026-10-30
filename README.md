@@ -13,7 +13,7 @@ bun install
 bun run start        # builds the web app, then serves on :4800
 ```
 
-The server listens on `127.0.0.1` and on this PC's Tailscale IP. It never listens on your LAN. On first start it prints a pairing link. You can also open the app on the PC, tap the PC name in the top-left, and scan the QR code with your phone (the phone must be on your tailnet).
+The server listens on `127.0.0.1` and on this PC's Tailscale IP. It never listens on your LAN. To pair a phone or laptop, open the app on the PC, tap *This PC*, choose *Pair a device*, and scan the QR code with your phone (the phone must be on your tailnet). Each pairing link works once and expires after 5 minutes. Every paired device gets its own sign-in and shows up under *Paired devices*, where *Remove* signs out just that device.
 
 ### Tailscale HTTPS
 
@@ -33,7 +33,7 @@ bun run desktop      # builds, then opens the Electron app
 
 The desktop app is a window onto a Fabs Bot server: this PC's, or another PC's on your tailnet. Run it on your laptop to work with the bots on your PC:
 
-1. On the PC, open *This PC* and copy the pairing link. With Tailscale HTTPS on, its `https://` address works too.
+1. On the PC, open *This PC*, choose *Pair a device*, and copy the link. It works once, within 5 minutes. With Tailscale HTTPS on, the link uses the `https://` address.
 2. On the laptop, choose *File → Switch PC…* and paste it under *Add a PC*.
 
 The app opens straight into a PC, with no picker: the last saved PC you opened, else the newest one you paired, else *This PC*. *File → Switch PC…* (`Ctrl/Cmd+Shift+O`) goes back to the list. For *This PC* it attaches to a server that's already running (`bun run start`); it doesn't start one yet. Its data (saved PCs, sign-ins) lives in its own `Fabs Bot` app-data folder.
@@ -43,7 +43,7 @@ To develop with hot reload: `bun run dev` (server + Vite together), then open `h
 | env | default | |
 |---|---|---|
 | `FABS_PORT` | `4800` | |
-| `FABS_DATA_DIR` | `~/.fabs-bot` | database, shared files, access token (`access-token`; delete it to revoke every paired device) |
+| `FABS_DATA_DIR` | `~/.fabs-bot` | database, shared files, paired devices (`devices.json`, which keeps only a hash of each device's sign-in) |
 | `FABS_WORK_ROOT` | `~/FabsBot` | bots' desk folders; `shared/` is visible to all of them and holds your uploads |
 | `FABS_HOST` | – | bind to a single address instead of loopback + tailnet |
 | `FABS_TAILSCALE_SERVE_PORT` | `8443` | HTTPS port for Tailscale HTTPS (never 443) |
@@ -122,7 +122,7 @@ server/            Bun HTTP + WebSocket server
   providers/       one adapter per CLI → normalized events
   scheduler.ts     routines (croner)
   tailscale.ts     Tailscale status, plus Tailscale HTTPS on its own serve port
-  auth.ts          pairing token + loopback trust
+  auth.ts          pairing codes, device sign-ins + loopback trust
 shared/            types + bot templates + connector presets
 web/               React app: Tailwind + shadcn (sidebar, chat, desk panel, new bot, dialogs, desktop launcher)
 desktop/           Electron app: PC launcher, one window per connection

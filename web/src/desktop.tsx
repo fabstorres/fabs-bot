@@ -94,7 +94,7 @@ function Launcher() {
       <form aria-label="Add a PC" className="flex flex-col gap-3 rounded-2xl border p-4" onSubmit={add}>
         <h2 className="font-semibold">Add a PC</h2>
         <p className="text-sm text-muted-foreground">
-          On the other PC, open This PC and copy the pairing link. If it has Tailscale HTTPS on, the link uses its https address.
+          On the other PC, open This PC, choose Pair a device, and copy the link. It works once, within 5 minutes. If that PC has Tailscale HTTPS on, the link uses its https address.
         </p>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="pc-link">Pairing link or address</Label>

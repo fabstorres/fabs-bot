@@ -1,0 +1,3 @@
+devices.json before pairing: 644
+pair iPhone -> HTTP 302 cookie=set
+devices.json after pairing:  600

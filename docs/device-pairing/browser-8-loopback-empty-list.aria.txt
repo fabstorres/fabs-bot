@@ -1,0 +1,4 @@
+# http://127.0.0.1:4960/  viewport=1440x900
+- region "Paired devices":
+  - heading "Paired devices" [level=3]
+  - paragraph: No devices yet.

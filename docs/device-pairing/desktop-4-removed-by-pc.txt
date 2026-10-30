@@ -1,0 +1,2 @@
+this PC removed "Desktop app on Linux" from Paired devices -> HTTP 200
+desktop window now shows Not paired yet; page marker: "set"

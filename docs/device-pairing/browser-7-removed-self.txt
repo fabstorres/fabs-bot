@@ -1,0 +1,3 @@
+removed this device (Chrome on Linux) from its own This PC panel
+Not paired yet shown; window marker after removal: "set"
+after a reload over the tailnet: Not paired yet

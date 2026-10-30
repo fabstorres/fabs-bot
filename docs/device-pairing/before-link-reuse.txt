@@ -1,0 +1,6 @@
+attempt 1 (fresh client, no cookie) -> HTTP 302  cookie attrs: Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax
+attempt 2 (fresh client, no cookie) -> HTTP 302  cookie attrs: Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax
+attempt 3 (fresh client, no cookie) -> HTTP 302  cookie attrs: Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax
+all three cookies identical: true
+cookie value equals the access-token file: true
+/api/host pairUrl carries the master token: true
