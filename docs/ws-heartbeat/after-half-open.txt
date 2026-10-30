@@ -1,0 +1,15 @@
+server pid from state.json: 199409 (bun server/index.ts )
+send disabled before pause: false
+16:42:34 SIGSTOP -> State: T (stopped)
++1s alerts=0 disconnected=0
++5s alerts=0 disconnected=0
++10s alerts=0 disconnected=0
++14s alerts=0 disconnected=0
++18s alerts=0 disconnected=0
++22s alerts=0 disconnected=0
++27s alerts=0 disconnected=1
++31s alerts=1 disconnected=1
++31s banner: <pc> is reconnecting Reconnect
++41s banner: <pc> is reconnecting <pc> did not answer in time Reconnect
+16:43:15 SIGCONT -> State: S (sleeping)
++3s after SIGCONT: alerts=0 send=1 draft="Still here after a restart?"

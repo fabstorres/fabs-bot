@@ -1,0 +1,8 @@
+stopped server 198870; run data kept
+ok  visible
++1s send held
+ok  visible
++2s banner: <pc> is reconnecting Fabs Bot on <pc> did not answer Reconnect
+ready  run=run-20261024163524  url=http://127.0.0.1:4910  pid=199409
+ok  hidden
++6s banner cleared after server start; send=1

@@ -128,6 +128,7 @@ const STABLE_MS = 30_000;
 const PROBE_TIMEOUT_MS = 15_000;
 const RETRY_BASE_MS = 1_000;
 const RETRY_MAX_MS = 300_000;
+const HEARTBEAT_SLACK_MS = 5_000;
 
 let socket: WebSocket | null = null;
 let latest = 0;
@@ -135,6 +136,7 @@ let failures = 0;
 let openedAt = 0;
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
 let graceTimer: ReturnType<typeof setTimeout> | undefined;
+let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function retryDelay(previousFailures: number, random: number) {
   const ceiling = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** (previousFailures + 1));
@@ -159,6 +161,7 @@ function lose(failure: Failure | null) {
 }
 
 function dropped() {
+  clearTimeout(heartbeatTimer);
   const wasOpen = openedAt > 0;
   if (wasOpen && Date.now() - openedAt >= STABLE_MS) failures = 0;
   socket = null;
@@ -186,7 +189,11 @@ async function open() {
     set({ unpaired: false });
     setConnection("connected", null);
   };
-  ws.onmessage = (m) => apply(JSON.parse(m.data));
+  ws.onmessage = (m) => {
+    const e: ServerEvent = JSON.parse(m.data);
+    if (e.type === "heartbeat") expectHeartbeat(ws, e.everyMs);
+    else apply(e);
+  };
   ws.onclose = () => socket === ws && dropped();
 }
 
@@ -197,6 +204,15 @@ function check(ws: WebSocket) {
     ws.close();
     dropped();
   });
+}
+
+function expectHeartbeat(ws: WebSocket, everyMs: number) {
+  clearTimeout(heartbeatTimer);
+  heartbeatTimer = setTimeout(() => {
+    if (socket !== ws) return;
+    ws.close();
+    dropped();
+  }, 2 * everyMs + HEARTBEAT_SLACK_MS);
 }
 
 export function reconnect() {

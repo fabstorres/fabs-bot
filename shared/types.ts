@@ -170,7 +170,8 @@ export type ServerEvent =
   | { type: "thread.deleted"; threadId: string }
   | { type: "message"; message: Message }
   | { type: "link.start"; link: Link }
-  | { type: "link.end"; linkId: string };
+  | { type: "link.end"; linkId: string }
+  | { type: "heartbeat"; everyMs: number };
 
 /** A PC the desktop app can open: a name and the web origin its Fabs Bot answers on. */
 export interface SavedPc {

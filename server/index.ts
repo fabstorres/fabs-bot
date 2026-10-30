@@ -431,6 +431,9 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   return serveStatic(url);
 }
 
+const HEARTBEAT_MS = 15_000;
+const heartbeat: ServerEvent = { type: "heartbeat", everyMs: HEARTBEAT_MS };
+
 const websocket = {
   open(ws: ServerWebSocket<WsData>) {
     const hello: ServerEvent = {
@@ -441,6 +444,7 @@ const websocket = {
       links: getLinks(),
     };
     ws.send(JSON.stringify(hello));
+    ws.send(JSON.stringify(heartbeat));
     ws.data.unsubscribe = subscribe((e) => ws.send(JSON.stringify(e)));
   },
   message() {},
@@ -458,6 +462,7 @@ function listen(hostname: string) {
 onboard();
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+setInterval(() => publish(heartbeat), HEARTBEAT_MS);
 console.log(`fabs-bot ${VERSION}`);
 if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {
