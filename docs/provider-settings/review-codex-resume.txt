@@ -2,6 +2,10 @@
 # Codex settings set through the Providers dialog: binary path = <run>/bin/codex-wrapper, launch arguments = --color never (exec-only flag)
 
 ## Engineer (Codex) thread
+#2 user (done): "Reply with just the word apple."
+#3 Engineer (done): "apple"
+#4 user (done): "Now reply with just the word you said before, twice."
+#5 Engineer (done): "apple apple"
 
 ## codex-wrapper.log (bot runs only; first 7 arguments)
 codex wrapper: exec --color never --json --skip-git-repo-check -c mcp_servers.fabsbot.url="http://127.0.0.1:4870/mcp/<id>"
