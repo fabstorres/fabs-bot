@@ -4,6 +4,8 @@ import { redact, risky } from "./privacy.mjs";
 
 test("redacted output passes the privacy scan", () => {
   expect(risky(redact("https://pc.tail1234.ts.net/pair?token=abcdefghijkl"))).toBe(false);
+  expect(risky("http://127.0.0.1:4870/pair?code=abcdefghijkl")).toBe(true);
+  expect(risky(redact("https://pc.tail1234.ts.net/pair?code=abcdefghijkl"))).toBe(false);
 });
 
 test("Tailscale IPv6 addresses are caught and redacted", () => {

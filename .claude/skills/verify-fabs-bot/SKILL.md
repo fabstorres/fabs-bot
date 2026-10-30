@@ -88,7 +88,7 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
 | bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` in groups `Shape` / `Color` / `Brain` / `Autonomy` |
-| This PC panel | `--role switch --name "Tailscale HTTPS"` inside `--role group --name "Tailscale HTTPS"`; version badge `--text "v<version>"` beside the PC name |
+| This PC panel | `--role group --name "Pair your phone or laptop"` with `"Pair a device"`, then `"New link"` / `"Copy pairing link"`; `--role region --name "Paired devices"` with `"Remove <label>"` per device (`This device` marks your own); `--role switch --name "Tailscale HTTPS"` inside `--role group --name "Tailscale HTTPS"`; version badge `--text "v<version>"` beside the PC name |
 | desktop launcher | `--role region --name "PCs"`; rows `--role group --name "PC <name>"` with `"Open"` / `"Forget <name>"`; form `--role form --name "Add a PC"` with `--label "Pairing link or address"`, `--label "Name (optional)"`, `"Connect"`; errors `--role alert` |
 
 Other drivers:
@@ -97,7 +97,7 @@ Other drivers:
 - `threads`
 - `paths` (scratch dirs for checking files on disk)
 - `logs`
-- `pair-check`: the remote-device auth matrix over the tailnet; needs `--tailnet`.
+- `pair-check`: the remote-device auth matrix over the tailnet; needs `--tailnet`. `--expiry` waits 5 minutes to check that a link expires.
 - `serve-shim state|log|occupy <port>|fail <stderr>`: inspect or rig the simulated serve config.
 - `serve-check`: the Tailscale HTTPS auth matrix.
 - `server stop|start`: stop the run's server (and any bot CLI mid-turn) and start it again on the same port and data, for offline behavior.
@@ -112,7 +112,7 @@ $C desktop stop
 
 - While the app runs, `browser` actions drive its newest window. `browser open` is refused; drive the launcher instead.
 - The app gets this run's port and its own data dir. `--fresh` wipes saved PCs and cookies.
-- `browser fill --value @pair-link` or `--value @tailnet-url` types the tailnet link without it appearing anywhere (needs `--tailnet`).
+- `browser fill --value @pair-link` makes a fresh one-time pairing link and types it; `--value @tailnet-url` types the bare tailnet address. Neither appears anywhere (needs `--tailnet`).
 
 Real bot turns cost money and take time (usually 3–30 s on haiku). Wait on observable state with `$C wait` or `browser wait`, never fixed sleeps. Phrase prompts so the bot must use the tool you are proving, for example "share it with share_file" or "use ask_user".
 
@@ -135,10 +135,10 @@ Proof standards:
 - No mocks: the agent CLIs are the product.
 - When a bot answers in prose instead of using the tool you asked for, that's a failed drive. Rephrase and retry; don't count prose as proof.
 
-**Privacy.** The user's Tailscale hostname, tailnet IPs, and pairing token must never land in shared evidence, PRs, or chat.
+**Privacy.** The user's Tailscale hostname, tailnet IPs, pairing codes, and device tokens must never land in shared evidence, PRs, or chat.
 - The harness redacts them from everything it prints and snapshots.
 - Screenshots mask the PC-name chip, any text with this PC's own name (the offline banner shows it), the pairing QR, and the pairing link by default (`--no-mask` to opt out locally). Text output redacts this PC's name to `<pc>`.
-- `pair-check` and `browser pair` resolve the tailnet URL internally.
+- `pair-check` and `browser pair` resolve the tailnet URL and make pairing links internally.
 - Don't screenshot the "This PC" panel unmasked.
 - Before anything leaves the machine, run `$C privacy-check`. It scans text artifacts and flags any PNG that lacks a clean `.aria.txt` twin.
 - A clean ARIA twin can't prove every pixel is private, especially when the snapshot covers less than the screenshot. Look at each screenshot yourself before sharing it.

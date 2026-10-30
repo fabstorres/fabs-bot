@@ -1,6 +1,6 @@
 # Desktop app
 
-`bun run desktop` opens straight into a PC: the last saved PC opened, else the newest paired, else `This PC`. The launcher, listing `This PC` and saved PCs, only shows from `File → Switch PC…` or when the chosen PC doesn't answer. Opening a PC shows its Fabs Bot in its own window. This is how a laptop works with the bots on another PC over the tailnet. Adding a PC takes its pairing link (or its Tailscale HTTPS address). The app remembers the PC, reopens it on the next start, and stays signed in. `File → Switch PC…` returns to the launcher. Pages from a PC can't reach the launcher or its controls.
+`bun run desktop` opens straight into a PC: the last saved PC opened, else the newest paired, else `This PC`. The launcher, listing `This PC` and saved PCs, only shows from `File → Switch PC…` or when the chosen PC doesn't answer. Opening a PC shows its Fabs Bot in its own window. This is how a laptop works with the bots on another PC over the tailnet. Adding a PC takes a one-time pairing link from that PC's `This PC` → `Pair a device`; a bare address connects but shows `Not paired yet`. The app remembers the PC, reopens it on the next start, and stays signed in. `File → Switch PC…` returns to the launcher. Pages from a PC can't reach the launcher or its controls.
 
 ## Sub-features
 
@@ -8,10 +8,11 @@
 - `desktop-first-run` opens This PC on a fresh start, without the launcher.
 - `desktop-startup` prefers a saved PC over This PC, even when This PC was opened last.
 - `desktop-local` opens This PC when its server is running.
-- `desktop-remote-pair` pairs with another PC from its pairing link and shows its bots.
+- `desktop-remote-pair` pairs with another PC from its one-time pairing link and shows its bots. The reachability checks before it don't use up the link, and the PC lists the app as `Desktop app on <OS>`.
 - `desktop-remember` reopens the last PC after a restart, still signed in.
 - `desktop-switch` goes back to the launcher from the menu.
-- `desktop-forget` forgets a PC and its sign-in; adding it again needs pairing.
+- `desktop-forget` forgets a PC and its sign-in; adding it again needs a new pairing link.
+- `desktop-removed` shows `Not paired yet` in the app once the PC removes it under `Paired devices`.
 - `desktop-unreachable` refuses a link that doesn't answer, without saving it.
 - `desktop-isolation` keeps the launcher's controls out of PC pages, and refuses navigation from a PC page into the launcher or a popup.
 
@@ -33,10 +34,11 @@ Preconditions:
 - **Isolation.** In that window, run `$C browser eval "location.href = 'fabs-app://launcher/desktop.html'; 1"`, then `browser eval "location.href"`: the page hasn't moved. `browser eval "window.open('fabs-app://launcher/desktop.html') === null"` prints `true`.
 - **Remember.** Run `$C desktop stop` and `$C desktop start`. The app lands straight in the sidebar.
 - **Switch.** Run `$C desktop menu "Switch PC…"` and wait for `--role region --name "PCs"`.
-- **Pair a remote PC.** Run `$C browser fill --label "Pairing link or address" --value @pair-link`, then `fill --label "Name (optional)" --value Fedora`, then `click --role button --name "Connect"`. Wait for `--role button --name "This PC"`. `browser eval "location.hostname"` is the tailnet address (redacted). Capture `desktop/5-remote-paired`.
+- **Pair a remote PC.** Run `$C browser fill --label "Pairing link or address" --value @pair-link`, then `fill --label "Name (optional)" --value Fedora`, then `click --role button --name "Connect"`. Wait for `--role button --name "This PC"`: the link survived the app's reachability checks. `browser eval "location.hostname"` is the tailnet address (redacted). Capture `desktop/5-remote-paired`. In the app, `This PC` → `Paired devices` lists `Desktop app on Linux` with `This device`.
 - **Stay signed in.** Run `$C desktop stop` and `$C desktop start`. The sidebar loads over the tailnet with no `Not paired yet`.
 - **Saved PC wins.** Switch to `This PC`, then `$C desktop stop` and `$C desktop start`. `browser eval "location.hostname"` is still the tailnet address, not `127.0.0.1`.
-- **Forget.** Run `$C desktop menu "Switch PC…"` and `$C browser click --role button --name "Forget Fedora"`. Then add it back with `--value @tailnet-url`, which has no token. Wait for `--role heading --name "Not paired yet"`.
+- **Removed by the PC.** From a script on the PC, `DELETE /api/devices/<id>` for the app's device (or click `Remove Desktop app on Linux` in a loopback browser). The app window shows `--role heading --name "Not paired yet"` without a restart.
+- **Forget.** Run `$C desktop menu "Switch PC…"` and `$C browser click --role button --name "Forget Fedora"`. Then add it back with `--value @tailnet-url`, which has no code. Wait for `--role heading --name "Not paired yet"`. Adding it with a fresh `@pair-link` signs it in again.
 - **Unreachable.** Fill `http://127.0.0.1:1` and click `Connect`. A `--role alert` says `Couldn't reach that PC`, and no new PC row appears.
 - **Proof.** The snapshot and screenshot pairs above, plus `$C privacy-check`.
 
