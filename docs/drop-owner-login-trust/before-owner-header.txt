@@ -1,0 +1,19 @@
+# main @ e6c2c6e, before the fix
+== owner login header, no cookie
+200      main          :PORT   /api/host  tailscale-user-login: <owner-login>
+200      main          :PORT   /api/host  host: evil.example:4900  origin: http://evil.example:4900  tailscale-user-login: <owner-login>
+200      https-target  :PORT+1 /api/host  tailscale-user-login: <owner-login>
+200      https-target  :PORT+1 /api/host  host: this-pc.tailnet.example:8443  origin: https://this-pc.tailnet.example:8443  tailscale-user-login: <owner-login>
+200      https-target  :PORT+1 /api/host  host: evil.example:4901  origin: http://evil.example:4901  tailscale-user-login: <owner-login>
+open     main ws       :PORT   /ws        tailscale-user-login: <owner-login>
+open     https ws      :PORT+1 /ws        host: this-pc.tailnet.example:8443  origin: https://this-pc.tailnet.example:8443  tailscale-user-login: <owner-login>
+== controls
+200      main          :PORT   /api/bots  (no extra headers)
+200      main          :PORT   /api/bots  host: localhost:4900
+open     main ws       :PORT   /ws        (no extra headers)
+401      https-target  :PORT+1 /api/bots  host: this-pc.tailnet.example:8443  origin: https://this-pc.tailnet.example:8443
+== pairing through the https target
+302      /pair?token=<token>  Location: /  Set-Cookie: fabs_token=<token>; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax
+200      https-target  :PORT+1 /api/bots  host: this-pc.tailnet.example:8443  origin: https://this-pc.tailnet.example:8443  tailscale-user-login: <owner-login>  cookie: fabs_token=<token>
+open     https ws      :PORT+1 /ws        host: this-pc.tailnet.example:8443  origin: https://this-pc.tailnet.example:8443  tailscale-user-login: <owner-login>  cookie: fabs_token=<token>
+200      https-target  :PORT+1 /api/bots  host: this-pc.tailnet.example:8443  origin: https://this-pc.tailnet.example:8443  cookie: fabs_token=<token>

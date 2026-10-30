@@ -30,12 +30,9 @@ function cookieToken(req: Request): string | null {
   return m ? decodeURIComponent(m[1]!) : null;
 }
 
-export function authorized(req: Request, ip: string | undefined, ownerLogin: string | null, viaServe = false): boolean {
+export function authorized(req: Request, ip: string | undefined, viaServe = false): boolean {
   const tsUser = req.headers.get("tailscale-user-login");
-  if (isLoopback(ip)) {
-    if (!tsUser && !viaServe && loopbackHost(req)) return true;
-    if (ownerLogin && tsUser === ownerLogin) return true;
-  }
+  if (isLoopback(ip) && !tsUser && !viaServe && loopbackHost(req)) return true;
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   return [cookieToken(req), bearer].some((t) => t && timingSafeEqual(t, ACCESS_TOKEN));
 }

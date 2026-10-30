@@ -1,6 +1,6 @@
 # Tailscale HTTPS
 
-The This PC panel has a Tailscale HTTPS switch. Turning it on serves the app at `https://<pc>.<tailnet>.ts.net:<port>` (8443 unless `FABS_TAILSCALE_SERVE_PORT` says otherwise), so the user's own devices sign in by Tailscale identity. Turning it off removes only that port. Fabs Bot never touches 443 or a port another app already serves; it refuses and says why. Requests through HTTPS are never trusted as this PC: they need the owner's Tailscale login or the pairing cookie, and the bot MCP endpoint refuses them.
+The This PC panel has a Tailscale HTTPS switch. Turning it on serves the app at `https://<pc>.<tailnet>.ts.net:<port>` (8443 unless `FABS_TAILSCALE_SERVE_PORT` says otherwise), so phones get the mic and install-to-home-screen. Devices still pair once; while it's on, the QR code and pairing link use the HTTPS address. Turning it off removes only that port. Fabs Bot never touches 443 or a port another app already serves; it refuses and says why. Requests through HTTPS are never trusted as this PC: they need the pairing cookie or token, whatever Tailscale login header they carry, and the bot MCP endpoint refuses them.
 
 ## Sub-features
 
@@ -10,7 +10,7 @@ The This PC panel has a Tailscale HTTPS switch. Turning it on serves the app at 
 - `https-port-taken` refuses when another app holds the port, makes no serve change, and leaves the switch off.
 - `https-cli-error` shows a fix (for example `tailscale set --operator`) when Tailscale refuses.
 - `https-stop` removes only Fabs Bot's port when the server gets SIGINT or SIGTERM, keeps the switch on, and puts the port back on the next start. Another app's mapping on the port is left alone.
-- `https-auth` admits the owner's Tailscale login or a pairing cookie or bearer token, refuses requests with no identity (tagged devices, Funnel), another user's, or the token as `?token=`, and refuses the bot MCP endpoint.
+- `https-auth` admits a pairing cookie or bearer token, with or without the owner's Tailscale login header, refuses requests with no identity (tagged devices, Funnel), another user's, the owner's login without pairing, or the token as `?token=`, and refuses the bot MCP endpoint.
 
 ## How to get to it (user POV)
 
@@ -25,8 +25,8 @@ Preconditions:
 - `$C doctor` reports `tailscale serve is simulated by the shim`.
 
 - **Off.** Run `$C browser click --role button --name "This PC"`, then `$C browser wait --role switch --name "Tailscale HTTPS"`. Capture `tailscale-https/1-off.aria.txt` with `--role group --name "Tailscale HTTPS"`, and `.png`. Run `$C serve-shim state --path tailscale-https/1-serve-before.txt`, which lists the user's existing mappings only.
-- **On.** Run `$C browser click --role switch --name "Tailscale HTTPS"` and `$C browser wait --text "Your own devices sign in automatically"`. Capture `2-on`. `$C serve-shim state` adds exactly `https :8443 → http://127.0.0.1:<port+1>`, and every earlier line is unchanged.
-- **Auth.** Run `$C serve-check`. All eight lines read `ok`; the matrix is saved to `tailscale-https/serve-check.txt`.
+- **On.** Run `$C browser click --role switch --name "Tailscale HTTPS"` and `$C browser wait --text "The QR code and pairing link use this address"`. Capture `2-on`. `$C serve-shim state` adds exactly `https :8443 → http://127.0.0.1:<port+1>`, and every earlier line is unchanged.
+- **Auth.** Run `$C serve-check`. All nine lines read `ok`; the matrix is saved to `tailscale-https/serve-check.txt`.
 - **Off again.** Click the switch and wait for `Other apps using Tailscale HTTPS are left alone`. `$C serve-shim state` is back to the "before" list.
 - **CLI error.** Run `$C serve-shim fail "Access denied: serve config denied"`, click the switch, and wait for `Tailscale refused`. The switch is unchecked. Capture `4-permission-denied`.
 - **Port taken.** Run `$C serve-shim occupy 8443`, click the switch, and wait for `Another app already uses this HTTPS port`. `$C serve-shim state` still shows the other app's `:8443` mapping. Capture `5-port-taken`.

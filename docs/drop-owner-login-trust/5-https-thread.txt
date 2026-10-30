@@ -1,0 +1,3 @@
+#1 Chief of Staff (done): "Hey, I'm Chief of Staff. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Reply with exactly the word: paired"
+#3 Chief of Staff (done): "paired"

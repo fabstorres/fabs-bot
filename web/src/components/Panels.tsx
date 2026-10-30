@@ -67,15 +67,15 @@ function TailscaleHttps({ host, onChange }: { host: HostInfo; onChange: () => vo
   };
   let status: ReactNode = (
     <span className="text-muted-foreground">
-      Serves this PC over HTTPS on port {serve.port} of your tailnet. It turns on the mic and install-to-home-screen, and your own devices sign in
-      without pairing. Other apps using Tailscale HTTPS are left alone.
+      Serves this PC over HTTPS on port {serve.port} of your tailnet. It turns on the mic and install-to-home-screen. Each device still pairs once
+      with the QR code. Other apps using Tailscale HTTPS are left alone.
     </span>
   );
   if (serve.problem) status = <span className="text-destructive">{SERVE_PROBLEMS[serve.problem]}</span>;
   else if (serve.enabled && tailscale.serveUrl)
     status = (
       <>
-        On at <a className="mono-box underline" href={tailscale.serveUrl}>{tailscale.serveUrl}</a>. Your own devices sign in automatically.
+        On at <a className="mono-box underline" href={tailscale.serveUrl}>{tailscale.serveUrl}</a>. The QR code and pairing link use this address.
       </>
     );
   else if (serve.enabled) status = <span className="text-muted-foreground">Turned on, but Tailscale isn't serving it yet.</span>;

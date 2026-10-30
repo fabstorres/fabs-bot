@@ -17,7 +17,7 @@ The server listens on `127.0.0.1` and on this PC's Tailscale IP. It never listen
 
 ### Tailscale HTTPS
 
-Optional, and off until you turn it on: *This PC → Tailscale HTTPS*. It serves the app at `https://<pc>.<tailnet>.ts.net:8443`, which turns on the mic and lets you install the app to your home screen. Devices signed in to your own Tailscale account get in without pairing. Anyone else, including tagged devices, still needs the pairing link.
+Optional, and off until you turn it on: *This PC → Tailscale HTTPS*. It serves the app at `https://<pc>.<tailnet>.ts.net:8443`, which turns on the mic and lets you install the app to your home screen. Every device still pairs once: scan the QR code or open the pairing link, which uses the `https://` address while this is on. An app installed to the home screen may need to pair again on its own. Fabs Bot never treats Tailscale's login header as proof of who you are.
 
 Under the hood it runs `tailscale serve --bg --https=8443 http://127.0.0.1:4801`, and turning it off runs `tailscale serve --https=8443 off`. That HTTPS port is the only serve setting Fabs Bot ever touches:
 
@@ -122,7 +122,7 @@ server/            Bun HTTP + WebSocket server
   providers/       one adapter per CLI → normalized events
   scheduler.ts     routines (croner)
   tailscale.ts     Tailscale status, plus Tailscale HTTPS on its own serve port
-  auth.ts          pairing token + Tailscale identity
+  auth.ts          pairing token + loopback trust
 shared/            types + bot templates + connector presets
 web/               React app: Tailwind + shadcn (sidebar, chat, desk panel, new bot, dialogs, desktop launcher)
 desktop/           Electron app: PC launcher, one window per connection

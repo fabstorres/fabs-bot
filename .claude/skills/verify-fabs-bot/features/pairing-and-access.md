@@ -23,7 +23,7 @@ Preconditions:
 - Launched with `$C launch --tailnet`, and `$C doctor` reports `tailscale running, instance also bound to tailnet`.
 - This recipe never prints or screenshots the tailnet hostname, IP, or token. The harness resolves and redacts them.
 
-- **Auth matrix.** Run `$C pair-check`. All ten lines read `ok`: unpaired API 401, wrong token 403, pairing link 302 with a `fabs_token` cookie, paired API 200, the token as `?token=` on the API 401, the token as a bearer header 200, MCP from the tailnet 403, a cross-origin WebSocket upgrade 403, a cross-origin `text/plain` write 403, and a non-JSON write 415. The matrix is saved to `pairing/pair-check.txt`.
+- **Auth matrix.** Run `$C pair-check`. All eleven lines read `ok`: unpaired API 401, wrong token 403, pairing link 302 with a `fabs_token` cookie, paired API 200, the token as `?token=` on the API 401, the token as a bearer header 200, MCP from the tailnet 403, the owner's Tailscale login header on this PC's port 401, a cross-origin WebSocket upgrade 403, a cross-origin `text/plain` write 403, and a non-JSON write 415. The matrix is saved to `pairing/pair-check.txt`.
 - **Loopback.** Run `$C browser open /` and `$C browser wait --role button --name "This PC"`. The sidebar loads with no pairing.
 - **Unpaired over the tailnet.** The browser has no cookie yet (loopback never sets one). Run `$C browser open / --via tailnet` and `$C browser wait --role heading --name "Not paired yet"`. Capture `pairing/unpaired.aria.txt` plus `.png`.
 - **Pair.** Run `$C browser pair`, then `$C browser wait --role button --name "This PC"`. The app loads over the tailnet. Run `$C browser open / --via tailnet` again; it still loads, so the cookie persisted. Capture `pairing/paired.aria.txt` plus `.png` (the host chip is masked).
@@ -37,4 +37,4 @@ Preconditions:
 - `browser start` reuses the run's profile. Delete it or relaunch the run to get back to an unpaired state.
 - `launch` without `--tailnet` is loopback-only, so `pair-check`, `--via tailnet`, and `browser pair` refuse to run.
 - The This PC panel prints the real tailnet hostname. Never capture it unmasked, and never paste `$C api GET /api/host` output into a PR. Hostnames and IPs are redacted, but it still lists your peer device names; prefer `doctor`.
-- Requests through Tailscale HTTPS are trusted by Tailscale identity instead of the cookie. Never turn it on against the real `tailscale`. Prove it with [tailscale-https](./tailscale-https.md), which runs on the simulated serve config.
+- Requests through Tailscale HTTPS need the pairing cookie too; the Tailscale login header earns nothing. Never turn it on against the real `tailscale`. Prove it with [tailscale-https](./tailscale-https.md), which runs on the simulated serve config.
