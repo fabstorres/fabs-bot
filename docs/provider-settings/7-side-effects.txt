@@ -1,0 +1,11 @@
+# wrapper log: one line per spawn of the configured Claude binary path
+wrapper ran: --version   | FABS_PROBE=
+wrapper ran: --version   | FABS_PROBE=
+wrapper ran: --version   | FABS_PROBE=
+wrapper ran: --version   | FABS_PROBE=providers-ok
+wrapper ran: --debug-file <run>/claude-debug.log -p | FABS_PROBE=providers-ok
+
+# debug file Claude wrote because of the --debug-file launch argument:
+35663 bytes <run>/claude-debug.log
+# wrapper log after Plugins → Scan:
+wrapper ran: --debug-file <run>/claude-debug.log -p | FABS_PROBE=providers-ok

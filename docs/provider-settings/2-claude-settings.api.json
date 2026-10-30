@@ -1,0 +1,1 @@
+{"enabled": true, "displayName": "Claude (probe)", "binaryPath": "<run>/bin/claude-wrapper", "launchArgs": "--debug-file <run>/claude-debug.log", "env": {"FABS_PROBE": "providers-ok"}}

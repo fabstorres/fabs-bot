@@ -1,0 +1,1 @@
+"{\"displayName\":\"Claude (probe)\",\"binaryPath\":\"<run>/bin/claude-wrapper\",\"launchArgs\":\"--debug-file <run>/claude-debug.log\",\"env\":[\"FABS_PROBE\",\"providers-ok\"],\"switches\":[\"Enable Claude (probe)=true\",\"Enable Codex=false\",\"Enable Cursor Agent=true\",\"Enable OpenCode=true\",\"Enable Gemini CLI=false\"]}"

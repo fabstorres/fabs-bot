@@ -1,0 +1,18 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- group "Environment variables":
+  - text: Variables API keys, base URLs, and other settings this CLI reads from its environment. Stored on this PC only.
+  - button "Add variable"
+  - textbox "Variable 1 name":
+    - /placeholder: NAME
+    - text: FABS_PROBE
+  - textbox "Variable 1 value":
+    - /placeholder: value
+    - text: providers-ok
+  - button "Remove FABS_PROBE"
+  - textbox "Variable 2 name":
+    - /placeholder: NAME
+    - text: 1BAD
+  - textbox "Variable 2 value":
+    - /placeholder: value
+  - button "Remove 1BAD"
+  - alert: "\"1BAD\" isn't a valid variable name. Use letters, digits and _, and don't start with a digit."
