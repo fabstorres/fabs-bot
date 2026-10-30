@@ -25,7 +25,7 @@ export function App() {
 
   useWindowEvent("popstate", restoreView);
 
-  if (unpaired) return <Notice shape="square" color="#7A7A7A" state="waiting" title="Not paired yet">On your PC, open Fabs Bot → tap This PC at the bottom of the sidebar → scan the QR code with this device. Both need to be on your Tailscale network.</Notice>;
+  if (unpaired) return <Notice shape="square" color="#7A7A7A" state="waiting" title="Not paired yet">On your PC, open Fabs Bot → tap This PC at the bottom of the sidebar → Pair a device, then scan the QR code with this device. Both need to be on your Tailscale network.</Notice>;
   if (!loaded && offline)
     return (
       <Notice
