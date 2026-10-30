@@ -4,7 +4,7 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import QRCode from "qrcode";
 import { Check, Copy as CopyIcon, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
-import type { Connector, Device, HostInfo, PairingLink, ProviderInfo } from "../../../shared/types";
+import type { Connector, Device, HostInfo, PairingLink } from "../../../shared/types";
 import type { ConnectorPreset } from "../../../shared/templates";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
@@ -173,7 +173,6 @@ export function SettingsPanel() {
   const hostLoad = useLoad(() => api.get<HostInfo>("/api/host"), []);
   const host = hostLoad.data;
   const reload = hostLoad.reload;
-  const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []).data ?? [];
   const ts = host?.tailscale;
 
   return (
@@ -206,22 +205,6 @@ export function SettingsPanel() {
         <PairDevice host={host} onChange={reload} />
         <PairedDevices />
 
-        <section>
-          <h3 className="mb-2 font-semibold">Agent CLIs on this PC</h3>
-          <div className="flex flex-col divide-y rounded-2xl border">
-            {providers.map((p) => (
-              <div key={p.id} className={cn("grid grid-cols-[auto_8rem_1fr] items-center gap-x-3 px-4 py-2.5 text-sm", !p.installed && "opacity-55")}>
-                <Led on={p.installed} />
-                <b>{p.label}</b>
-                <span className="truncate font-mono text-xs text-muted-foreground">{p.installed ? p.version : "not installed"}</span>
-                <span className="col-start-2 col-end-4 text-xs text-muted-foreground">{p.note}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Bots run these CLIs with your existing logins. Fabs Bot passes everything per run (flags only) and never edits their configs.
-          </p>
-        </section>
         <section>
           <h3 className="mb-1 font-semibold">Where bots work</h3>
           <p className="text-sm text-muted-foreground">

@@ -7,6 +7,7 @@ import { Chat } from "./components/Chat";
 import { DeskPanel } from "./components/DeskPanel";
 import { NewBot } from "./components/NewBot";
 import { ConnectorsPanel, FileViewer, SettingsPanel } from "./components/Panels";
+import { ProvidersPanel } from "./components/Providers";
 import { Sidebar } from "./components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,7 @@ export function App() {
       {modal?.kind === "bot" && <BotEditor botId={modal.botId} />}
       {modal?.kind === "settings" && <SettingsPanel />}
       {modal?.kind === "connectors" && <ConnectorsPanel />}
+      {modal?.kind === "providers" && <ProvidersPanel />}
       {modal?.kind === "file" && <FileViewer url={modal.url} name={modal.name} />}
     </div>
   );

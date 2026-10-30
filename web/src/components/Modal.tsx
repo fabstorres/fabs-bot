@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export function Modal({
   children,
   wide,
+  className,
   title,
   label,
   initialFocus,
@@ -14,6 +15,7 @@ export function Modal({
 }: {
   children: ReactNode;
   wide?: boolean;
+  className?: string;
   title?: ReactNode;
   /** Accessible dialog name (defaults to a string title). */
   label?: string;
@@ -31,7 +33,7 @@ export function Modal({
           e.preventDefault();
           initialFocus.current.focus();
         }}
-        className={cn("max-h-[90dvh] gap-0 overflow-y-auto rounded-3xl p-6 sm:max-w-lg", wide && "sm:max-w-3xl")}
+        className={cn("max-h-[90dvh] gap-0 overflow-y-auto rounded-3xl p-6 sm:max-w-lg", wide && "sm:max-w-3xl", className)}
         onCloseAutoFocus={
           onCloseAutoFocus ??
           ((e) => {
