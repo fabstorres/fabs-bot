@@ -1,0 +1,11 @@
+1440px: Claude Code settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+1440px: Codex settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+1440px: Cursor Agent settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+1440px: OpenCode settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+1440px: Gemini CLI settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+430px: Claude Code settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+430px: Codex settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+430px: Cursor Agent settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+430px: OpenCode settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+430px: Gemini CLI settings: list/header paths match; all five SVGs 24×24, decorative, no monogram text; five labelled switches; no horizontal overflow.
+Disabled OpenCode: logo retained, accessible switch retained; enabled state restored through the UI.

@@ -4,6 +4,7 @@ import { ENV_NAME, type ProviderId, type ProviderInfo, type ProviderSettings } f
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
 import { Modal } from "./Modal";
+import { ProviderIcon } from "./ProviderIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,14 +21,6 @@ function providerStatus(p: ProviderInfo) {
   if (!p.settings.enabled) return "Off";
   if (!p.installed) return p.settings.binaryPath ? "Binary not found" : "Not installed";
   return p.supportsTools ? "Ready · full team tools" : "Ready · chat + workspace";
-}
-
-function Monogram({ id }: { id: ProviderId }) {
-  return (
-    <span aria-hidden className="grid size-8 flex-none place-items-center rounded-lg bg-foreground text-[11px] font-bold text-background">
-      {id.slice(0, 2).toUpperCase()}
-    </span>
-  );
 }
 
 export function ProvidersPanel() {
@@ -115,7 +108,7 @@ function ProviderRow({
           !p.settings.enabled && !selected && "opacity-60",
         )}
       >
-        <Monogram id={p.id} />
+        <ProviderIcon id={p.id} />
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-baseline gap-2">
             <span className="max-w-full flex-none truncate text-sm font-medium">{name}</span>
@@ -185,7 +178,7 @@ function ProviderDetail({ provider: p, onSave }: { provider: ProviderInfo; onSav
   return (
     <section aria-label={`${name} settings`} className="min-w-0">
       <header className="flex items-center gap-3 border-b px-4 py-3">
-        <Monogram id={p.id} />
+        <ProviderIcon id={p.id} />
         <h3 className="min-w-0 flex-1 truncate text-lg font-semibold">{name}</h3>
         {p.version && <code className="font-mono text-xs text-muted-foreground">v{p.version}</code>}
       </header>

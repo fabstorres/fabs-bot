@@ -5,6 +5,7 @@ Users manage the agent CLIs their bots run on this PC from one place. Sidebar �
 ## Sub-features
 
 - `providers-list` lists every CLI with its version and `Ready · full team tools`, `Ready · chat + workspace`, `Not installed`, `Binary not found`, or `Off`.
+- `providers-icons` shows each CLI's actual logo in its list row and selected settings header.
 - `providers-settings` saves display name, binary path, launch arguments, and environment variables on blur and keeps them across a reload.
 - `providers-run` makes the next bot run use the binary path, put the launch arguments before Fabs Bot's own flags, and set the environment variables.
 - `providers-env-name` flags an invalid variable name inline, doesn't save it, and clears the warning once the name is fixed or the row is removed.
@@ -24,6 +25,7 @@ Preconditions:
 - For `providers-run`, write a wrapper in the run dir (`$C paths` → `runDir`) that appends `"$1 $2 $3 | FABS_PROBE=$FABS_PROBE"` to `<runDir>/wrapper.log` and then `exec`s the real `claude` with `"$@"`.
 
 - **Open.** Run `$C browser click --role button --name "Providers"` and `$C browser wait --role region --name "Claude Code settings"`. `--role group --name "Agent CLIs"` holds one button and one `Enable <CLI>` switch per CLI. Capture `providers/open.aria.txt` plus `.png`.
+- **Logos.** Select Claude Code, Codex, Cursor Agent, OpenCode, and Gemini CLI in turn. Each header must show the same SVG logo as its list row, with no letter tiles. Repeat at 430px and capture the list plus the selected header. Logos are decorative: CLI names and switch labels must remain accessible.
 - **Settings.** Fill `--label "Display name"`, `--label "Binary path"` (the wrapper), and `--label "Launch arguments"` (` --debug-file <runDir>/claude-debug.log`, with a leading space), pressing `Tab` after each. Click `Add variable`, fill `--label "Variable 1 name" --value "FABS_PROBE"` and `--label "Variable 1 value" --value "providers-ok"`, then `Tab`. The region is renamed to `<display name> settings`, and `$C api GET /api/providers` shows the four values under `settings` for `claude`.
 - **Run.** Open `Bot Chief` and ask it to run `echo "probe=$FABS_PROBE"` with its Bash tool. `$C wait <T> --for idle` passes, `$C thread <T>` shows `[tool Bash done] "probe=providers-ok"`, `wrapper.log` ends with `--debug-file <runDir>/claude-debug.log -p | FABS_PROBE=providers-ok`, and `claude-debug.log` exists.
 - **Bad name.** Click `Add variable`, fill `--label "Variable 2 name" --value "1BAD"`, and press `Tab`. `--role alert` names `"1BAD"`, and the API still shows only `FABS_PROBE`. `$C browser click --role button --name "Remove 1BAD"` hides the alert.
