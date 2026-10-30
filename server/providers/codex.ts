@@ -32,9 +32,9 @@ export const codex: Provider = {
     if (o.bot.autonomy === "ask") cfg.push(`sandbox_mode="workspace-write"`, `approval_policy="never"`);
     if (o.addDirs.length) cfg.push(`sandbox_workspace_write.writable_roots=${toml(o.addDirs)}`);
 
-    const cmd = [o.launch.bin, "exec"];
+    const cmd = [o.launch.bin, "exec", ...o.launch.args];
     if (o.sessionId) cmd.push("resume", o.sessionId);
-    cmd.push(...o.launch.args, "--json", "--skip-git-repo-check");
+    cmd.push("--json", "--skip-git-repo-check");
     for (const c of cfg) cmd.push("-c", c);
     if (o.bot.model) cmd.push("-m", o.bot.model);
     if (o.bot.autonomy === "full") cmd.push("--dangerously-bypass-approvals-and-sandbox");
