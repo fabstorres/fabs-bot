@@ -79,6 +79,7 @@ function apply(e: ServerEvent) {
         threads: e.threads,
         links: e.links,
         loaded: true,
+        devicesVersion: get().devicesVersion + 1,
       });
       if (get().openThreadId) void loadMessages(get().openThreadId!);
       else if (firstLoad) land(e.threads);
