@@ -1,5 +1,5 @@
 import { afterEach, expect, setSystemTime, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { chmodSync, mkdtempSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -57,4 +57,12 @@ test("removing one device signs out only that device, by cookie and by bearer", 
     expect(authorized(fromDevice(removed, how), "192.0.2.10")).toBe(false);
     expect(authorized(fromDevice(kept, how), "192.0.2.10")).toBe(true);
   }
+});
+
+test("saving devices tightens a devices file that was left readable by others", () => {
+  const file = join(scratch, "data", "devices.json");
+  pairDevice("Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0");
+  chmodSync(file, 0o644);
+  pairDevice("Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0");
+  expect(statSync(file).mode & 0o777).toBe(0o600);
 });

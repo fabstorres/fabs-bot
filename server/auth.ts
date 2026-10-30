@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Device } from "../shared/types";
 import { DATA_DIR } from "./config";
@@ -24,7 +24,10 @@ function loadDevices(): StoredDevice[] {
 
 const codes = new Map<string, number>();
 const devices = loadDevices();
-const saveDevices = () => writeFileSync(devicesFile, JSON.stringify(devices, null, 2), { mode: 0o600 });
+function saveDevices() {
+  writeFileSync(devicesFile, JSON.stringify(devices, null, 2), { mode: 0o600 });
+  chmodSync(devicesFile, 0o600);
+}
 
 export function isLoopback(ip: string | undefined) {
   return !!ip && (ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1");
