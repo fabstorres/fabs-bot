@@ -1,0 +1,5 @@
+# http://127.0.0.1:4990/  viewport=1440x900
+- region "Paired devices":
+  - heading "Paired devices" [level=3]
+  - text: Safari on iPhone Paired 9:43 AM · last seen 9:43 AM
+  - button "Remove Safari on iPhone": Remove

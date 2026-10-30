@@ -1,0 +1,13 @@
+# http://127.0.0.1:4990/  viewport=1440x900
+- group "Pair your phone or laptop":
+  - heading "Pair your phone or laptop" [level=3]
+  - paragraph: Scan with a device on your tailnet. Each link works once and expires after 5 minutes. The device stays signed in until you remove it.
+  - button "Pair a device"
+  - group "Tailscale HTTPS":
+    - text: Tailscale HTTPS
+    - switch "Tailscale HTTPS" [checked]
+    - paragraph:
+      - text: On at
+      - link "https://<pc>.<tailnet>.ts.net:8443":
+        - /url: https://<pc>.<tailnet>.ts.net:8443
+      - text: . The QR code and pairing link use this address.
