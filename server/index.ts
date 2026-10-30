@@ -2,11 +2,11 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node
 import { hostname } from "node:os";
 import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
-import type { Bot, HostInfo, MessagePart, ServerEvent } from "../shared/types";
+import type { Bot, HostInfo, MessagePart, PairingLink, ServerEvent } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
-import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin, timingSafeEqual } from "./auth";
+import { authorized, deviceId, isLoopback, listDevices, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { realPathWithin, within } from "./paths";
@@ -131,16 +131,22 @@ function onboard() {
 
 async function hostInfo(): Promise<HostInfo> {
   const ts = await refreshTailscale();
-  const base = ts.serveUrl ?? (ts.dnsName ? `http://${ts.dnsName}:${PORT}` : ts.ip ? `http://${ts.ip}:${PORT}` : null);
   return {
     hostname: hostname(),
     version: VERSION,
     port: PORT,
     tailscale: ts,
     serve: { enabled: serveEnabled(), port: TAILSCALE_SERVE_PORT, problem: serveProblem },
-    pairUrl: base ? `${base}/pair?token=${ACCESS_TOKEN}` : null,
     workRoot: WORK_ROOT,
   };
+}
+
+async function pairingLink(): Promise<PairingLink | null> {
+  const ts = await refreshTailscale();
+  const base = ts.serveUrl ?? (ts.dnsName ? `http://${ts.dnsName}:${PORT}` : ts.ip ? `http://${ts.ip}:${PORT}` : null);
+  if (!base) return null;
+  const { code, expiresAt } = newPairingCode();
+  return { url: `${base}/pair?code=${code}`, expiresAt };
 }
 
 type Handler = (req: Request, params: Record<string, string>, url: URL) => Response | Promise<Response>;
@@ -158,6 +164,17 @@ route("PUT", "/api/host/serve", async (req) => {
   await applyServe();
   if (serveProblem) db.setSetting("tailscale.serve", enabled ? "0" : "1");
   return json(await hostInfo());
+});
+route("POST", "/api/pairing-links", async () => {
+  const link = await pairingLink();
+  return link ? json(link) : bad("Start Tailscale on this PC to pair a device.", 409);
+});
+route("GET", "/api/devices", (req) => json(listDevices(req)));
+route("DELETE", "/api/devices/:id", (_r, p) => {
+  if (!removeDevice(p.id!)) return bad("not found", 404);
+  for (const ws of sockets) if (ws.data.deviceId === p.id) ws.close(1008, "device removed");
+  publish({ type: "devices" });
+  return json({ ok: true });
 });
 route("GET", "/api/providers", (_r, _p, url) => providerInfo(url.searchParams.has("refresh")).then(json));
 
@@ -369,7 +386,8 @@ function messageParts(text?: string, fileIds?: string[]): MessagePart[] {
   return parts;
 }
 
-type WsData = { unsubscribe?: () => void };
+type WsData = { deviceId: string | null; unsubscribe?: () => void };
+const sockets = new Set<ServerWebSocket<WsData>>();
 
 function serveStatic(url: URL): Response {
   if (!existsSync(WEB_DIST)) {
@@ -394,8 +412,11 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   }
 
   if (url.pathname === "/pair") {
-    if (!timingSafeEqual(url.searchParams.get("token") ?? "", ACCESS_TOKEN)) return new Response("Invalid pairing link", { status: 403 });
-    return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": pairCookie() } });
+    if (!redeemPairingCode(url.searchParams.get("code") ?? ""))
+      return new Response("This pairing link expired or was already used. On your PC, open This PC and choose Pair a device to get a new one.", { status: 403 });
+    const token = pairDevice(req.headers.get("user-agent") ?? "");
+    publish({ type: "devices" });
+    return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": pairCookie(token) } });
   }
 
   const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws";
@@ -403,7 +424,7 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
 
   if (url.pathname === "/ws") {
-    return server.upgrade(req, { data: {} }) ? undefined : new Response("expected websocket", { status: 400 });
+    return server.upgrade(req, { data: { deviceId: deviceId(req) } }) ? undefined : new Response("expected websocket", { status: 400 });
   }
 
   if (url.pathname.startsWith("/files/")) {
@@ -439,6 +460,7 @@ const heartbeat: ServerEvent = { type: "heartbeat", everyMs: HEARTBEAT_MS };
 
 const websocket = {
   open(ws: ServerWebSocket<WsData>) {
+    sockets.add(ws);
     const hello: ServerEvent = {
       type: "hello",
       bots: db.listBots(),
@@ -452,6 +474,7 @@ const websocket = {
   },
   message() {},
   close(ws: ServerWebSocket<WsData>) {
+    sockets.delete(ws);
     ws.data.unsubscribe?.();
   },
 };
