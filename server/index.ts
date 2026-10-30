@@ -9,7 +9,7 @@ import * as db from "./db";
 import { ACCESS_TOKEN, authorized, isLoopback, pairCookie, sameOrigin, timingSafeEqual } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
-import { within } from "./paths";
+import { realPathWithin, within } from "./paths";
 import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { providerInfo } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
@@ -209,9 +209,12 @@ route("GET", "/api/bots/:id/files", (_r, p, url) => {
 });
 route("GET", "/api/bots/:id/file", (_r, p, url) => {
   const bot = db.getBot(p.id!);
-  const full = bot && within(bot.cwd, url.searchParams.get("path") ?? "");
-  if (!full || !existsSync(full) || !statSync(full).isFile()) return bad("not found", 404);
-  return new Response(Bun.file(full), { headers: fileHeaders(basename(full), url.searchParams.has("download")) });
+  const path = url.searchParams.get("path") ?? "";
+  const real = bot && realPathWithin(bot.cwd, path);
+  if (!real || !existsSync(real) || !statSync(real).isFile()) return bad("not found", 404);
+  return new Response(Bun.file(real, { type: Bun.file(basename(path).toLowerCase()).type }), {
+    headers: fileHeaders(basename(path), url.searchParams.has("download")),
+  });
 });
 
 route("GET", "/api/threads", () => json(db.listThreads()));

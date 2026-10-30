@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { within } from "./paths";
+import { realPathWithin, within } from "./paths";
 
 const tmp = mkdtempSync(join(tmpdir(), "fabs-within-"));
 const desk = join(tmp, "desk");
@@ -48,5 +48,14 @@ describe("within", () => {
   test("refuses a path that does not exist", () => {
     expect(within(desk, "missing.md")).toBeNull();
     expect(within(desk, "out/missing.md")).toBeNull();
+  });
+});
+
+describe("realPathWithin", () => {
+  test("returns the link target under the real root, not the path as written", () => {
+    const plan = join(realpathSync(desk), "plan.md");
+    expect(realPathWithin(desk, "plan-link.md")).toBe(plan);
+    expect(realPathWithin(join(tmp, "desk-link"), "plan-link.md")).toBe(plan);
+    expect(realPathWithin(desk, "notes.txt")).toBeNull();
   });
 });

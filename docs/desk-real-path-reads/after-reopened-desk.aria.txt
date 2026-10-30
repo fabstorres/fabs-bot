@@ -1,0 +1,18 @@
+# http://127.0.0.1:4920/  viewport=1440x900
+- complementary "Design's desk":
+  - button "Show desk" [disabled]
+  - heading "Desk" [level=2]
+  - button "Show settings"
+  - button "Close desk"
+  - button "design"
+  - group "Desk files":
+    - button "Folder drafts": drafts
+    - button "File drafts-link": drafts-link 60 B
+    - button "File plan-link.md": plan-link.md 26 B
+    - button "File plan.md": plan.md 26 B
+  - paragraph: Design's desk
+  - heading "Routines" [level=3]
+  - paragraph:
+    - text: None yet. Ask Design to do something on a schedule, or add one in
+    - button "settings"
+    - text: .

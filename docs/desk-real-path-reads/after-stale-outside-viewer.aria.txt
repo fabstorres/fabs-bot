@@ -1,0 +1,10 @@
+# http://127.0.0.1:4920/  viewport=1440x900
+- dialog "stale.txt":
+  - heading "stale.txt" [level=2]
+  - paragraph: stale.txt
+  - document "Preview of stale.txt": "{\"error\":\"not found\"}"
+  - link "Download":
+    - /url: /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=stale.txt&download
+  - link "Open":
+    - /url: /api/bots/4dbbf14d-ddc0-4196-9233-b14a997be0cb/file?path=stale.txt
+  - button "Close"

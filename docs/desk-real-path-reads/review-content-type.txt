@@ -1,0 +1,33 @@
+Desk file route after the review fix (isolated instance, loopback).
+note.txt -> page.html, plan-link.md -> plan.md, out.txt -> a file outside the desk
+
+== GET /api/bots/<id>/file?path=note.txt
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="note.txt"
+X-Content-Type-Options: nosniff
+Content-Type: text/plain;charset=utf-8
+
+== GET /api/bots/<id>/file?path=page.html
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="page.html"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-downloads
+Content-Type: text/html;charset=utf-8
+
+== GET /api/bots/<id>/file?path=plan-link.md
+HTTP/1.1 200 OK
+Content-Disposition: inline; filename="plan-link.md"
+X-Content-Type-Options: nosniff
+Content-Type: text/markdown
+
+== GET /api/bots/<id>/file?path=out.txt
+HTTP/1.1 404 Not Found
+Content-Type: application/json;charset=utf-8
+
+== GET /api/bots/<id>/file?path=note.txt&download
+HTTP/1.1 200 OK
+Content-Disposition: attachment; filename="note.txt"
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'; sandbox
+Content-Type: text/plain;charset=utf-8
+
