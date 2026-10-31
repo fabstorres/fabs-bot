@@ -287,7 +287,14 @@ route("POST", "/api/threads/:id/stop", (_r, p) => {
 });
 route("POST", "/api/threads/:id/members", async (req, p) => {
   const { botId } = await body(req);
-  if (!db.getBot(botId) || !db.getThread(p.id!)) return bad("not found", 404);
+  const thread = db.getThread(p.id!);
+  if (!db.getBot(botId) || !thread) return bad("not found", 404);
+  if (thread.memberIds.includes(botId)) return json(thread);
+  if (thread.kind === "direct") {
+    const group = db.createThread("group", [...thread.memberIds, botId]);
+    publish({ type: "thread", thread: group });
+    return json(group);
+  }
   db.addMember(p.id!, botId);
   const t = db.getThread(p.id!)!;
   publish({ type: "thread", thread: t });

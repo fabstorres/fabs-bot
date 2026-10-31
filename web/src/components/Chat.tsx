@@ -1,9 +1,9 @@
-import { type RefObject, useRef, useState } from "react";
+import { type RefObject, useId, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, X } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, isImage } from "../api";
 import { toast } from "sonner";
-import { attachFiles, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
+import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
@@ -78,7 +78,7 @@ export function Chat({ thread }: { thread: Thread }) {
               </span>
             </div>
           )}
-          {messages && messages.length === 0 && members[0] && <Hello bot={members[0]} />}
+          {messages && messages.length === 0 && members[0] && <Hello members={members} title={title} />}
           {messages && <MessageList messages={messages} bots={bots} multi={multi} />}
         </div>
       </div>
@@ -88,12 +88,13 @@ export function Chat({ thread }: { thread: Thread }) {
   );
 }
 
-function Hello({ bot }: { bot: Bot }) {
+function Hello({ members, title }: { members: Bot[]; title: string }) {
+  const solo = members.length === 1 ? members[0] : undefined;
   return (
     <div className="m-auto flex flex-col items-center gap-2 py-10 text-center">
-      <BotAvatar shape={bot.shape} color={bot.color} size={112} />
-      <h3 className="mt-2 text-xl font-semibold">{bot.name}</h3>
-      <p className="max-w-sm text-muted-foreground">{bot.role || "Ready when you are."}</p>
+      <AvatarStack bots={members} size={112} />
+      <h3 className="mt-2 text-xl font-semibold">{solo?.name ?? title}</h3>
+      {solo && <p className="max-w-sm text-muted-foreground">{solo.role || "Ready when you are."}</p>}
     </div>
   );
 }
@@ -102,7 +103,14 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
   const bots = useStore((s) => s.bots);
   const others = bots.filter((b) => !thread.memberIds.includes(b.id));
   const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const more = useRef<HTMLButtonElement>(null);
+
+  async function bringIn(botId: string) {
+    const t = await api.post<Thread>(`/api/threads/${thread.id}/members`, { botId });
+    if (t.id !== thread.id) enterThread(t);
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -121,7 +129,7 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               {others.map((b) => (
-                <DropdownMenuItem key={b.id} onSelect={() => api.post(`/api/threads/${thread.id}/members`, { botId: b.id })}>
+                <DropdownMenuItem key={b.id} onSelect={() => void bringIn(b.id)}>
                   <BotAvatar shape={b.shape} color={b.color} size={18} /> {b.name}
                 </DropdownMenuItem>
               ))}
@@ -134,19 +142,76 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={async () => {
-            if (!confirm("Delete this thread? The bots' work on disk stays.")) return;
-            await api.del(`/api/threads/${thread.id}`);
-            goBack();
-          }}
-        >
+        <DropdownMenuItem variant="destructive" onSelect={() => setDeleting(true)}>
           <Trash2 /> Delete thread
         </DropdownMenuItem>
       </DropdownMenuContent>
       {renaming && <RenameThread thread={thread} trigger={more} onClose={() => setRenaming(false)} />}
+      {deleting && <DeleteThread thread={thread} members={members} trigger={more} onClose={() => setDeleting(false)} />}
     </DropdownMenu>
+  );
+}
+
+function DeleteThread({ thread, members, trigger, onClose }: { thread: Thread; members: Bot[]; trigger: RefObject<HTMLButtonElement | null>; onClose(): void }) {
+  const bots = useStore((s) => s.bots);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const listId = useId();
+
+  async function remove() {
+    setBusy(true);
+    setError("");
+    try {
+      await api.del(`/api/threads/${thread.id}`);
+      onClose();
+      goBack();
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      title={`Delete “${threadTitle(thread, bots)}”?`}
+      onClose={() => !busy && onClose()}
+      onCloseAutoFocus={(e) => {
+        e.preventDefault();
+        trigger.current?.focus();
+      }}
+    >
+      <div className="flex flex-col gap-4">
+        <p className="text-muted-foreground">This deletes the thread and all its messages.</p>
+        <div className="flex flex-col gap-2">
+          <p id={listId} className="text-sm font-medium">
+            Bots in this thread
+          </p>
+          <ul aria-labelledby={listId} className="flex flex-col gap-2">
+            {members.map((m) => (
+              <li key={m.id} className="flex items-center gap-2">
+                <BotAvatar shape={m.shape} color={m.color} size={24} /> {m.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="text-muted-foreground">
+          {thread.kind === "direct" ? "The bot stays, and so does its work on disk." : "Each bot's 1:1 chat with you stays, and so does their work on disk."}
+        </p>
+        {error && (
+          <p role="alert" className="text-sm text-failing">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" variant="destructive" className="rounded-full px-6" disabled={busy} onClick={remove}>
+            Delete
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -231,18 +296,23 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       });
       return;
     }
-    if (thread.kind !== "backchannel") {
-      for (const b of mentionedBots(body, bots)) {
-        if (!thread.memberIds.includes(b.id)) await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
-      }
-    }
+    const joining = thread.kind === "backchannel" ? [] : mentionedBots(body, bots).filter((b) => !thread.memberIds.includes(b.id));
+    const regroup = thread.kind === "direct" && joining.length > 0;
+    if (!regroup) for (const b of joining) await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
     const sending = files;
+    const message = { text: body, fileIds: sending.map((f) => f.fileId) };
     draft("");
     updateAttachments(thread.id, () => []);
-    await api.post(`/api/threads/${thread.id}/messages`, { text: body, fileIds: sending.map((f) => f.fileId) }).catch(() => {
+    const restore = () => {
       draft([body, sessionStorage.getItem(draftKey)].filter(Boolean).join("\n"));
       updateAttachments(thread.id, (f) => [...sending, ...f]);
-    });
+    };
+    if (regroup) {
+      const group = await api.post<Thread>("/api/threads", { ...message, botIds: [...thread.memberIds, ...joining.map((b) => b.id)] }).catch(restore);
+      if (group) enterThread(group);
+    } else {
+      await api.post(`/api/threads/${thread.id}/messages`, message).catch(restore);
+    }
   }
 
   const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;

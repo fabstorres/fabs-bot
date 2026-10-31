@@ -303,7 +303,10 @@ export function goBack() {
 }
 
 export async function openDirect(botId: string) {
-  const t = await api.post<Thread>(`/api/bots/${botId}/direct`);
+  enterThread(await api.post<Thread>(`/api/bots/${botId}/direct`));
+}
+
+export function enterThread(t: Thread) {
   set({ threads: upsert(get().threads, t).sort((a, b) => b.updatedAt - a.updatedAt) });
   openThread(t.id);
 }

@@ -86,7 +86,7 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | phone favorites | `--role button --name "Open <Name>"` (big faces above the list, 430px only) |
 | new bot pane | `--role region --name "New bot"`; `--role radio` in groups `Color` / `Shape`; `--label "Name"`; suggestions `"Suggestion <Template>"`; `"Get started"` |
 | open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"`, `"Send"` (`"Environment disconnected"` while offline), `"Stop"`, `"Attach"`; offline banner `--role alert` with `"Reconnect"` |
-| thread header | `"Back"` (phone, or desktop inside a backchannel), `"Open desk"`, `"More"`; menu `--role menu --name "Thread menu"` |
+| thread header | `"Back"` (phone, or desktop inside a backchannel), `"Open desk"`, `"More"`; menu `--role menu --name "Thread menu"`; `"Delete thread"` opens `--role dialog --name "Delete “<title>”?"` with `--role list --name "Bots in this thread"`, `Cancel` / `Delete` |
 | cards | `--role group --name "Question: <q>"` (options are buttons named `"<Letter> <option>"`); `--role group --name "Approval: <Tool>"` with buttons `Allow` / `Deny`; bot↔bot `--role button --name "Exchange with <Bot>"` (opens the backchannel) |
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
