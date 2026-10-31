@@ -8,6 +8,7 @@ import { api, formatSize, formatTime } from "../api";
 import { isConnected, openModal, openNestedThread, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type ToolPart = Extract<MessagePart, { type: "tool" }>;
@@ -68,12 +69,12 @@ function MessageView({ m, bots, showAuthor, gap }: { m: Message; bots: Bot[]; sh
       )}
       {groups.map((g, i) =>
         g.kind === "tools" ? (
-          <WorkLog key={i} tools={g.tools} live={m.status === "streaming" && i === groups.length - 1} />
+          <WorkLog key={i} tools={g.tools} live={m.status === "streaming" && i === groups.length - 1} bot={bot} />
         ) : (
           <Part key={i} part={g.part} index={g.index} message={m} bot={bot} error={m.status === "error" && i === groups.length - 1} />
         ),
       )}
-      {m.status === "streaming" && (empty || groups[groups.length - 1]?.kind !== "part") && (
+      {m.status === "streaming" && empty && (
         <div className="rounded-3xl bg-bubble px-[18px] py-4 text-muted-foreground">
           <span className="typing">
             <i />
@@ -148,28 +149,46 @@ function Exchange({ tool, from }: { tool: ToolPart; from?: Bot }) {
   );
 }
 
-function WorkLog({ tools, live }: { tools: ToolPart[]; live: boolean }) {
+function WorkLog({ tools, live, bot }: { tools: ToolPart[]; live: boolean; bot?: Bot }) {
   const [open, setOpen] = useState(false);
-  const running = tools.find((t) => t.status === "running");
+  const [peek, setPeek] = useState(false);
+  const current = tools.find((t) => t.status === "running") ?? tools[tools.length - 1];
   const errors = tools.filter((t) => t.status === "error").length;
-  const label = running
-    ? `${running.name}${running.summary ? ` · ${running.summary}` : ""}`
-    : `${tools.length} step${tools.length > 1 ? "s" : ""}${errors ? ` · ${errors} failed` : ""}`;
   return (
     <div className="max-w-[88%] text-[13px] text-muted-foreground" role="group" aria-label="Work log">
-      <button className="flex max-w-full items-center gap-2 rounded-full px-2 py-1 hover:bg-muted" onClick={() => setOpen(!open)}>
-        <span className={cn("size-1.5 flex-none rounded-full bg-muted-foreground/50", running && live && "animate-pulse bg-working", errors > 0 && !running && "bg-failing")} />
-        <span className="truncate">{label}</span>
-        <ChevronDown className={cn("size-3.5 flex-none transition-transform", !open && "-rotate-90")} />
-      </button>
+      <TooltipProvider>
+        <Tooltip open={live && peek} onOpenChange={setPeek}>
+          <TooltipTrigger asChild>
+            <button className="flex max-w-full items-center gap-2 rounded-full py-1 pr-2 pl-1 hover:bg-muted" aria-expanded={open} onClick={() => setOpen(!open)}>
+              {bot && <BotAvatar shape={bot.shape} color={bot.color} size={20} state={live ? "working" : "idle"} />}
+              <span className="truncate">
+                {tools.length} step{tools.length > 1 ? "s" : ""}
+                {errors > 0 && (
+                  <>
+                    {" · "}
+                    <span className="text-failing">{errors} failed</span>
+                  </>
+                )}
+              </span>
+              <ChevronDown className={cn("size-3.5 flex-none transition-transform", !open && "-rotate-90")} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="start" className="max-w-80">
+            {current?.name} <span className="opacity-60">{current?.summary}</span>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       {open && (
-        <ol className="mt-1 ml-3 flex flex-col gap-1 border-l pl-3">
-          {tools.map((t) => (
-            <li key={t.id} className={cn("flex min-w-0 gap-2", t.status === "error" && "text-failing")}>
-              <span className="flex-none font-medium text-foreground">{t.name}</span>
-              <span className="truncate font-mono text-xs leading-5">{t.summary}</span>
-            </li>
-          ))}
+        <ol className="mt-1 flex flex-col gap-1 pl-8">
+          {tools.map((t) => {
+            const shimmer = live && t.status === "running";
+            return (
+              <li key={t.id} className={cn("flex min-w-0 gap-1.5 leading-5", shimmer && "shimmer", t.status === "error" && "text-failing")}>
+                <span className={cn("flex-none", !shimmer && t.status !== "error" && "text-foreground")}>{t.name}</span>
+                <span className="truncate">{t.summary}</span>
+              </li>
+            );
+          })}
         </ol>
       )}
     </div>
