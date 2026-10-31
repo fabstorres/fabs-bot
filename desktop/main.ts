@@ -63,6 +63,7 @@ function showLauncher(error?: string) {
       backgroundColor: "#ffffff",
       webPreferences: { preload: join(app.getAppPath(), "dist/desktop/preload.cjs"), sandbox: true, contextIsolation: true },
     });
+    launcher.setMenuBarVisibility(false);
     launcher.on("closed", () => (launcher = null));
   }
   void launcher.loadURL(`${LAUNCHER_ORIGIN}/desktop.html${error ? `?error=${encodeURIComponent(error)}` : ""}`);
@@ -93,6 +94,7 @@ async function openPc(id: string, url?: string): Promise<string | null> {
     webPreferences: { sandbox: true, contextIsolation: true },
   });
   const opened = pcWindow;
+  opened.setMenuBarVisibility(false);
   opened.on("closed", () => {
     if (pcWindow === opened) {
       pcWindow = null;
