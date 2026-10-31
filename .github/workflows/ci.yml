@@ -36,7 +36,7 @@ jobs:
         run: bun run typecheck
 
       - name: Test
-        run: bun test ./.claude/skills/verify-fabs-bot/scripts ./server ./web/src
+        run: bun test ./.claude/skills/verify-fabs-bot/scripts ./server ./web/src ./desktop
 
       - name: Build web
         run: bun run build

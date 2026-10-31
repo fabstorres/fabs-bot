@@ -1,9 +1,10 @@
-import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type IpcMainInvokeEvent, type MenuItemConstructorOptions, type WebContents } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type IpcMainInvokeEvent, type WebContents } from "electron";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { PC_ICONS, type DesktopState, type PcChoice, type PcIcon, type SavedPc } from "../shared/types";
+import { menuTemplate } from "./menu";
 
 const LOCAL_ORIGIN = `http://127.0.0.1:${Number(process.env.FABS_PORT ?? 4800)}`;
 const LAUNCHER_ORIGIN = "fabs-app://launcher";
@@ -201,21 +202,6 @@ app.on("web-contents-created", (_e, contents) => {
   });
 });
 
-function setMenu() {
-  const mac = process.platform === "darwin";
-  const template: MenuItemConstructorOptions[] = [
-    ...(mac ? [{ role: "appMenu" } as const] : []),
-    {
-      label: "File",
-      submenu: [{ label: "Switch PC…", accelerator: "CmdOrCtrl+Shift+O", click: () => showLauncher() }, { type: "separator" }, mac ? { role: "close" } : { role: "quit" }],
-    },
-    { role: "editMenu" },
-    { role: "viewMenu" },
-    { role: "windowMenu" },
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-}
-
 const primary = app.requestSingleInstanceLock();
 if (!primary) app.quit();
 
@@ -243,7 +229,7 @@ app.whenReady().then(async () => {
   session.defaultSession.setPermissionCheckHandler(
     (contents, permission, origin, details) => allowPermission(contents, permission, origin) && details.mediaType !== "video",
   );
-  setMenu();
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(process.platform, () => showLauncher())));
 
   const error = await openPc(startupPc());
   if (error) showLauncher(error);
