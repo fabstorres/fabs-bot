@@ -1,0 +1,7 @@
+saved=dark, OS light, reload: class before <body> parsed   dark
+picked System (OS light): <html> class                     (none)
+picked System: saved theme in localStorage                 null
+OS switches to dark, no reload: <html> class               dark
+OS switches back to light, no reload: <html> class         (none)
+System + OS dark, reload: class before <body> parsed       dark
+picked Light while OS is dark: <html> class                (none)

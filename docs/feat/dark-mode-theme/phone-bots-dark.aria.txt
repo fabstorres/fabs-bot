@@ -1,0 +1,17 @@
+# http://127.0.0.1:4930/?phone=1  viewport=430x932
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "PC <pc>": <pc>
+  - button "Settings"
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - button "Open Chief of Staff": Chief of Staff
+  - button "Open Chief": Chief
+  - button "Open Design": Design
+  - navigation "Chats":
+    - button "Bot Chief": "Chief 11:50 AM Here's the reply, with the notes file shared. Read the example page, then run bun test once you're ready. Here's a 3-line snippet: I wrote …"
+    - button "Bot Careful": Careful 11:50 AM Hey, I'm Careful. What's the main thing you want me on?
+    - button "Bot Engineer": Engineer 11:50 AM Hey, I'm Engineer. What's the main thing you want me on?
+    - button "Bot Design": Design 11:50 AM Hey, I'm Design. What's the main thing you want me on?
+    - button "Bot Chief of Staff": Chief of Staff 11:50 AM Hey, I'm Chief of Staff. What's the main thing you want me on?

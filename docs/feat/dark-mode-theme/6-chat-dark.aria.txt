@@ -1,0 +1,41 @@
+# http://127.0.0.1:4930/  viewport=1440x900
+- region "Thread with Chief":
+  - text: Chief
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops" [disabled]
+      - button "B A specific project" [disabled]
+      - button "C Research and writing" [disabled]
+      - button "D Something else" [disabled]
+    - paragraph:
+      - text: Reply in one short message that has a markdown link to
+      - link "https://example.com":
+        - /url: https://example.com
+      - text: ", some inline code like"
+      - code: bun test
+      - text: ", and a 3-line code block. Then write a file notes.md with two bullet points and share it with share_file."
+    - group "Work log":
+      - button "2 steps"
+    - button "File notes.md": M↓ notes.md 150 B
+    - paragraph: Here's the reply, with the notes file shared.
+    - paragraph:
+      - text: Read the
+      - link "example":
+        - /url: https://example.com
+      - text: page, then run
+      - code: bun test
+      - text: "once you're ready. Here's a 3-line snippet:"
+    - code: "const greeting = \"hello\"; console.log(greeting); export {};"
+    - paragraph:
+      - text: I wrote
+      - code: notes.md
+      - text: with two bullets and shared it.
+  - textbox "Message":
+    - /placeholder: Message Chief
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

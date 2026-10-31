@@ -1,0 +1,13 @@
+# http://127.0.0.1:4930/?phone  viewport=430x932
+- banner:
+  - button "Back"
+  - navigation "breadcrumb":
+    - list:
+      - listitem: Settings
+      - listitem:
+        - link "Appearance" [disabled]
+- region "Appearance":
+  - heading "Appearance" [level=2]
+  - text: Theme Saved on this device. System follows your device's light or dark setting.
+  - combobox "Theme": Dark
+- region "Notifications alt+T"
