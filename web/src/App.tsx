@@ -7,7 +7,7 @@ import { Chat } from "./components/Chat";
 import { DeskPanel } from "./components/DeskPanel";
 import { NewBot } from "./components/NewBot";
 import { FileViewer } from "./components/Panels";
-import { SettingsPage } from "./components/Settings";
+import { SettingsDialog } from "./components/Settings";
 import { Sidebar } from "./components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -51,8 +51,6 @@ export function App() {
       </div>
     );
 
-  if (settings) return <SettingsPage section={settings.section} />;
-
   const showMain = creating || !!thread;
   return (
     <div className="flex h-dvh">
@@ -71,6 +69,7 @@ export function App() {
           <Empty />
         )}
       </main>
+      {settings && <SettingsDialog section={settings.section} />}
       {modal?.kind === "bot" && <BotEditor botId={modal.botId} />}
       {modal?.kind === "file" && <FileViewer url={modal.url} name={modal.name} />}
     </div>
