@@ -9,7 +9,7 @@ export type SettingsSection = "providers" | "plugins" | "pc" | "appearance";
 
 type SettingsView = { section?: SettingsSection };
 
-type View = { thread?: string; creating?: boolean; settings?: SettingsView };
+type View = { thread?: string; creating?: boolean };
 
 export type Attachment = { fileId: string; name: string; size: number };
 
@@ -257,17 +257,8 @@ export async function loadMessages(threadId: string) {
   set({ messages: { ...get().messages, [threadId]: msgs } });
 }
 
-function settingsFocus(from: SettingsView | null, to: SettingsView | undefined) {
-  if (from && !to) return "open-settings";
-  if (!to) return null;
-  if (to.section) return from?.section ? null : "settings-section-title";
-  return from?.section ? `settings-nav-${from.section}` : "settings-title";
-}
-
 function show(view: View) {
-  const target = settingsFocus(get().settings, view.settings);
-  flushSync(() => set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: view.settings ?? null }));
-  if (target) document.getElementById(target)?.focus();
+  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: null });
   if (view.thread) {
     void loadMessages(view.thread);
     void api.post(`/api/threads/${view.thread}/read`).catch(() => {});
@@ -295,8 +286,15 @@ export const openThread = (threadId: string) => go({ thread: threadId }, false);
 /** Stacks on top of the current chat, so Back returns to it. */
 export const openNestedThread = (threadId: string) => go({ thread: threadId }, true);
 export const startCreating = () => go({ creating: true }, false);
-export const openSettings = () => go({ settings: wide() ? { section: "providers" } : {} }, true);
-export const openSettingsSection = (section: SettingsSection) => go({ settings: { section } }, !wide());
+export const openSettings = () => set({ settings: wide() ? { section: "providers" } : {} });
+export const closeSettings = () => set({ settings: null });
+export function openSettingsSection(section?: SettingsSection) {
+  const previous = get().settings?.section;
+  flushSync(() => set({ settings: { section } }));
+  if (section && wide()) return;
+  const target = section ? "settings-section-title" : previous ? `settings-nav-${previous}` : "settings-title";
+  if (target) document.getElementById(target)?.focus();
+}
 export const restoreView = () => show(history.state?.view ?? {});
 
 export function goBack() {

@@ -1,0 +1,16 @@
+# http://127.0.0.1:4870/?phone  viewport=430x932
+- region "Notifications alt+T"
+- dialog "Settings":
+  - heading "Settings" [level=2]
+  - paragraph: Manage providers, plugins, this PC, and appearance.
+  - navigation "Settings sections":
+    - heading "Settings" [level=1]
+    - button "Close settings"
+    - group:
+      - group
+      - textbox "Search settings":
+        - /placeholder: Search
+    - button "Providers"
+    - button "Plugins"
+    - button "This PC"
+    - button "Appearance"
