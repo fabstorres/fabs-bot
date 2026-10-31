@@ -1,0 +1,175 @@
+- generic [box=0,0,1440,900]:
+  - generic [box=0,0,1440,900]:
+    - generic [box=0,0,1440,900]:
+      - generic [box=0,0,320,900]:
+        - complementary [box=0,0,320,900]:
+          - generic [box=0,0,319,60]:
+            - heading [level=1] [box=15,34,1,1]: Fabs Bot
+            - button [box=16,16,114,36]:
+              - img [box=28,26,16,16]
+              - generic [box=52,24,42,20]: <pc>
+              - img [box=102,26,16,16]
+            - button [box=227,16,36,36]:
+              - img [box=235,24,20,20]
+            - button [box=267,16,36,36]:
+              - img [box=275,24,20,20]
+          - generic [box=12,60,295,39]:
+            - img [box=24,71,16,16]
+            - textbox [box=48,68,247,23]:
+              - /placeholder: Search
+          - navigation [box=0,107,319,794]:
+            - button [box=8,107,303,64]:
+              - generic [box=20,117,44,44]:
+                - img [box=20,117,44,44]
+              - generic [box=76,117,223,43]:
+                - generic [box=76,117,223,23]:
+                  - generic [box=76,117,171,23]:
+                    - generic [box=76,117,50,23]: Careful
+                  - generic [box=255,119,44,20]: 7:31 PM
+                - generic [box=76,140,223,20]:
+                  - generic [box=76,140,223,20]: Hey, I'm Careful. What's the main thing you want me on?
+            - button [box=8,171,303,64]:
+              - generic [box=20,181,44,44]:
+                - img [box=20,181,44,44]
+              - generic [box=76,181,223,43]:
+                - generic [box=76,181,223,23]:
+                  - generic [box=76,181,171,23]:
+                    - generic [box=76,181,60,23]: Engineer
+                  - generic [box=255,183,44,20]: 7:31 PM
+                - generic [box=76,204,223,20]:
+                  - generic [box=76,204,205,20]: Hey, I'm Engineer. What's the main thing you want me on?
+                  - img [box=289,209,10,10]
+            - button [box=8,235,303,64]:
+              - generic [box=20,245,44,44]:
+                - img [box=20,245,44,44]
+              - generic [box=76,245,223,43]:
+                - generic [box=76,245,223,23]:
+                  - generic [box=76,245,171,23]:
+                    - generic [box=76,245,37,23]: Chief
+                  - generic [box=255,247,44,20]: 7:31 PM
+                - generic [box=76,268,223,20]:
+                  - generic [box=76,268,205,20]: Hey, I'm Chief. What's the main thing you want me on?
+                  - img [box=289,273,10,10]
+            - button [box=8,299,303,64]:
+              - generic [box=20,309,44,44]:
+                - img [box=20,309,44,44]
+              - generic [box=76,309,223,43]:
+                - generic [box=76,309,223,23]:
+                  - generic [box=76,309,171,23]:
+                    - generic [box=76,309,47,23]: Design
+                  - generic [box=255,311,44,20]: 7:31 PM
+                - generic [box=76,332,223,20]:
+                  - generic [box=76,332,205,20]: Hey, I'm Design. What's the main thing you want me on?
+                  - img [box=289,337,10,10]
+            - button [box=8,363,303,64]:
+              - generic [box=20,373,44,44]:
+                - img [box=20,373,44,44]
+              - generic [box=76,373,223,43]:
+                - generic [box=76,373,223,23]:
+                  - generic [box=76,373,171,23]:
+                    - generic [box=76,373,93,23]: Chief of Staff
+                  - generic [box=255,375,44,20]: 7:31 PM
+                - generic [box=76,396,223,20]:
+                  - generic [box=76,396,205,20]: Hey, I'm Chief of Staff. What's the main thing you want me on?
+                  - img [box=289,401,10,10]
+      - main [box=320,0,1120,900]:
+        - region [box=320,0,1120,900]:
+          - generic [box=320,0,1120,56]:
+            - generic [box=340,14,992,28]:
+              - generic [box=340,14,28,28]:
+                - img [box=340,14,28,28]
+              - generic [box=376,15,57,26]: Careful
+            - button [box=1340,10,36,36]:
+              - img [box=1348,18,20,20]
+            - button [box=1384,10,36,36]:
+              - img [box=1392,18,20,20]
+          - log [box=320,56,1120,774]:
+            - generic [box=496,72,768,738]:
+              - generic [box=496,72,768,316]:
+                - generic [box=496,72,440,47]:
+                  - paragraph [box=514,84,404,23]: Hey, I'm Careful. What's the main thing you want me on?
+                - group [box=496,125,448,263]:
+                  - generic [box=513,142,414,23]: What should I own for you?
+                  - generic [box=513,177,414,194]:
+                    - button [box=513,177,414,44]:
+                      - generic [box=525,187,24,24]: A
+                      - generic [box=561,187,354,23]: Day-to-day ops
+                    - button [box=513,227,414,44]:
+                      - generic [box=525,237,24,24]: B
+                      - generic [box=561,237,354,23]: A specific project
+                    - button [box=513,277,414,44]:
+                      - generic [box=525,287,24,24]: C
+                      - generic [box=561,287,354,23]: Research and writing
+                    - button [box=513,327,414,44]:
+                      - generic [box=525,337,24,24]: D
+                      - generic [box=561,337,354,23]: Something else
+          - generic [box=320,830,1120,70]:
+            - generic [box=496,830,768,50]:
+              - generic [box=503,837,754,36]:
+                - button [box=503,837,36,36]:
+                  - img [box=511,845,20,20]
+                - generic [box=543,837,634,36]:
+                  - generic [box=543,837,634,36]:
+                    - textbox [box=543,837,634,36]:
+                      - /placeholder: Message Careful
+                - button [box=1181,837,36,36]:
+                  - img [box=1189,845,20,20]
+                - button [disabled] [box=1221,837,36,36]:
+                  - img [box=1229,845,20,20]
+    - region "Notifications alt+T" [box=0,900,1440,0]
+  - generic [box=55,56,208,106]:
+    - menu [box=55,56,208,106]:
+      - menuitem [box=60,61,198,32]:
+        - img [box=68,69,16,16]
+        - text: Plugins
+      - menuitem [box=60,93,198,32]:
+        - img [box=68,101,16,16]
+        - text: Providers
+      - menuitem [box=60,125,198,32]:
+        - img [box=68,133,16,16]
+        - text: This PC
+  - dialog "Plugins" [ref=t3-4e6ff06b-r-e335] [box=355,175,730,551]:
+    - heading "Plugins" [level=2] [ref=t3-4e6ff06b-r-e336] [box=379,198,682,27]
+    - paragraph [ref=t3-4e6ff06b-r-e337] [box=355,175,1,1]: Plugins
+    - generic [ref=t3-4e6ff06b-r-e338] [box=379,240,682,461]:
+      - paragraph [ref=t3-4e6ff06b-r-e339] [box=379,240,682,21]: "Give bots hands: Notion, Google Drive, GitHub, a browser… Turn plugins on per bot in its settings."
+      - generic [ref=t3-4e6ff06b-r-e341] [box=395,293,650,37]:
+        - generic [ref=t3-4e6ff06b-r-e342] [box=395,293,569,37]:
+          - heading "Inherited by Claude bots" [level=3] [ref=t3-4e6ff06b-r-e343] [box=395,293,569,21]
+          - paragraph [ref=t3-4e6ff06b-r-e344] [box=395,314,569,15]: Your Claude Code MCP servers and claude.ai connectors come along automatically.
+        - button "Scan" [active] [ref=t3-4e6ff06b-r-e345] [cursor=pointer] [box=975,293,70,30]:
+          - img [box=985,301,15,15]
+          - text: Scan
+      - generic [ref=t3-4e6ff06b-r-e346] [box=379,361,682,341]:
+        - heading "Added in Fabs Bot" [level=3] [ref=t3-4e6ff06b-r-e347] [box=395,377,650,21]
+        - paragraph [ref=t3-4e6ff06b-r-e348] [box=395,398,650,15]: Passed to the CLI on each run. Works for Claude and Codex bots.
+        - paragraph [ref=t3-4e6ff06b-r-e349] [box=395,421,650,19]: Nothing yet.
+        - generic [ref=t3-4e6ff06b-r-e350] [box=395,452,650,234]:
+          - button "Notion Official Notion MCP server. Create an internal integration at notion.so/my-integrations and paste its token." [ref=t3-4e6ff06b-r-e351] [cursor=pointer] [box=395,452,321,78]:
+            - generic [ref=t3-4e6ff06b-r-e352] [box=407,464,296,19]:
+              - img [ref=t3-4e6ff06b-r-e353] [box=407,467,13,13]
+              - text: Notion
+            - generic [ref=t3-4e6ff06b-r-e354] [box=407,487,296,30]: Official Notion MCP server. Create an internal integration at notion.so/my-integrations and paste its token.
+          - button "Google Drive Google Drive MCP server. Needs an OAuth client JSON from Google Cloud Console." [ref=t3-4e6ff06b-r-e355] [cursor=pointer] [box=724,452,321,78]:
+            - generic [ref=t3-4e6ff06b-r-e356] [box=736,464,296,19]:
+              - img [ref=t3-4e6ff06b-r-e357] [box=736,467,13,13]
+              - text: Google Drive
+            - generic [ref=t3-4e6ff06b-r-e358] [box=736,487,296,30]: Google Drive MCP server. Needs an OAuth client JSON from Google Cloud Console.
+          - button "GitHub GitHub's hosted MCP server. Paste a fine-grained personal access token." [ref=t3-4e6ff06b-r-e359] [cursor=pointer] [box=395,537,321,78]:
+            - generic [ref=t3-4e6ff06b-r-e360] [box=407,550,296,19]:
+              - img [ref=t3-4e6ff06b-r-e361] [box=407,552,13,13]
+              - text: GitHub
+            - generic [ref=t3-4e6ff06b-r-e362] [box=407,572,296,30]: GitHub's hosted MCP server. Paste a fine-grained personal access token.
+          - button "Browser Lets bots drive a real browser on this PC (Playwright)." [ref=t3-4e6ff06b-r-e363] [cursor=pointer] [box=724,537,321,78]:
+            - generic [ref=t3-4e6ff06b-r-e364] [box=736,550,296,19]:
+              - img [ref=t3-4e6ff06b-r-e365] [box=736,552,13,13]
+              - text: Browser
+            - generic [ref=t3-4e6ff06b-r-e366] [box=736,572,296,15]: Lets bots drive a real browser on this PC (Playwright).
+          - 'button "Custom Any MCP server: a command to run, or an HTTP URL." [ref=t3-4e6ff06b-r-e367] [cursor=pointer] [box=395,623,321,63]':
+            - generic [ref=t3-4e6ff06b-r-e368] [box=407,635,296,19]:
+              - img [ref=t3-4e6ff06b-r-e369] [box=407,638,13,13]
+              - text: Custom
+            - generic [ref=t3-4e6ff06b-r-e370] [box=407,658,296,15]: "Any MCP server: a command to run, or an HTTP URL."
+    - button "Close" [ref=t3-4e6ff06b-r-e371] [cursor=pointer] [box=1053,191,15,15]:
+      - img [box=1053,191,15,15]
+      - generic [ref=t3-4e6ff06b-r-e372] [box=1060,205,1,1]: Close

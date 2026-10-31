@@ -1,0 +1,229 @@
+- generic [box=0,0,1440,900]:
+  - generic [box=0,0,1440,900]:
+    - generic [box=0,0,1440,900]:
+      - generic [box=0,0,320,900]:
+        - complementary [box=0,0,320,900]:
+          - generic [box=0,0,319,60]:
+            - heading [level=1] [box=15,34,1,1]: Fabs Bot
+            - button [box=16,16,114,36]:
+              - img [box=28,26,16,16]
+              - generic [box=52,24,42,20]: <pc>
+              - img [box=102,26,16,16]
+            - button [box=227,16,36,36]:
+              - img [box=235,24,20,20]
+            - button [box=267,16,36,36]:
+              - img [box=275,24,20,20]
+          - generic [box=12,60,295,39]:
+            - img [box=24,71,16,16]
+            - textbox [box=48,68,247,23]:
+              - /placeholder: Search
+          - navigation [box=0,107,319,794]:
+            - button [box=8,107,303,64]:
+              - generic [box=20,117,44,44]:
+                - img [box=20,117,44,44]
+              - generic [box=76,117,223,43]:
+                - generic [box=76,117,223,23]:
+                  - generic [box=76,117,171,23]:
+                    - generic [box=76,117,50,23]: Careful
+                  - generic [box=255,119,44,20]: 7:31 PM
+                - generic [box=76,140,223,20]:
+                  - generic [box=76,140,223,20]: Hey, I'm Careful. What's the main thing you want me on?
+            - button [box=8,171,303,64]:
+              - generic [box=20,181,44,44]:
+                - img [box=20,181,44,44]
+              - generic [box=76,181,223,43]:
+                - generic [box=76,181,223,23]:
+                  - generic [box=76,181,171,23]:
+                    - generic [box=76,181,60,23]: Engineer
+                  - generic [box=255,183,44,20]: 7:31 PM
+                - generic [box=76,204,223,20]:
+                  - generic [box=76,204,205,20]: Hey, I'm Engineer. What's the main thing you want me on?
+                  - img [box=289,209,10,10]
+            - button [box=8,235,303,64]:
+              - generic [box=20,245,44,44]:
+                - img [box=20,245,44,44]
+              - generic [box=76,245,223,43]:
+                - generic [box=76,245,223,23]:
+                  - generic [box=76,245,171,23]:
+                    - generic [box=76,245,37,23]: Chief
+                  - generic [box=255,247,44,20]: 7:31 PM
+                - generic [box=76,268,223,20]:
+                  - generic [box=76,268,205,20]: Hey, I'm Chief. What's the main thing you want me on?
+                  - img [box=289,273,10,10]
+            - button [box=8,299,303,64]:
+              - generic [box=20,309,44,44]:
+                - img [box=20,309,44,44]
+              - generic [box=76,309,223,43]:
+                - generic [box=76,309,223,23]:
+                  - generic [box=76,309,171,23]:
+                    - generic [box=76,309,47,23]: Design
+                  - generic [box=255,311,44,20]: 7:31 PM
+                - generic [box=76,332,223,20]:
+                  - generic [box=76,332,205,20]: Hey, I'm Design. What's the main thing you want me on?
+                  - img [box=289,337,10,10]
+            - button [box=8,363,303,64]:
+              - generic [box=20,373,44,44]:
+                - img [box=20,373,44,44]
+              - generic [box=76,373,223,43]:
+                - generic [box=76,373,223,23]:
+                  - generic [box=76,373,171,23]:
+                    - generic [box=76,373,93,23]: Chief of Staff
+                  - generic [box=255,375,44,20]: 7:31 PM
+                - generic [box=76,396,223,20]:
+                  - generic [box=76,396,205,20]: Hey, I'm Chief of Staff. What's the main thing you want me on?
+                  - img [box=289,401,10,10]
+      - main [box=320,0,1120,900]:
+        - region [box=320,0,1120,900]:
+          - generic [box=320,0,1120,56]:
+            - generic [box=340,14,992,28]:
+              - generic [box=340,14,28,28]:
+                - img [box=340,14,28,28]
+              - generic [box=376,15,57,26]: Careful
+            - button [box=1340,10,36,36]:
+              - img [box=1348,18,20,20]
+            - button [box=1384,10,36,36]:
+              - img [box=1392,18,20,20]
+          - log [box=320,56,1120,774]:
+            - generic [box=496,72,768,738]:
+              - generic [box=496,72,768,316]:
+                - generic [box=496,72,440,47]:
+                  - paragraph [box=514,84,404,23]: Hey, I'm Careful. What's the main thing you want me on?
+                - group [box=496,125,448,263]:
+                  - generic [box=513,142,414,23]: What should I own for you?
+                  - generic [box=513,177,414,194]:
+                    - button [box=513,177,414,44]:
+                      - generic [box=525,187,24,24]: A
+                      - generic [box=561,187,354,23]: Day-to-day ops
+                    - button [box=513,227,414,44]:
+                      - generic [box=525,237,24,24]: B
+                      - generic [box=561,237,354,23]: A specific project
+                    - button [box=513,277,414,44]:
+                      - generic [box=525,287,24,24]: C
+                      - generic [box=561,287,354,23]: Research and writing
+                    - button [box=513,327,414,44]:
+                      - generic [box=525,337,24,24]: D
+                      - generic [box=561,337,354,23]: Something else
+          - generic [box=320,830,1120,70]:
+            - generic [box=496,830,768,50]:
+              - generic [box=503,837,754,36]:
+                - button [box=503,837,36,36]:
+                  - img [box=511,845,20,20]
+                - generic [box=543,837,634,36]:
+                  - generic [box=543,837,634,36]:
+                    - textbox [box=543,837,634,36]:
+                      - /placeholder: Message Careful
+                - button [box=1181,837,36,36]:
+                  - img [box=1189,845,20,20]
+                - button [disabled] [box=1221,837,36,36]:
+                  - img [box=1229,845,20,20]
+    - region "Notifications alt+T" [box=0,900,1440,0]
+  - dialog "Providers" [ref=t3-4e6ff06b-u-e374] [box=208,49,1024,802]:
+    - heading "Providers" [level=2] [ref=t3-4e6ff06b-u-e375] [box=233,74,974,28]
+    - paragraph [ref=t3-4e6ff06b-u-e376] [box=208,49,1,1]: Providers
+    - generic [ref=t3-4e6ff06b-u-e377] [box=233,118,974,708]:
+      - generic [ref=t3-4e6ff06b-u-e378] [box=233,118,974,40]:
+        - paragraph [ref=t3-4e6ff06b-u-e379] [box=233,118,810,40]: The agent CLIs bots run on this PC, with your existing logins. Settings here are passed on each run. Fabs Bot never edits the CLIs' own configs.
+        - button "Refresh Checked 7:32 PM" [ref=t3-4e6ff06b-u-e380] [cursor=pointer] [box=1055,118,152,32]:
+          - img [box=1065,126,16,16]
+          - generic [ref=t3-4e6ff06b-u-e381] [box=1131,134,1,1]: Refresh
+          - text: Checked 7:32 PM
+      - generic [ref=t3-4e6ff06b-u-e382] [box=233,174,974,652]:
+        - group "Agent CLIs" [ref=t3-4e6ff06b-u-e383] [box=234,175,272,650]:
+          - generic [ref=t3-4e6ff06b-u-e384] [box=234,175,271,61]:
+            - button "Claude Code v2.1.314 Ready · full team tools" [pressed] [ref=t3-4e6ff06b-u-e385] [cursor=pointer] [box=250,187,195,36]:
+              - img [ref=t3-4e6ff06b-u-e387] [box=254,191,24,24]
+              - generic [ref=t3-4e6ff06b-u-e389] [box=294,187,151,36]:
+                - generic [ref=t3-4e6ff06b-u-e390] [box=294,187,151,20]:
+                  - generic [ref=t3-4e6ff06b-u-e391] [box=294,187,82,20]: Claude Code
+                  - code [ref=t3-4e6ff06b-u-e392] [box=384,189,58,16]: v2.1.314
+                - generic [ref=t3-4e6ff06b-u-e393] [box=294,207,151,16]: Ready · full team tools
+            - switch "Enable Claude Code" [checked] [ref=t3-4e6ff06b-u-e394] [cursor=pointer] [box=457,196,32,18]
+          - generic [ref=t3-4e6ff06b-u-e395] [box=234,236,271,61]:
+            - button "Codex v0.165.0 Ready · full team tools" [ref=t3-4e6ff06b-u-e396] [cursor=pointer] [box=250,248,195,36]:
+              - img [ref=t3-4e6ff06b-u-e398] [box=254,252,24,24]
+              - generic [ref=t3-4e6ff06b-u-e400] [box=294,248,151,36]:
+                - generic [ref=t3-4e6ff06b-u-e401] [box=294,248,151,20]:
+                  - generic [ref=t3-4e6ff06b-u-e402] [box=294,248,41,20]: Codex
+                  - code [ref=t3-4e6ff06b-u-e403] [box=343,250,58,16]: v0.165.0
+                - generic [ref=t3-4e6ff06b-u-e404] [box=294,268,151,16]: Ready · full team tools
+            - switch "Enable Codex" [checked] [ref=t3-4e6ff06b-u-e405] [cursor=pointer] [box=457,257,32,18]
+          - generic [ref=t3-4e6ff06b-u-e406] [box=234,297,271,61]:
+            - button "Cursor Agent v2026.03.20-44cb435 Ready · chat + workspace" [ref=t3-4e6ff06b-u-e407] [cursor=pointer] [box=250,309,195,36]:
+              - img [ref=t3-4e6ff06b-u-e409] [box=254,313,24,24]
+              - generic [ref=t3-4e6ff06b-u-e411] [box=294,309,151,36]:
+                - generic [ref=t3-4e6ff06b-u-e412] [box=294,309,151,20]:
+                  - generic [ref=t3-4e6ff06b-u-e413] [box=294,309,84,20]: Cursor Agent
+                  - code [ref=t3-4e6ff06b-u-e414] [box=386,311,59,16]: v2026.03.20-44cb435
+                - generic [ref=t3-4e6ff06b-u-e415] [box=294,329,151,16]: Ready · chat + workspace
+            - switch "Enable Cursor Agent" [checked] [ref=t3-4e6ff06b-u-e416] [cursor=pointer] [box=457,318,32,18]
+          - generic [ref=t3-4e6ff06b-u-e417] [box=234,358,271,61]:
+            - button "OpenCode v1.17.11 Ready · chat + workspace" [ref=t3-4e6ff06b-u-e418] [cursor=pointer] [box=250,370,195,36]:
+              - img [ref=t3-4e6ff06b-u-e420] [box=254,374,24,24]
+              - generic [ref=t3-4e6ff06b-u-e423] [box=294,370,151,36]:
+                - generic [ref=t3-4e6ff06b-u-e424] [box=294,370,151,20]:
+                  - generic [ref=t3-4e6ff06b-u-e425] [box=294,370,69,20]: OpenCode
+                  - code [ref=t3-4e6ff06b-u-e426] [box=371,372,58,16]: v1.17.11
+                - generic [ref=t3-4e6ff06b-u-e427] [box=294,390,151,16]: Ready · chat + workspace
+            - switch "Enable OpenCode" [checked] [ref=t3-4e6ff06b-u-e428] [cursor=pointer] [box=457,379,32,18]
+          - generic [ref=t3-4e6ff06b-u-e429] [box=234,419,271,60]:
+            - button "Gemini CLI v0.1.3 Ready · chat + workspace" [ref=t3-4e6ff06b-u-e430] [cursor=pointer] [box=250,431,195,36]:
+              - img [ref=t3-4e6ff06b-u-e432] [box=254,435,24,24]
+              - generic [ref=t3-4e6ff06b-u-e434] [box=294,431,151,36]:
+                - generic [ref=t3-4e6ff06b-u-e435] [box=294,431,151,20]:
+                  - generic [ref=t3-4e6ff06b-u-e436] [box=294,431,70,20]: Gemini CLI
+                  - code [ref=t3-4e6ff06b-u-e437] [box=372,433,43,16]: v0.1.3
+                - generic [ref=t3-4e6ff06b-u-e438] [box=294,451,151,16]: Ready · chat + workspace
+            - switch "Enable Gemini CLI" [checked] [ref=t3-4e6ff06b-u-e439] [cursor=pointer] [box=457,440,32,18]
+        - region "Claude Code settings" [ref=t3-4e6ff06b-u-e440] [box=506,175,700,650]:
+          - generic [ref=t3-4e6ff06b-u-e441] [box=506,175,700,57]:
+            - img [ref=t3-4e6ff06b-u-e443] [box=526,191,24,24]
+            - heading "Claude Code" [level=3] [ref=t3-4e6ff06b-u-e445] [box=566,189,554,28]
+            - code [ref=t3-4e6ff06b-u-e446] [box=1132,195,58,16]: v2.1.314
+          - generic [ref=t3-4e6ff06b-u-e447] [box=506,232,700,141]:
+            - generic [ref=t3-4e6ff06b-u-e449] [box=522,244,668,56]:
+              - generic [ref=t3-4e6ff06b-u-e450] [box=522,244,668,14]: Status
+              - generic [ref=t3-4e6ff06b-u-e451] [box=522,264,668,36]:
+                - paragraph [ref=t3-4e6ff06b-u-e452] [box=522,264,668,16]:
+                  - text: Found at
+                  - code [ref=t3-4e6ff06b-u-e453] [box=572,264,202,16]: /home/fabs/.local/bin/claude
+                  - text: · full team tools
+                - paragraph [ref=t3-4e6ff06b-u-e454] [box=522,284,668,16]: Inherits your Claude Code MCP servers and claude.ai connectors (Notion, Google Drive, …).
+            - generic [ref=t3-4e6ff06b-u-e455] [box=506,313,700,60]:
+              - generic [ref=t3-4e6ff06b-u-e457] [box=522,336,388,14]: Display name
+              - textbox "Display name" [ref=t3-4e6ff06b-u-e459] [box=934,325,256,36]:
+                - /placeholder: Claude Code
+          - heading "Runtime" [level=4] [ref=t3-4e6ff06b-u-e460] [box=506,373,700,56]
+          - generic [ref=t3-4e6ff06b-u-e461] [box=506,429,700,137]:
+            - generic [ref=t3-4e6ff06b-u-e462] [box=506,429,700,77]:
+              - generic [ref=t3-4e6ff06b-u-e463] [box=522,441,388,52]:
+                - generic [ref=t3-4e6ff06b-u-e464] [box=522,441,388,14]: Binary path
+                - generic [ref=t3-4e6ff06b-u-e465] [box=522,461,388,32]: Path to the Claude Code binary bots run. Leave empty to use claude from PATH.
+              - textbox "Binary path" [ref=t3-4e6ff06b-u-e467] [box=934,449,256,36]:
+                - /placeholder: claude
+            - generic [ref=t3-4e6ff06b-u-e468] [box=506,506,700,60]:
+              - generic [ref=t3-4e6ff06b-u-e469] [box=522,518,388,36]:
+                - generic [ref=t3-4e6ff06b-u-e470] [box=522,518,388,14]: Launch arguments
+                - generic [ref=t3-4e6ff06b-u-e471] [box=522,538,388,16]: Extra arguments added to every run, before Fabs Bot's own flags.
+              - textbox "Launch arguments" [ref=t3-4e6ff06b-u-e473] [box=934,518,256,36]
+          - heading "Environment" [level=4] [ref=t3-4e6ff06b-u-e474] [box=506,566,700,56]
+          - group "Environment variables" [ref=t3-4e6ff06b-u-e475] [box=506,621,700,76]:
+            - generic [ref=t3-4e6ff06b-u-e476] [box=506,621,700,76]:
+              - generic [ref=t3-4e6ff06b-u-e477] [box=522,633,388,52]:
+                - generic [ref=t3-4e6ff06b-u-e478] [box=522,633,388,14]: Variables
+                - generic [ref=t3-4e6ff06b-u-e479] [box=522,653,388,32]: API keys, base URLs, and other settings this CLI reads from its environment. Stored on this PC only.
+              - button "Add variable" [ref=t3-4e6ff06b-u-e481] [cursor=pointer] [box=1068,643,122,32]:
+                - img [box=1079,651,16,16]
+                - text: Add variable
+          - heading "Models" [level=4] [ref=t3-4e6ff06b-u-e482] [box=506,697,700,56]
+          - generic [ref=t3-4e6ff06b-u-e483] [box=506,753,700,72]:
+            - paragraph [ref=t3-4e6ff06b-u-e484] [box=522,765,668,16]: Suggested in the bot editor. A bot can use any model the CLI accepts.
+            - generic [ref=t3-4e6ff06b-u-e485] [box=522,789,668,24]:
+              - generic [ref=t3-4e6ff06b-u-e486] [box=522,789,49,24]: opus
+              - generic [ref=t3-4e6ff06b-u-e487] [box=577,789,63,24]: sonnet
+              - generic [ref=t3-4e6ff06b-u-e488] [box=646,789,56,24]: haiku
+              - generic [ref=t3-4e6ff06b-u-e489] [box=708,789,128,24]: claude-opus-5-5
+              - generic [ref=t3-4e6ff06b-u-e490] [box=842,789,142,24]: claude-sonnet-5-5
+              - generic [ref=t3-4e6ff06b-u-e491] [box=990,789,135,24]: claude-fable-5-1
+    - button "Close" [active] [ref=t3-4e6ff06b-u-e492] [cursor=pointer] [box=1199,66,16,16]:
+      - img [box=1199,66,16,16]
+      - generic [ref=t3-4e6ff06b-u-e493] [box=1206,81,1,1]: Close

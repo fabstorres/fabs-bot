@@ -1,0 +1,10 @@
+# http://127.0.0.1:4870/  viewport=window
+- region "Notifications alt+T"
+- menu "PC This PC":
+  - text: All quiet
+  - group:
+    - menuitemradio "This PC" [checked]
+    - menuitemradio "Studio"
+  - separator
+  - menuitem "Change icon"
+  - menuitem "Manage PCs…"
