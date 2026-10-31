@@ -23,12 +23,15 @@ function providerStatus(p: ProviderInfo) {
 }
 
 export function ProvidersSettings() {
-  const loaded = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []);
+  const saved = useLoad(() => api.get<ProviderInfo[]>("/api/providers"), []);
+  const checked = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []);
   const [latest, setLatest] = useState<Partial<Record<ProviderId, ProviderInfo>>>({});
   const [selectedId, setSelectedId] = useState<ProviderId>("claude");
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const list = (loaded.data ?? []).map((p) => latest[p.id] ?? p);
+  const known = checked.data ?? saved.data;
+  const checking = refreshing || (!checked.data && !checked.error);
+  const list = (known ?? []).map((p) => latest[p.id] ?? p);
   const selected = list.find((p) => p.id === selectedId);
   const checkedAt = Math.max(0, ...list.map((p) => p.checkedAt));
   const remember = (fresh: ProviderInfo[]) => setLatest((l) => ({ ...l, ...Object.fromEntries(fresh.map((p) => [p.id, p])) }));
@@ -51,10 +54,10 @@ export function ProvidersSettings() {
         <p className="text-sm text-muted-foreground">
           The agent CLIs bots run on this PC, with your existing logins. Settings here are passed on each run. Fabs Bot never edits the CLIs' own configs.
         </p>
-        <Button variant="ghost" size="sm" className="flex-none rounded-full text-muted-foreground" onClick={refresh} disabled={refreshing || !loaded.data}>
-          <RefreshCw className={cn(refreshing && "animate-spin")} />
+        <Button variant="ghost" size="sm" className="flex-none rounded-full text-muted-foreground" onClick={refresh} disabled={checking}>
+          <RefreshCw className={cn(checking && "animate-spin")} />
           <span className="sr-only">Refresh</span>
-          {refreshing ? "Checking…" : checkedAt ? `Checked ${formatTime(checkedAt)}` : "Check"}
+          {checking ? "Checking…" : checkedAt ? `Checked ${formatTime(checkedAt)}` : "Check"}
         </Button>
       </div>
       {error && (
@@ -62,13 +65,13 @@ export function ProvidersSettings() {
           {error}
         </p>
       )}
-      {loaded.error && !loaded.data && (
+      {checked.error && !known && (
         <p role="alert" className="text-sm text-destructive">
-          {loaded.error}
+          {checked.error}
         </p>
       )}
-      {!loaded.data && !loaded.error && <p className="text-sm text-muted-foreground">Checking the agent CLIs on this PC…</p>}
-      {loaded.data && (
+      {!known && !checked.error && <p className="text-sm text-muted-foreground">Checking the agent CLIs on this PC…</p>}
+      {known && (
         <div className="overflow-hidden rounded-2xl border md:grid md:grid-cols-[17rem_minmax(0,1fr)]">
           <div role="group" aria-label="Agent CLIs" className="divide-y border-b bg-muted/30 md:border-r md:border-b-0">
             {list.map((p) => (

@@ -56,11 +56,14 @@ async function inspect(p: Provider): Promise<ProviderInfo> {
 }
 
 let cache: ProviderInfo[] | null = null;
+let probing: Promise<ProviderInfo[]> | null = null;
 
 export async function providerInfo(refresh = false): Promise<ProviderInfo[]> {
   if (cache && !refresh) return cache;
-  cache = await Promise.all(Object.values(providers).map(inspect));
-  return cache;
+  probing ??= Promise.all(Object.values(providers).map(inspect))
+    .then((list) => (cache = list))
+    .finally(() => (probing = null));
+  return probing;
 }
 
 export async function updateProvider(id: ProviderId, patch: Partial<ProviderSettings>): Promise<ProviderInfo> {
@@ -74,6 +77,7 @@ export async function updateProvider(id: ProviderId, patch: Partial<ProviderSett
     next.env = Object.fromEntries(Object.entries(patch.env).filter(([name, value]) => ENV_NAME.test(name) && typeof value === "string"));
   }
   setSetting(`provider.${id}`, JSON.stringify(next));
+  await probing;
   const info = await inspect(providers[id]);
   if (cache) cache = cache.map((p) => (p.id === id ? info : p));
   return info;
