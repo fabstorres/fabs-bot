@@ -60,8 +60,8 @@
   --sidebar-accent: #262626;
   --sidebar-border: #262626;
   --bubble: #2e2e2e;
-  --bubble-user: #3d3d3d;
-  --bubble-user-foreground: #ececec;
+  --bubble-user: #ececec;
+  --bubble-user-foreground: #151514;
   color-scheme: dark;
 }
 
@@ -190,8 +190,18 @@
   .bubble td {
     @apply border-b border-black/10 py-1 pr-2.5 text-left dark:border-white/10;
   }
+  .bubble-user a {
+    @apply dark:text-blue-700;
+  }
   .bubble-user code {
-    @apply bg-white/15;
+    @apply bg-white/15 dark:bg-black/7;
+  }
+  .bubble-user pre {
+    @apply dark:bg-black/6;
+  }
+  .bubble-user th,
+  .bubble-user td {
+    @apply dark:border-black/10;
   }
 }
 
