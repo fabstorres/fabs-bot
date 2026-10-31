@@ -1,6 +1,6 @@
 # Desktop app
 
-`bun run desktop` opens straight into a PC: the last saved PC opened, else the newest paired, else `This PC`. The launcher, listing `This PC` and saved PCs, only shows from `File → Switch PC…` or when the chosen PC doesn't answer. Opening a PC shows its Fabs Bot in its own window. This is how a laptop works with the bots on another PC over the tailnet. Adding a PC takes a one-time pairing link from that PC's `This PC` → `Pair a device`; a bare address connects but shows `Not paired yet`. The app remembers the PC, reopens it on the next start, and stays signed in. `File → Switch PC…` returns to the launcher. Pages from a PC can't reach the launcher or its controls.
+`bun run desktop` opens straight into a PC: the last saved PC opened, else the newest paired, else `This PC`. The launcher, listing `This PC` and saved PCs, only shows from `Switch PC…` (`Ctrl/Cmd+Shift+O`) or when the chosen PC doesn't answer. Opening a PC shows its Fabs Bot in its own window. This is how a laptop works with the bots on another PC over the tailnet. Adding a PC takes a one-time pairing link from that PC's `This PC` → `Pair a device`; a bare address connects but shows `Not paired yet`. The app remembers the PC, reopens it on the next start, and stays signed in. `Switch PC…` returns to the launcher. On Windows and Linux neither window shows a menu bar, but the menu's shortcuts still work; macOS keeps its system menu. Pages from a PC can't reach the launcher or its controls.
 
 ## Sub-features
 
@@ -11,6 +11,7 @@
 - `desktop-remote-pair` pairs with another PC from its one-time pairing link and shows its bots. The reachability checks before it don't use up the link, and the PC lists the app as `Desktop app on <OS>`.
 - `desktop-remember` reopens the last PC after a restart, still signed in.
 - `desktop-switch` goes back to the launcher from the menu.
+- `desktop-no-menu-bar` keeps the menu bar hidden on Windows and Linux, in the launcher and PC windows, even after Alt.
 - `desktop-forget` forgets a PC and its sign-in; adding it again needs a new pairing link.
 - `desktop-removed` shows `Not paired yet` in the app once the PC removes it under `Paired devices`.
 - `desktop-unreachable` refuses a link that doesn't answer, without saving it.
@@ -19,8 +20,8 @@
 ## How to get to it (user POV)
 
 - Run `bun run desktop`, or start the app from its menu entry once packaged.
-- The app opens a PC by itself. Use `File → Switch PC…` to reach the launcher, then choose `Open` on a PC, or paste a link under `Add a PC`.
-- In a PC window, use `File → Switch PC…` (`Ctrl/Cmd+Shift+O`).
+- The app opens a PC by itself. Press `Ctrl/Cmd+Shift+O` (`Switch PC…`) to reach the launcher, then choose `Open` on a PC, or paste a link under `Add a PC`.
+- In a PC window, press `Ctrl/Cmd+Shift+O`. On macOS it's also `File → Switch PC…`.
 
 ## Driving it with control-fabs
 
@@ -32,6 +33,7 @@ Preconditions:
 - **First run.** Run `$C desktop start --fresh` and `$C browser wait --role button --name "This PC"`: no launcher. Capture `desktop/1-first-run` with `--role complementary --name "Bots"`. `browser eval "typeof window.fabsDesktop"` prints `"undefined"`.
 - **Launcher.** Run `$C desktop menu "Switch PC…"` and `$C browser wait --role button --name "Connect"`. Capture `desktop/2-launcher`. `$C browser eval "typeof window.fabsDesktop"` prints `"object"`. Click `Open` on `This PC` to go back.
 - **Isolation.** In that window, run `$C browser eval "location.href = 'fabs-app://launcher/desktop.html'; 1"`, then `browser eval "location.href"`: the page hasn't moved. `browser eval "window.open('fabs-app://launcher/desktop.html') === null"` prints `true`.
+- **No menu bar.** In the PC window and again in the launcher, `browser eval "innerHeight === outerHeight"` prints `true`. A visible menu bar makes `innerHeight` smaller.
 - **Remember.** Run `$C desktop stop` and `$C desktop start`. The app lands straight in the sidebar.
 - **Switch.** Run `$C desktop menu "Switch PC…"` and wait for `--role region --name "PCs"`.
 - **Pair a remote PC.** Run `$C browser fill --label "Pairing link or address" --value @pair-link`, then `fill --label "Name (optional)" --value Fedora`, then `click --role button --name "Connect"`. Wait for `--role button --name "This PC"`: the link survived the app's reachability checks. `browser eval "location.hostname"` is the tailnet address (redacted). Capture `desktop/5-remote-paired`. In the app, `This PC` → `Paired devices` lists `Desktop app on Linux` with `This device`.
@@ -45,7 +47,7 @@ Preconditions:
 ## Gotchas
 
 - T3 Code terminals export `ELECTRON_RUN_AS_NODE=1`, which makes Electron start as plain Node. `bun run desktop` and `desktop start` both clear it. Clear it yourself if you start Electron another way.
-- Menu accelerators don't fire from synthesized key presses. Use `$C desktop menu "<label>"`, which clicks the real menu item.
+- Menu accelerators don't fire from synthesized key presses. Use `$C desktop menu "<label>"`, which clicks the real menu item. It works with the menu bar hidden, since the menu is still installed.
 - `desktop start` rebuilds the Electron bundle, not the web app. After editing `web/`, run `bun run build` first, or relaunch.
 - Saved PC addresses show in the launcher. Screenshots mask them, and snapshots redact tailnet IPs. Use `@pair-link` / `@tailnet-url` so the link never appears in commands or output.
 - The remote PC here is this machine's own tailnet address. It proves pairing, cookies, and isolation, not reachability from a second machine.
