@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mentionedBots, splitMentions } from "./mentions";
+import { mentionedBots, splitMarkdownMentions, splitMentions } from "./mentions";
 
 const chief = { name: "Chief" };
 const staff = { name: "Chief of Staff" };
@@ -34,6 +34,14 @@ describe("mention matching", () => {
   test("a handle two bots share stays plain text", () => {
     const twin = { name: "chief" };
     expect(splitMentions("hi @Chief", [chief, twin])).toEqual(["hi @Chief"]);
+  });
+
+  test("code and links keep their exact text when a draft or paste becomes chips", () => {
+    expect(splitMarkdownMentions("`@Chief of Staff` then @Chief of Staff", bots)).toEqual(["`@Chief of Staff` then ", { bot: staff, text: "@Chief of Staff" }]);
+    expect(splitMarkdownMentions("```\n@Chief\n```\n[@Chief](https://example.com) @Chief", bots)).toEqual([
+      "```\n@Chief\n```\n[@Chief](https://example.com) ",
+      { bot: chief, text: "@Chief" },
+    ]);
   });
 
   test("splits text around each mention and keeps what was typed", () => {

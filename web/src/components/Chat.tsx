@@ -293,7 +293,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     updateAttachments(thread.id, (f) => f.filter((x) => x.fileId !== fileId));
   }
 
-  async function send(current = text) {
+  async function send(current = input.current?.getText() ?? text) {
     const body = current.trim();
     if ((!body && !files.length) || uploading) return;
     if (!online) {

@@ -10,6 +10,7 @@ export interface MdNode {
   type: string;
   value?: string;
   children?: MdNode[];
+  position?: { start: { offset?: number }; end: { offset?: number } };
 }
 
 export type Piece<B> = string | { bot: B; text: string };
@@ -57,10 +58,31 @@ export function* textNodes(node: MdNode): Generator<{ node: MdNode; parent: MdNo
   }
 }
 
+const parse = (markdown: string): MdNode => unified().use(remarkParse).use(remarkGfm).parse(markdown);
+
+export function splitMarkdownMentions<B extends Named>(markdown: string, bots: B[]): Piece<B>[] {
+  const pieces: Piece<B>[] = [];
+  let last = 0;
+  for (const { node } of textNodes(parse(markdown))) {
+    const { start, end } = node.position!;
+    let at = start.offset!;
+    for (const piece of splitMentions(markdown.slice(at, end.offset), bots)) {
+      if (typeof piece === "string") {
+        at += piece.length;
+        continue;
+      }
+      pieces.push(markdown.slice(last, at), piece);
+      at += piece.text.length;
+      last = at;
+    }
+  }
+  pieces.push(markdown.slice(last));
+  return pieces.filter((p) => p !== "");
+}
+
 export function mentionedBots<B extends Named>(markdown: string, bots: B[]): B[] {
-  const tree = unified().use(remarkParse).use(remarkGfm).parse(markdown);
   const found = new Set<B>();
-  for (const { node } of textNodes(tree)) {
+  for (const { node } of textNodes(parse(markdown))) {
     for (const piece of splitMentions(node.value ?? "", bots)) if (typeof piece !== "string") found.add(piece.bot);
   }
   return [...found];

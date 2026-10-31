@@ -1,4 +1,4 @@
-import { type Ref, useImperativeHandle, useState } from "react";
+import { type Ref, useId, useImperativeHandle, useState } from "react";
 import type { JSONContent } from "@tiptap/core";
 import Document from "@tiptap/extension-document";
 import HardBreak from "@tiptap/extension-hard-break";
@@ -8,7 +8,7 @@ import Text from "@tiptap/extension-text";
 import { Fragment, Slice } from "@tiptap/pm/model";
 import { EditorContent, type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
-import { handleOf, splitMentions } from "../../../shared/mentions";
+import { handleOf, splitMarkdownMentions } from "../../../shared/mentions";
 import type { Bot } from "../../../shared/types";
 import { useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 export interface MentionInputHandle {
   setText(text: string): void;
+  getText(): string;
 }
 
 interface Props {
@@ -36,11 +37,16 @@ interface Suggest {
   pick(bot: Bot): void;
 }
 
+const toLines = (text: string): JSONContent[] =>
+  text.split(/\r?\n/).flatMap((line, i) => [...(i ? [{ type: "hardBreak" }] : []), ...(line ? [{ type: "text", text: line }] : [])]);
+
 function toContent(text: string, bots: Bot[]): JSONContent[] {
-  return text.split(/\r?\n/).flatMap((line, i) => [
-    ...(i ? [{ type: "hardBreak" }] : []),
-    ...splitMentions(line, bots).map((p) => (typeof p === "string" ? { type: "text", text: p } : { type: "mention", attrs: { id: p.bot.id, label: p.bot.name } })),
-  ]);
+  return splitMarkdownMentions(text, bots).flatMap((p) => (typeof p === "string" ? toLines(p) : [{ type: "mention", attrs: { id: p.bot.id, label: p.bot.name } }]));
+}
+
+function mentionText(attrs: { id?: string; label?: string }) {
+  const bot = useStore.getState().bots.find((b) => b.id === attrs.id);
+  return `@${handleOf(bot?.name ?? attrs.label ?? "")}`;
 }
 
 const toDoc = (text: string, bots: Bot[]): JSONContent => ({ type: "doc", content: [{ type: "paragraph", content: toContent(text, bots) }] });
@@ -59,6 +65,8 @@ const BotMention = Mention.extend({
 export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder, ariaLabel, autoFocus, onPasteFiles }: Props) {
   const [suggest, setSuggest] = useState<Suggest | null>(null);
   const [active, setActive] = useState(0);
+  const listId = useId();
+  const optionId = (i: number) => `${listId}-${i}`;
 
   const matches = suggest ? bots.filter((b) => handleOf(b.name).toLowerCase().startsWith(suggest.query.toLowerCase())).slice(0, 6) : [];
 
@@ -88,7 +96,7 @@ export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder
       HardBreak,
       BotMention.configure({
         deleteTriggerWithBackspace: true,
-        renderText: ({ node }) => `@${handleOf(node.attrs.label ?? "")}`,
+        renderText: ({ node }) => mentionText(node.attrs),
         suggestion: { render: () => ({ onStart: show, onUpdate: show, onExit: () => setSuggest(null) }) },
       }),
     ],
@@ -100,6 +108,8 @@ export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder
         "aria-label": ariaLabel,
         "aria-multiline": "true",
         "aria-placeholder": placeholder,
+        "aria-autocomplete": "list",
+        ...(matches.length > 0 && { "aria-controls": listId, "aria-activedescendant": optionId(active) }),
         class: "px-2 py-1 text-base leading-snug wrap-anywhere outline-none",
       },
       handleKeyDown: (_view, e) => keyDown(e),
@@ -117,28 +127,31 @@ export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder
     },
   });
 
-  useImperativeHandle(ref, () => ({ setText: (text) => editor.commands.setContent(toDoc(text, bots), { emitUpdate: false }) }));
+  useImperativeHandle(ref, () => ({
+    setText: (text) => editor.commands.setContent(toDoc(text, bots), { emitUpdate: false }),
+    getText: () => editor.getText({ blockSeparator: "\n" }),
+  }));
 
   return (
     <div className="relative min-w-0 flex-1">
       {matches.length > 0 && (
         <div
           className="absolute bottom-[calc(100%+14px)] left-0 z-50 w-72 max-w-full rounded-2xl border bg-popover p-1.5 shadow-lg animate-in fade-in-0 zoom-in-95"
+          id={listId}
           role="listbox"
           aria-label="Mention a bot"
         >
           {matches.map((b, i) => (
             <button
               key={b.id}
+              id={optionId(i)}
               type="button"
               role="option"
               aria-selected={i === active}
               aria-label={b.name}
               className={cn("flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left", i === active && "bg-accent")}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                suggest?.pick(b);
-              }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => suggest?.pick(b)}
             >
               <BotAvatar shape={b.shape} color={b.color} size={24} />
               <span className="font-semibold whitespace-nowrap">{b.name}</span>
