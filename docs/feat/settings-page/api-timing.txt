@@ -1,0 +1,4 @@
+port 4932 GET /api/providers?refresh x10: 1133 1117 1120 1151 1106 1121 1140 1130 1101 1170 ms
+port 4932 GET /api/providers x5:          0.4 0.7 0.4 0.3 0.3 ms
+port 4930 GET /api/providers?refresh x10: 1201 1167 1099 1125 1188 1091 1099 1183 1071 1136 ms
+port 4930 GET /api/providers x5:          0.3 0.5 0.2 0.2 0.2 ms

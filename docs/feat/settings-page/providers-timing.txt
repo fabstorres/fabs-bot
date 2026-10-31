@@ -1,0 +1,23 @@
+After (feat/settings-page), headless Chromium, isolated instance on 127.0.0.1:4930.
+Each line: from Chief's chat, click Settings (desktop opens on Providers); time until the first row in 'Agent CLIs' is in the DOM, then until the background check ends (MutationObserver).
+1440x900 open 1: "http://127.0.0.1:4930  first row 19 ms (5 CLIs, button \"Checking…\")  check done 1103 ms (button \"Checked 10:40 AM\")  requests: /api/providers 2 ms, /api/providers?refresh 1091 ms"
+1440x900 open 2: "http://127.0.0.1:4930  first row 8 ms (5 CLIs, button \"Checking…\")  check done 1095 ms (button \"Checked 10:40 AM\")  requests: /api/providers 2 ms, /api/providers?refresh 1089 ms"
+1440x900 open 3: "http://127.0.0.1:4930  first row 8 ms (5 CLIs, button \"Checking…\")  check done 1112 ms (button \"Checked 10:40 AM\")  requests: /api/providers 2 ms, /api/providers?refresh 1107 ms"
+1440x900 open 4: "http://127.0.0.1:4930  first row 9 ms (5 CLIs, button \"Checking…\")  check done 1120 ms (button \"Checked 10:40 AM\")  requests: /api/providers 2 ms, /api/providers?refresh 1116 ms"
+1440x900 open 5: "http://127.0.0.1:4930  first row 9 ms (5 CLIs, button \"Checking…\")  check done 1147 ms (button \"Checked 10:40 AM\")  requests: /api/providers 2 ms, /api/providers?refresh 1143 ms"
+$ browser open /   (reload)
+1440x900 after reload: "http://127.0.0.1:4930  first row 10 ms (5 CLIs, button \"Checking…\")  check done 1131 ms (button \"Checked 10:40 AM\")  requests: /api/providers 2 ms, /api/providers?refresh 1124 ms"
+430x932 tap Providers in the section list: "http://127.0.0.1:4930  first row 25 ms (5 CLIs, button \"Checking…\")  check done 1152 ms (button \"Checked 10:40 AM\")  requests: /api/providers 2 ms, /api/providers?refresh 1147 ms"
+
+== server restart: the server checks the CLIs at startup, and the first request joins that check ==
+stopped server 6576; run data kept
+ready  run=final2  url=http://127.0.0.1:4930  pid=18249
+GET /api/providers right after start (x3): 839.9 ms  0.3 ms  0.2 ms  
+
+
+== a switch flipped while Checking… shows is kept after the check ends (one in-page script) ==
+"switch clicked at 11 ms (button \"Checking…\", switch true); switch off at 1141 ms (button \"Checked 10:41 AM\"); check ended at 1141 ms (button \"Checked 10:41 AM\", switch false)"
+server cache (GET /api/providers) gemini enabled: False
+fresh check (GET /api/providers?refresh) gemini enabled: False
+$ browser click --role switch --name 'Enable Gemini CLI'   (back on)
+server cache gemini enabled: True

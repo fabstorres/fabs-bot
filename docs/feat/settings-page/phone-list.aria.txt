@@ -1,0 +1,12 @@
+# http://127.0.0.1:4930/?phone  viewport=430x932
+- navigation "Settings sections":
+  - button "Back"
+  - heading "Settings" [level=1]
+  - group:
+    - group
+    - textbox "Search settings":
+      - /placeholder: Search
+  - button "Providers"
+  - button "Plugins"
+  - button "This PC"
+- region "Notifications alt+T"

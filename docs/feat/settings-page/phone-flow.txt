@@ -1,0 +1,30 @@
+$ browser start --viewport 430x932; browser open /?phone
+opened http://127.0.0.1:4930/?phone
+page: "http://127.0.0.1:4930"   viewport: "430x932"   "{\"nav\":false,\"section\":null,\"bots\":true}"
+$ browser click --role button --name Settings
+clicked
+ok  visible
+list: "{\"nav\":true,\"section\":null,\"bots\":false}"   heading Settings=1  Back=1
+→ .verify/artifacts/final2/settings/phone-list.aria.txt
+$ browser click --role button --name Providers
+clicked
+ok  visible
+section: "{\"nav\":false,\"section\":\"Providers\",\"bots\":false}"   breadcrumb: Settings / Providers 
+→ .verify/artifacts/final2/settings/phone-providers-header.aria.txt
+$ browser click --role button --name Back
+clicked
+ok  visible
+back: "{\"nav\":true,\"section\":null,\"bots\":false}"
+$ browser click --role button --name Back
+clicked
+ok  visible
+back: "{\"nav\":false,\"section\":null,\"bots\":true}"
+$ browser click --role button --name Settings; click Plugins
+ok  visible
+section: "{\"nav\":false,\"section\":\"Plugins\",\"bots\":false}"
+$ browser eval 'history.back()'
+ok  visible
+browser back: "{\"nav\":true,\"section\":null,\"bots\":false}"
+$ browser eval 'history.back()'
+ok  visible
+browser back: "{\"nav\":false,\"section\":null,\"bots\":true}"

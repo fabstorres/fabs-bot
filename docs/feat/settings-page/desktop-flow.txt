@@ -1,0 +1,43 @@
+$ browser start --viewport 1440x900; browser open /
+opened http://127.0.0.1:4930/
+$ browser click --role button --name 'Bot Chief' --exact
+clicked
+ok  visible
+page: "http://127.0.0.1:4930"   history.length=3
+$ browser click --role button --name Settings
+clicked
+ok  visible
+nav current: "Providers"   breadcrumb: Settings / Providers 
+while open: chat regions=0  bots sidebar=0  close buttons=1
+→ .verify/artifacts/final2/settings/desktop-providers.aria.txt
+$ browser click --role button --name Plugins
+clicked
+ok  visible
+nav current: "Plugins"   breadcrumb: Settings / Plugins 
+→ .verify/artifacts/final2/settings/desktop-plugins.aria.txt
+$ browser click --role button --name 'This PC'
+clicked
+ok  visible
+nav current: "This PC"   breadcrumb: Settings / This PC 
+This PC holds: 'Pair your phone or laptop'=1  'Paired devices'=1  'Tailscale HTTPS'=1  (section itself not snapshotted: it lists peers)
+→ .verify/artifacts/final2/settings/desktop-this-pc-nav.aria.txt
+→ .verify/artifacts/final2/settings/desktop-this-pc-breadcrumb.aria.txt
+$ browser fill --label 'Search settings' --value tailscale
+filled
+nav: "This PC"
+$ browser fill --label 'Search settings' --value claude
+filled
+nav: "Providers"
+$ browser fill --label 'Search settings' --value zzz
+filled
+nav text: Settings  Nothing matches "zzz". 
+$ browser fill --label 'Search settings' --value ''
+filled
+nav: "Providers | Plugins | This PC"
+$ browser click --role button --name 'Close settings'
+clicked
+ok  visible
+after close: history.length=4  chat=1  settings nav=0
+$ browser click --role button --name Settings; click Plugins; browser eval 'history.back()'
+ok  visible
+after browser back: chat=1  settings nav=0

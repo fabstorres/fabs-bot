@@ -1,0 +1,14 @@
+# http://127.0.0.1:4930/  viewport=1440x900
+- region "Plugins":
+  - paragraph: "Give bots hands: Notion, Google Drive, GitHub, a browser… Turn plugins on per bot in its settings."
+  - heading "Inherited by Claude bots" [level=3]
+  - paragraph: Your Claude Code MCP servers and claude.ai connectors come along automatically.
+  - button "Scan"
+  - heading "Added in Fabs Bot" [level=3]
+  - paragraph: Passed to the CLI on each run. Works for Claude and Codex bots.
+  - paragraph: Nothing yet.
+  - button "Notion Official Notion MCP server. Create an internal integration at notion.so/my-integrations and paste its token."
+  - button "Google Drive Google Drive MCP server. Needs an OAuth client JSON from Google Cloud Console."
+  - button "GitHub GitHub's hosted MCP server. Paste a fine-grained personal access token."
+  - button "Browser Lets bots drive a real browser on this PC (Playwright)."
+  - 'button "Custom Any MCP server: a command to run, or an HTTP URL."'
