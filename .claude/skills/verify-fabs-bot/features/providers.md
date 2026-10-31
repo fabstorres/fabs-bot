@@ -25,8 +25,29 @@ Preconditions:
 - Baseline state from the map README. `providers-run` needs a logged-in `claude`.
 - For `providers-run`, write a wrapper in the run dir (`$C paths` → `runDir`) that appends `"$1 $2 $3 | FABS_PROBE=$FABS_PROBE"` to `<runDir>/wrapper.log` and then `exec`s the real `claude` with `"$@"`.
 
-- **Open.** Run `$C browser click --role button --name "Settings"` and `$C browser wait --role region --name "Claude Code settings"`. `--role group --name "Agent CLIs"` holds one button and one `Enable <CLI>` switch per CLI. Capture `providers/open.aria.txt` plus `.png`.
-- **Instant.** From a chat, run one `$C browser eval` that clicks `button[aria-label="Settings"]`, then polls with `requestAnimationFrame` until `[aria-label="Agent CLIs"] button` exists, and again until no button reads `Checking…`. The first row appears within ~50 ms with `Checking…` still showing; the check ends about as long after as the slowest CLI's `--version` takes. Close, `$C browser open /`, and repeat. Save the timings to `providers/instant.txt`.
+- **Open.** Run `$C browser click --role button --name "Settings"`. At 430px Settings opens on its section list, so also run `$C browser click --role button --name "Providers"`. Then `$C browser wait --role region --name "Claude Code settings"`. `--role group --name "Agent CLIs"` holds one button and one `Enable <CLI>` switch per CLI. Capture `providers/open.aria.txt` plus `.png`.
+- **Instant.** Save the script below as `<runDir>/instant.js`. From a chat at 1440x900, run `$C browser eval "$(cat <runDir>/instant.js)"`. It clicks Settings and times, with a `MutationObserver`, when the first row is in the DOM and when the background check ends. The first row is there within tens of ms with `checkingAtFirstRow: true`, and the check ends about as long after as the slowest CLI's `--version` takes. Click `Close settings`, run `$C browser open /`, and run it again. At 430px, from the bot list, click `Settings`, then run `$C browser eval "$(sed 's/OPEN = "gear"/OPEN = "providers"/' <runDir>/instant.js)"`. Save the three results to `providers/instant.txt`.
+  ```js
+  (async () => {
+    const OPEN = "gear";
+    const has = (test) => new Promise((done) => {
+      if (test()) return done();
+      const obs = new MutationObserver(() => test() && (obs.disconnect(), done()));
+      obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+    });
+    const checking = () => [...document.querySelectorAll("button")].some((b) => b.textContent.includes("Checking…"));
+    const target = OPEN === "gear"
+      ? document.querySelector('button[aria-label="Settings"]')
+      : [...document.querySelectorAll('nav[aria-label="Settings sections"] button')].find((b) => b.textContent.trim() === "Providers");
+    const t0 = performance.now();
+    target.click();
+    await has(() => document.querySelector('[aria-label="Agent CLIs"] button'));
+    const firstRowMs = Math.round(performance.now() - t0);
+    const checkingAtFirstRow = checking();
+    await has(() => !checking());
+    return { origin: location.origin, firstRowMs, checkingAtFirstRow, checkDoneMs: Math.round(performance.now() - t0) };
+  })()
+  ```
 - **Logos.** Select Claude Code, Codex, Cursor Agent, OpenCode, and Gemini CLI in turn. Each header must show the same SVG logo as its list row, with no letter tiles. Repeat at 430px and capture the list plus the selected header. Logos are decorative: CLI names and switch labels must remain accessible.
 - **Settings.** Fill `--label "Display name"`, `--label "Binary path"` (the wrapper), and `--label "Launch arguments"` (` --debug-file <runDir>/claude-debug.log`, with a leading space), pressing `Tab` after each. Click `Add variable`, fill `--label "Variable 1 name" --value "FABS_PROBE"` and `--label "Variable 1 value" --value "providers-ok"`, then `Tab`. The region is renamed to `<display name> settings`, and `$C api GET /api/providers` shows the four values under `settings` for `claude`.
 - **Run.** Open `Bot Chief` and ask it to run `echo "probe=$FABS_PROBE"` with its Bash tool. `$C wait <T> --for idle` passes, `$C thread <T>` shows `[tool Bash done] "probe=providers-ok"`, `wrapper.log` ends with `--debug-file <runDir>/claude-debug.log -p | FABS_PROBE=providers-ok`, and `claude-debug.log` exists.
@@ -42,4 +63,6 @@ Preconditions:
 - Every save re-checks that one CLI's version, so the wrapper logs a `--version` line per save. Only the line with `-p` is a bot run.
 - Plugins → Scan also starts Claude through these settings. Expect one more `-p` line in `wrapper.log` after a scan.
 - A save made while `Checking…` shows waits for that check to finish, so a switch can take a second to flip.
+- A CLI whose `--version` doesn't finish in 5 s is cut off and listed without a version. The check, and any save waiting on it, ends by then.
+- Time row presence with a `MutationObserver`, never `requestAnimationFrame`. A freshly started headless browser can hold back frames for about a second, which reads as app latency.
 - Engineer's desk opens on its files page. Click `Show settings` before `Edit Engineer`.

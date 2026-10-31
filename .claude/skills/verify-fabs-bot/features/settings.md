@@ -9,6 +9,7 @@ The gear at the top of the sidebar opens Settings as a full page, not a menu. On
 - `settings-search` filters the nav by section name or by what's inside (`tailscale` finds This PC), and says when nothing matches.
 - `settings-close` returns to the chat that was open in one step, however many sections were visited.
 - `settings-phone` shows the section list at 430px, opens a section full-screen with `Back`, and walks back to the list, then to the bot list.
+- `settings-focus` moves keyboard focus with each step: the section heading when a section opens from outside it, the `Settings` heading on the phone list, the section you came from when going back to the list, and the gear once Settings closes by close, `Back` or the browser's back button.
 
 ## How to get to it (user POV)
 
@@ -25,6 +26,8 @@ Preconditions:
 - **Search.** Fill `--label "Search settings" --value "tailscale"`: the nav holds only `This PC`. With `--value "zzz"` it reads `Nothing matches "zzz".` Fill an empty value to clear it.
 - **Close.** Click `--role button --name "Close settings"`. `--role region --name "Thread with Chief"` is back. `$C browser eval "history.length"` is the same as before Settings opened, plus one.
 - **Phone.** Run `$C browser start --viewport 430x932`, `$C browser open /?phone`, and click `Settings`. The nav fills the screen with `Back` and the heading `Settings`, and no section is mounted. Click `Providers`: `--role region --name "Providers"` shows with `Back`, and the nav is hidden. `Back` returns to the list, and `Back` again to `--role complementary --name "Bots"`. `$C browser eval "history.back()"` walks the same steps.
+
+- **Focus.** After each step above, `$C browser eval "[document.activeElement.tagName, document.activeElement.id, document.activeElement.textContent.trim()]"` reads: on desktop, `H2 settings-section-title Providers` after opening, `BUTTON settings-nav-plugins Plugins` after clicking Plugins, and `BUTTON open-settings` after `Close settings` or `history.back()`. At 430px: `H1 settings-title Settings` on the list, `H2 settings-section-title Providers` in the section, `BUTTON settings-nav-providers Providers` after `Back`, and `BUTTON open-settings` after `Back` to the bot list.
 
 ## Gotchas
 
