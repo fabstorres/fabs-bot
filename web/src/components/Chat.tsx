@@ -1,5 +1,5 @@
 import { type RefObject, useRef, useState } from "react";
-import { ArrowUp, ChevronLeft, Ellipsis, Mic, Monitor, Paperclip, Pencil, Plus, Square, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowUp, ChevronLeft, Ellipsis, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, X } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { api } from "../api";
 import { toast } from "sonner";
@@ -273,7 +273,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       onDrop={(e) => (e.preventDefault(), attach(e.dataTransfer.files))}
     >
       <OfflineBanner />
-      <div className="mx-auto max-w-3xl rounded-[26px] border bg-background p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
+      <div className="mx-auto max-w-3xl rounded-2xl border bg-muted/50 p-2 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
         {files.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-1">
             {files.map((f) => (
@@ -286,21 +286,21 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
             ))}
           </div>
         )}
-        <div className="flex items-end gap-1">
-          <Button variant="secondary" size="icon" className="rounded-full" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading || !online}>
-            <Plus className="size-5" />
+        <MentionInput
+          value={text}
+          onChange={draft}
+          autoFocus={window.matchMedia("(pointer: fine)").matches}
+          onSubmit={send}
+          bots={bots}
+          ariaLabel="Message"
+          placeholder={`Message ${name}`}
+          onPaste={(e) => e.clipboardData.files.length && (e.preventDefault(), attach(e.clipboardData.files))}
+        />
+        <div className="mt-1 flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="mr-auto rounded-full text-muted-foreground" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading || !online}>
+            <Paperclip className="size-5" />
           </Button>
           <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && attach(e.target.files)} />
-          <MentionInput
-            value={text}
-            onChange={draft}
-            autoFocus={window.matchMedia("(pointer: fine)").matches}
-            onSubmit={send}
-            bots={bots}
-            ariaLabel="Message"
-            placeholder={`Message ${name}`}
-            onPaste={(e) => e.clipboardData.files.length && (e.preventDefault(), attach(e.clipboardData.files))}
-          />
           {SpeechRecognition && (
             <Button variant="ghost" size="icon" className={cn("rounded-full", listening && "bg-red-50 text-red-600")} onClick={dictate} aria-label="Dictate">
               <Mic className="size-5" />
