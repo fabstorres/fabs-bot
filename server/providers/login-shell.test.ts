@@ -21,6 +21,10 @@ test("login shell entries come first and repeats keep their first position", () 
   );
 });
 
+test("keeps spaces that are part of a directory name", () => {
+  expect(mergePath("/tmp/tool bin :/usr/bin", " /opt/lead")).toBe("/tmp/tool bin :/usr/bin: /opt/lead");
+});
+
 test("ignores what rc files print around the PATH", () => {
   const shell = fakeShell("noisy", `echo "Welcome back"\nprintf 'no newline'\nexport PATH="/from/rc:$PATH"\nexec /bin/sh -c "$2"`);
   expect(readLoginShellPath(shell)?.split(":")[0]).toBe("/from/rc");
