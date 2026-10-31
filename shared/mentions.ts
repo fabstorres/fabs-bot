@@ -60,13 +60,19 @@ export function* textNodes(node: MdNode): Generator<{ node: MdNode; parent: MdNo
 
 const parse = (markdown: string): MdNode => unified().use(remarkParse).use(remarkGfm).parse(markdown);
 
+const botsIn = <B>(pieces: Piece<B>[]) => pieces.flatMap((p) => (typeof p === "string" ? [] : [p.bot]));
+
+const sameBots = <B>(a: B[], b: B[]) => a.length === b.length && a.every((bot, i) => bot === b[i]);
+
 export function splitMarkdownMentions<B extends Named>(markdown: string, bots: B[]): Piece<B>[] {
   const pieces: Piece<B>[] = [];
   let last = 0;
   for (const { node } of textNodes(parse(markdown))) {
     const { start, end } = node.position!;
     let at = start.offset!;
-    for (const piece of splitMentions(markdown.slice(at, end.offset), bots)) {
+    const source = splitMentions(markdown.slice(at, end.offset), bots);
+    if (!sameBots(botsIn(source), botsIn(splitMentions(node.value ?? "", bots)))) continue;
+    for (const piece of source) {
       if (typeof piece === "string") {
         at += piece.length;
         continue;

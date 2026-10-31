@@ -44,6 +44,12 @@ describe("mention matching", () => {
     ]);
   });
 
+  test("escapes or character references that change who is mentioned leave the composer text plain", () => {
+    expect(splitMarkdownMentions("@Chief&#32;of Staff hi", bots)).toEqual(["@Chief&#32;of Staff hi"]);
+    expect(names("@Chief&#32;of Staff hi")).toEqual(["Chief of Staff"]);
+    expect(splitMarkdownMentions("hi @Chief \nfile\\_name", bots)).toEqual(["hi ", { bot: chief, text: "@Chief" }, " \nfile\\_name"]);
+  });
+
   test("splits text around each mention and keeps what was typed", () => {
     expect(splitMentions("ask @githubissues now", bots)).toEqual(["ask ", { bot: issues, text: "@githubissues" }, " now"]);
   });
