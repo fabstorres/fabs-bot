@@ -35,6 +35,8 @@ export function formatSize(n: number) {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
+export const isImage = (name: string) => /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i.test(name);
+
 export function formatTime(ts: number) {
   const d = new Date(ts);
   const now = new Date();

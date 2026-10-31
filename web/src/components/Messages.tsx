@@ -4,7 +4,7 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { Check, ChevronDown, ChevronRight, Download, Zap } from "lucide-react";
 import type { Bot, Message, MessagePart } from "../../../shared/types";
-import { api, formatSize, formatTime } from "../api";
+import { api, formatSize, formatTime, isImage } from "../api";
 import { isConnected, openModal, openNestedThread, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,20 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 
 type ToolPart = Extract<MessagePart, { type: "tool" }>;
+type FilePart = Extract<MessagePart, { type: "file" }>;
 
 /** The teammate a message_bot call went to, read from its "<Name>: <message>" summary. */
 const exchangeTarget = (p: ToolPart, bots: Bot[]) => (/message_bot$/.test(p.name) ? bots.find((b) => p.summary.startsWith(`${b.name}: `)) : undefined);
 
-/** Consecutive tool calls collapse into one work log; messages to a known teammate stand on their own. */
+/** Consecutive images form a grid and tool calls a work log; teammate exchanges stand on their own. */
 function groupParts(parts: MessagePart[], bots: Bot[]) {
-  const out: ({ kind: "tools"; tools: ToolPart[] } | { kind: "part"; part: MessagePart; index: number })[] = [];
+  const out: ({ kind: "images"; files: FilePart[] } | { kind: "tools"; tools: ToolPart[] } | { kind: "part"; part: MessagePart; index: number })[] = [];
   parts.forEach((p, index) => {
-    if (p.type === "tool" && !exchangeTarget(p, bots)) {
+    if (p.type === "file" && isImage(p.name)) {
+      const last = out[out.length - 1];
+      if (last?.kind === "images") last.files.push(p);
+      else out.push({ kind: "images", files: [p] });
+    } else if (p.type === "tool" && !exchangeTarget(p, bots)) {
       const last = out[out.length - 1];
       if (last?.kind === "tools") last.tools.push(p);
       else out.push({ kind: "tools", tools: [p] });
@@ -68,7 +73,9 @@ function MessageView({ m, bots, showAuthor, gap }: { m: Message; bots: Bot[]; sh
         </div>
       )}
       {groups.map((g, i) =>
-        g.kind === "tools" ? (
+        g.kind === "images" ? (
+          <ImageGrid key={i} files={g.files} />
+        ) : g.kind === "tools" ? (
           <WorkLog key={i} tools={g.tools} live={m.status === "streaming" && i === groups.length - 1} bot={bot} />
         ) : (
           <Part key={i} part={g.part} index={g.index} message={m} bot={bot} error={m.status === "error" && i === groups.length - 1} />
@@ -191,6 +198,29 @@ function WorkLog({ tools, live, bot }: { tools: ToolPart[]; live: boolean; bot?:
           })}
         </ol>
       )}
+    </div>
+  );
+}
+
+function ImageGrid({ files }: { files: FilePart[] }) {
+  const single = files.length === 1;
+  return (
+    <div role="group" aria-label="Image attachments" className={cn("grid max-w-[min(88%,20rem)] gap-1 overflow-hidden rounded-3xl", single ? "w-fit" : "w-80 grid-cols-2")}>
+      {files.map((file, i) => (
+        <Button
+          key={i}
+          variant="ghost"
+          className={cn(
+            "h-auto min-w-0 overflow-hidden rounded-none bg-muted p-0 focus-visible:ring-0 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring",
+            !single && "aspect-square w-full",
+            files.length === 3 && i === 0 && "row-span-2 aspect-auto",
+          )}
+          aria-label={`File ${file.name}`}
+          onClick={() => openModal({ kind: "file", url: `/files/${file.fileId}`, name: file.name })}
+        >
+          <img src={`/files/${file.fileId}`} alt={file.name} className={single ? "max-h-80 max-w-full object-contain" : "size-full object-cover"} />
+        </Button>
+      ))}
     </div>
   );
 }

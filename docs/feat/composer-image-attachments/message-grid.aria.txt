@@ -1,0 +1,58 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief": Chief 7:20 PM (no reply)
+    - button "Bot Engineer": Engineer 7:18 PM Hey, I'm Engineer. What's the main thing you want me on?
+    - button "Bot Design": Design 7:18 PM Hey, I'm Design. What's the main thing you want me on?
+    - button "Bot Careful":
+      - text: Careful 7:18 PM Hey, I'm Careful. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 7:18 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+  - button "Plugins"
+  - button "Providers"
+  - button "This PC": FE <pc> All quiet
+- main:
+  - region "Thread with Chief":
+    - text: Chief
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops" [disabled]
+        - button "B A specific project" [disabled]
+        - button "C Research and writing" [disabled]
+        - button "D Something else" [disabled]
+      - group "Image attachments":
+        - button "File mountains.jpg":
+          - img "mountains.jpg"
+        - button "File lake.jpg":
+          - img "lake.jpg"
+      - button "File notes.txt": TXT notes.txt 18 B
+      - paragraph: Please read notes.txt and name the four photos in one short sentence.
+      - paragraph:
+        - emphasis: (no reply)
+      - group "Image attachments":
+        - button "File hills.jpg":
+          - img "hills.jpg"
+        - button "File mountains.jpg":
+          - img "mountains.jpg"
+        - button "File lake.jpg":
+          - img "lake.jpg"
+      - button "File notes.txt": TXT notes.txt 18 B
+      - paragraph: Which of these places would you pick for a weekend trip?
+      - paragraph:
+        - emphasis: (no reply)
+    - button "Attach"
+    - textbox "Message":
+      - /placeholder: Message Chief
+    - button "Dictate"
+    - button "Send" [disabled]
+- region "Notifications alt+T"

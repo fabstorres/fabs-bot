@@ -1,9 +1,9 @@
 import { type RefObject, useRef, useState } from "react";
-import { ArrowUp, ChevronLeft, Ellipsis, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, X } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
-import { api } from "../api";
+import { api, isImage } from "../api";
 import { toast } from "sonner";
-import { goBack, isConnected, openModal, threadTitle, togglePanel, useStore } from "../store";
+import { attachFiles, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
@@ -198,15 +198,13 @@ function RenameThread({ thread, trigger, onClose }: { thread: Thread; trigger: R
   );
 }
 
-type Attachment = { fileId: string; name: string; size: number };
-
 function Composer({ thread, members, working }: { thread: Thread; members: Bot[]; working: boolean }) {
   const bots = useStore((s) => s.bots);
   const online = useStore(isConnected);
   const draftKey = `draft:${thread.id}`;
   const [text, setText] = useState(() => sessionStorage.getItem(draftKey) ?? "");
-  const [files, setFiles] = useState<Attachment[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const files = useStore((s) => s.attachments[thread.id]) ?? [];
+  const uploading = useStore((s) => !!s.uploads[thread.id]);
   const [listening, setListening] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -215,20 +213,17 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     sessionStorage.setItem(draftKey, next);
   }
 
-  async function attach(list: FileList | File[]) {
-    if (!list.length || !online) return;
-    setUploading(true);
-    try {
-      const up = await api.upload([...list]);
-      setFiles((f) => [...f, ...up]);
-    } finally {
-      setUploading(false);
-    }
+  function attach(list: FileList | File[]) {
+    if (list.length && online) void attachFiles(thread.id, [...list]);
+  }
+
+  function remove(fileId: string) {
+    updateAttachments(thread.id, (f) => f.filter((x) => x.fileId !== fileId));
   }
 
   async function send() {
     const body = text.trim();
-    if (!body && !files.length) return;
+    if ((!body && !files.length) || uploading) return;
     if (!online) {
       toast.warning("Not connected: message not sent", {
         id: "send-offline",
@@ -243,10 +238,10 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     }
     const sending = files;
     draft("");
-    setFiles([]);
+    updateAttachments(thread.id, () => []);
     await api.post(`/api/threads/${thread.id}/messages`, { text: body, fileIds: sending.map((f) => f.fileId) }).catch(() => {
       draft([body, sessionStorage.getItem(draftKey)].filter(Boolean).join("\n"));
-      setFiles((f) => [...sending, ...f]);
+      updateAttachments(thread.id, (f) => [...sending, ...f]);
     });
   }
 
@@ -274,16 +269,37 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     >
       <OfflineBanner />
       <div className="mx-auto max-w-3xl rounded-2xl border bg-muted/50 p-2 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
-        {files.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-1">
-            {files.map((f) => (
-              <Badge key={f.fileId} variant="secondary" className="gap-1 py-1 pr-1">
-                <Paperclip /> {f.name}
-                <button className="rounded-full p-0.5 hover:bg-black/10" onClick={() => setFiles(files.filter((x) => x.fileId !== f.fileId))} aria-label="Remove">
-                  <X className="size-3" />
-                </button>
+        {(files.length > 0 || uploading) && (
+          <div className="flex flex-wrap items-center gap-2 px-2 pt-2 pb-2">
+            {files.map((f) =>
+              isImage(f.name) ? (
+                <div key={f.fileId} className="relative size-24 flex-none">
+                  <Button
+                    variant="ghost"
+                    className="size-full overflow-hidden rounded-2xl border bg-muted p-0"
+                    aria-label={`Preview ${f.name}`}
+                    onClick={() => openModal({ kind: "file", url: `/files/${f.fileId}`, name: f.name })}
+                  >
+                    <img src={`/files/${f.fileId}`} alt={f.name} className="size-full object-cover" />
+                  </Button>
+                  <Button variant="secondary" size="icon-xs" className="absolute top-1 right-1 rounded-full bg-background/95 shadow-sm" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
+                    <X />
+                  </Button>
+                </div>
+              ) : (
+                <Badge key={f.fileId} variant="secondary" className="max-w-full gap-1 py-1 pr-1">
+                  <Paperclip className="shrink-0" /> <span className="truncate">{f.name}</span>
+                  <button className="shrink-0 rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              ),
+            )}
+            {uploading && (
+              <Badge variant="secondary" className="py-1">
+                <LoaderCircle className="animate-spin" /> Uploading…
               </Badge>
-            ))}
+            )}
           </div>
         )}
         <MentionInput
@@ -311,7 +327,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
               <Square className="size-3.5 fill-current" />
             </Button>
           ) : (
-            <Button size="icon" className="rounded-full" onClick={send} disabled={!ready || !online} aria-label={online ? "Send" : "Environment disconnected"}>
+            <Button size="icon" className="rounded-full" onClick={send} disabled={!ready || uploading || !online} aria-label={online ? "Send" : "Environment disconnected"}>
               <ArrowUp className="size-5" strokeWidth={2.4} />
             </Button>
           )}

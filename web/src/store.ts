@@ -13,6 +13,8 @@ export type Modal =
 /** What the main pane shows. Each one is a history entry, so the phone's back button walks back through them. */
 type View = { thread?: string; creating?: boolean };
 
+export type Attachment = { fileId: string; name: string; size: number };
+
 export type Connection = "connecting" | "connected" | "reconnecting" | "offline";
 export type Failure = "offline" | "no-answer" | "timeout";
 
@@ -36,6 +38,8 @@ interface State {
   modalOpener: HTMLElement | null;
   search: string;
   devicesVersion: number;
+  attachments: Record<string, Attachment[]>;
+  uploads: Record<string, number>;
 }
 
 export const useStore = create<State>(() => ({
@@ -57,6 +61,8 @@ export const useStore = create<State>(() => ({
   modalOpener: null,
   search: "",
   devicesVersion: 0,
+  attachments: savedAttachments(),
+  uploads: {},
 }));
 
 const set = useStore.setState;
@@ -303,6 +309,34 @@ export const openModal = (modal: Modal) => set({ modal, modalOpener: focusedOpen
 export const closeModal = () => set({ modal: null });
 export const togglePanel = () => set({ panelOpen: !get().panelOpen });
 export const closePanel = () => set({ panelOpen: false });
+
+function savedAttachments(): Record<string, Attachment[]> {
+  try {
+    return JSON.parse(sessionStorage.getItem("attachments") ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function updateAttachments(threadId: string, update: (files: Attachment[]) => Attachment[]) {
+  const attachments = { ...get().attachments, [threadId]: update(get().attachments[threadId] ?? []) };
+  sessionStorage.setItem("attachments", JSON.stringify(attachments));
+  set({ attachments });
+}
+
+function countUpload(threadId: string, by: number) {
+  set({ uploads: { ...get().uploads, [threadId]: (get().uploads[threadId] ?? 0) + by } });
+}
+
+export async function attachFiles(threadId: string, files: File[]) {
+  countUpload(threadId, 1);
+  try {
+    const up = await api.upload(files);
+    updateAttachments(threadId, (f) => [...f, ...up]);
+  } finally {
+    countUpload(threadId, -1);
+  }
+}
 
 export function botById(id: string | null | undefined): Bot | undefined {
   return id ? get().bots.find((b) => b.id === id) : undefined;
