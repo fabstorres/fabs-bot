@@ -49,7 +49,7 @@ export function Sidebar() {
       <div className="flex items-center gap-1 px-4 pt-4 pb-2">
         <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only">Fabs Bot</h1>
         <PcMenu />
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={openSettings} aria-label="Settings" title="Settings">
+        <Button id="open-settings" variant="ghost" size="icon" className="rounded-full" onClick={openSettings} aria-label="Settings" title="Settings">
           <Settings className="size-5" />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={startCreating} aria-label="New bot" title="New bot">

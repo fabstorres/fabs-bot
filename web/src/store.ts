@@ -1,3 +1,4 @@
+import { flushSync } from "react-dom";
 import { create } from "zustand";
 import type { Bot, BotStatus, HostInfo, Link, Message, ServerEvent, Thread } from "../../shared/types";
 import { api, Unpaired } from "./api";
@@ -256,8 +257,17 @@ export async function loadMessages(threadId: string) {
   set({ messages: { ...get().messages, [threadId]: msgs } });
 }
 
+function settingsFocus(from: SettingsView | null, to: SettingsView | undefined) {
+  if (from && !to) return "open-settings";
+  if (!to) return null;
+  if (to.section) return from?.section ? null : "settings-section-title";
+  return from?.section ? `settings-nav-${from.section}` : "settings-title";
+}
+
 function show(view: View) {
-  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: view.settings ?? null });
+  const target = settingsFocus(get().settings, view.settings);
+  flushSync(() => set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: view.settings ?? null }));
+  if (target) document.getElementById(target)?.focus();
   if (view.thread) {
     void loadMessages(view.thread);
     void api.post(`/api/threads/${view.thread}/read`).catch(() => {});

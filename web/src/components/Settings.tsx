@@ -30,7 +30,9 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
           <Button variant="ghost" size="icon" className="rounded-full md:hidden" onClick={goBack} aria-label="Back">
             <ChevronLeft className="size-5" />
           </Button>
-          <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only">Settings</h1>
+          <h1 id="settings-title" tabIndex={-1} className="flex-1 text-lg font-semibold tracking-tight outline-none md:sr-only">
+            Settings
+          </h1>
         </div>
         <InputGroup className="mx-3 mb-2 w-auto rounded-xl border-0 bg-black/5 shadow-none has-[[data-slot=input-group-control]:focus-visible]:bg-black/7">
           <InputGroupAddon>
@@ -42,6 +44,7 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
           {matches.map(({ id, label, Icon }) => (
             <Button
               key={id}
+              id={`settings-nav-${id}`}
               variant="ghost"
               aria-current={id === section ? "page" : undefined}
               className={cn("h-12 justify-start gap-3 rounded-xl px-3 text-[15px] font-normal hover:bg-sidebar-accent/60 md:h-10", id === section && "bg-sidebar-accent hover:bg-sidebar-accent")}
@@ -81,6 +84,9 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
         <div className="flex-1 overflow-y-auto">
           {shown && (
             <section aria-label={shown.label} className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-8">
+              <h2 id="settings-section-title" tabIndex={-1} className="sr-only">
+                {shown.label}
+              </h2>
               {shown.id === "providers" && <ProvidersSettings />}
               {shown.id === "plugins" && <PluginsSettings />}
               {shown.id === "pc" && <ThisPcSettings />}
