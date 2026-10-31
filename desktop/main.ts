@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { DesktopState, SavedPc } from "../shared/types";
+import { PC_ICONS, type DesktopState, type PcChoice, type PcIcon, type SavedPc } from "../shared/types";
 
 const LOCAL_ORIGIN = `http://127.0.0.1:${Number(process.env.FABS_PORT ?? 4800)}`;
 const LAUNCHER_ORIGIN = "fabs-app://launcher";
@@ -15,11 +15,16 @@ app.setPath("userData", process.env.FABS_DESKTOP_DATA ?? join(app.getPath("appDa
 protocol.registerSchemesAsPrivileged([{ scheme: "fabs-app", privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 const storeFile = () => join(app.getPath("userData"), "pcs.json");
+const isPcIcon = (icon: unknown): icon is PcIcon => PC_ICONS.includes(icon as PcIcon);
 
 function readStore(): DesktopState {
   try {
     const state = JSON.parse(readFileSync(storeFile(), "utf8"));
-    return { pcs: Array.isArray(state.pcs) ? state.pcs : [], last: typeof state.last === "string" ? state.last : null };
+    return {
+      pcs: Array.isArray(state.pcs) ? state.pcs : [],
+      last: typeof state.last === "string" ? state.last : null,
+      localIcon: isPcIcon(state.localIcon) ? state.localIcon : undefined,
+    };
   } catch {
     return { pcs: [], last: null };
   }
@@ -83,14 +88,14 @@ async function openPc(id: string, url?: string): Promise<string | null> {
   }
   writeStore({ ...store, last: id });
 
-  pcWindow?.destroy();
+  const previous = pcWindow;
   pcOrigin = origin;
   pcWindow = new BrowserWindow({
     width: 1280,
     height: 860,
     title: "Fabs Bot",
     backgroundColor: "#ffffff",
-    webPreferences: { sandbox: true, contextIsolation: true },
+    webPreferences: { preload: join(app.getAppPath(), "dist/desktop/pc-preload.cjs"), sandbox: true, contextIsolation: true },
   });
   const opened = pcWindow;
   opened.on("closed", () => {
@@ -104,6 +109,7 @@ async function openPc(id: string, url?: string): Promise<string | null> {
     if (isMainFrame && code !== -3 && pcWindow === opened) showLauncher("That PC stopped answering.");
   });
   void opened.loadURL(url ?? `${origin}/`);
+  previous?.destroy();
   launcher?.close();
   return null;
 }
@@ -126,7 +132,7 @@ async function addPc(link: string, name: string): Promise<string | null> {
   if (!(await reachable(url.origin))) return "Couldn't reach that PC. Check that it's on, running Fabs Bot, and on your tailnet.";
   const store = readStore();
   const existing = store.pcs.find((pc) => pc.origin === url.origin);
-  const pc: SavedPc = { id: existing?.id ?? randomUUID(), name: name.trim() || existing?.name || url.hostname.split(".")[0]!, origin: url.origin };
+  const pc: SavedPc = { id: existing?.id ?? randomUUID(), name: name.trim() || existing?.name || url.hostname.split(".")[0]!, origin: url.origin, icon: existing?.icon };
   writeStore({ ...store, pcs: [...store.pcs.filter((p) => p.id !== pc.id), pc] });
   return openPc(pc.id, url.pathname === "/pair" ? url.href : undefined);
 }
@@ -134,7 +140,7 @@ async function addPc(link: string, name: string): Promise<string | null> {
 async function removePc(id: string) {
   const store = readStore();
   const pc = store.pcs.find((p) => p.id === id);
-  writeStore({ pcs: store.pcs.filter((p) => p.id !== id), last: store.last === id ? null : store.last });
+  writeStore({ ...store, pcs: store.pcs.filter((p) => p.id !== id), last: store.last === id ? null : store.last });
   if (pc) await session.defaultSession.clearStorageData({ origin: pc.origin });
 }
 
@@ -144,9 +150,27 @@ function fromLauncher(e: IpcMainInvokeEvent) {
   return !!launcher && !!frame && e.sender === launcher.webContents && frame === e.sender.mainFrame && within(frame.url, LAUNCHER_ORIGIN);
 }
 
-function handle(channel: string, fn: (...args: unknown[]) => unknown) {
+function fromPcWindow(e: IpcMainInvokeEvent) {
+  const frame = e.senderFrame;
+  return !!pcWindow && !!pcOrigin && !!frame && e.sender === pcWindow.webContents && frame === e.sender.mainFrame && within(frame.url, pcOrigin);
+}
+
+function pcChoices(): PcChoice[] {
+  const { pcs, last, localIcon } = readStore();
+  const choices = [{ id: "local", name: "This PC", icon: localIcon }, ...pcs.map(({ id, name, icon }) => ({ id, name, icon }))];
+  return choices.map((pc) => ({ ...pc, current: pc.id === last }));
+}
+
+function setPcIcon(id: string, icon: unknown) {
+  if (!isPcIcon(icon)) return;
+  const store = readStore();
+  if (id === "local") writeStore({ ...store, localIcon: icon });
+  else writeStore({ ...store, pcs: store.pcs.map((pc) => (pc.id === id ? { ...pc, icon } : pc)) });
+}
+
+function handle(channel: string, fn: (...args: unknown[]) => unknown, allowed = fromLauncher) {
   ipcMain.handle(channel, (e, ...args) => {
-    if (!fromLauncher(e)) throw new Error("forbidden");
+    if (!allowed(e)) throw new Error("forbidden");
     return fn(...args);
   });
 }
@@ -155,6 +179,10 @@ handle("pcs:state", () => readStore());
 handle("pcs:open", (id) => openPc(String(id)));
 handle("pcs:add", (link, name) => addPc(String(link), String(name ?? "")));
 handle("pcs:remove", (id) => removePc(String(id)));
+handle("pc:list", () => pcChoices(), fromPcWindow);
+handle("pc:open", (id) => openPc(String(id)), fromPcWindow);
+handle("pc:icon", (id, icon) => setPcIcon(String(id), icon), fromPcWindow);
+handle("pc:manage", () => showLauncher(), fromPcWindow);
 
 app.on("web-contents-created", (_e, contents) => {
   contents.on("will-navigate", (e, url) => {

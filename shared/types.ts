@@ -200,17 +200,22 @@ export type ServerEvent =
   | { type: "devices" }
   | { type: "heartbeat"; everyMs: number };
 
+export const PC_ICONS = ["monitor", "laptop", "pc-case", "server", "house", "briefcase"] as const;
+export type PcIcon = (typeof PC_ICONS)[number];
+
 /** A PC the desktop app can open: a name and the web origin its Fabs Bot answers on. */
 export interface SavedPc {
   id: string;
   name: string;
   origin: string;
+  icon?: PcIcon;
 }
 
 export interface DesktopState {
   pcs: SavedPc[];
   /** `"local"` for this PC, a saved PC's id, or null before the first connection. */
   last: string | null;
+  localIcon?: PcIcon;
 }
 
 /** What the desktop launcher may ask the Electron app. Calls that can fail resolve to an error message, or null. */
@@ -219,4 +224,18 @@ export interface DesktopBridge {
   open(id: string): Promise<string | null>;
   add(link: string, name: string): Promise<string | null>;
   remove(id: string): Promise<void>;
+}
+
+export interface PcChoice {
+  id: string;
+  name: string;
+  icon?: PcIcon;
+  current: boolean;
+}
+
+export interface PcSwitcher {
+  list(): Promise<PcChoice[]>;
+  open(id: string): Promise<string | null>;
+  setIcon(id: string, icon: PcIcon): Promise<void>;
+  manage(): Promise<void>;
 }
