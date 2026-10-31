@@ -6,7 +6,7 @@ A user hands one bot a piece of work. Clicking a bot in the sidebar opens its ch
 
 - `chat-open` opens a bot's direct chat from its sidebar row.
 - `chat-compose` sends from the composer.
-- `chat-live` shows the bot working: status text in its sidebar row, an avatar that turns into thinking dots, works while tools run, and spins once when done, typing dots, a work log of tool steps.
+- `chat-live` shows the bot working: status text in its sidebar row, an avatar that turns into thinking dots, works while tools run, and spins once when done, typing dots until the first step, then a step row (`--role group --name "Work log"`) whose small avatar works while tools run: hovering it shows the current action, clicking it lists every step, and failed steps read `· N failed` in red.
 - `chat-file` shows a shared file as a card that opens in a preview dialog.
 - `chat-attach` shows pasted, dropped or picked images in the composer as uniform square previews that open the preview dialog, and other files as a name badge. Consecutive sent images form a compact grid in the chat; a single image keeps its proportions. Every image opens the preview dialog on click.
 - `chat-attach-draft` keeps each chat's attachments, like its typed draft, across chat switches and reloads until sent or removed. While an upload is pending the composer shows `Uploading…` and Send waits.

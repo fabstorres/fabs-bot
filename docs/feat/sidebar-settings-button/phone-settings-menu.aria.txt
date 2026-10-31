@@ -1,0 +1,98 @@
+- generic [box=0,0,430,932]:
+  - generic [box=0,0,430,932]:
+    - generic [box=0,0,430,932]:
+      - generic [box=0,0,430,932]:
+        - complementary [box=0,0,430,932]:
+          - generic [box=0,0,430,60]:
+            - heading [level=1] [box=16,20,200,28]: Fabs Bot
+            - button [box=220,16,114,36]:
+              - img [box=232,26,16,16]
+              - generic [box=256,24,42,20]: <pc>
+              - img [box=306,26,16,16]
+            - button [expanded] [box=338,16,36,36]:
+              - img [box=346,24,20,20]
+            - button [box=378,16,36,36]:
+              - img [box=386,24,20,20]
+          - generic [box=12,60,406,39]:
+            - img [box=24,71,16,16]
+            - textbox [box=48,68,358,23]:
+              - /placeholder: Search
+          - generic [box=0,107,430,118]:
+            - button [box=34,115,96,94]:
+              - generic [box=48,115,68,68]:
+                - img [box=48,115,68,68]
+              - generic [box=34,189,96,20]: Chief of Staff
+            - button [box=167,115,96,94]:
+              - generic [box=181,115,68,68]:
+                - img [box=181,115,68,68]
+              - generic [box=167,189,96,20]: Chief
+            - button [box=300,115,96,94]:
+              - generic [box=314,115,68,68]:
+                - img [box=314,115,68,68]
+              - generic [box=300,189,96,20]: Design
+          - navigation [box=0,224,430,708]:
+            - button [box=8,224,414,64]:
+              - generic [box=20,234,44,44]:
+                - img [box=20,234,44,44]
+              - generic [box=76,235,334,43]:
+                - generic [box=76,235,334,23]:
+                  - generic [box=76,235,282,23]:
+                    - generic [box=76,235,50,23]: Careful
+                  - generic [box=366,237,44,20]: 7:31 PM
+                - generic [box=76,257,334,20]:
+                  - generic [box=76,257,334,20]: Hey, I'm Careful. What's the main thing you want me on?
+            - button [box=8,288,414,64]:
+              - generic [box=20,298,44,44]:
+                - img [box=20,298,44,44]
+              - generic [box=76,299,334,43]:
+                - generic [box=76,299,334,23]:
+                  - generic [box=76,299,282,23]:
+                    - generic [box=76,299,60,23]: Engineer
+                  - generic [box=366,301,44,20]: 7:31 PM
+                - generic [box=76,321,334,20]:
+                  - generic [box=76,321,316,20]: Hey, I'm Engineer. What's the main thing you want me on?
+                  - img [box=400,326,10,10]
+            - button [box=8,352,414,64]:
+              - generic [box=20,362,44,44]:
+                - img [box=20,362,44,44]
+              - generic [box=76,363,334,43]:
+                - generic [box=76,363,334,23]:
+                  - generic [box=76,363,282,23]:
+                    - generic [box=76,363,37,23]: Chief
+                  - generic [box=366,365,44,20]: 7:31 PM
+                - generic [box=76,385,334,20]:
+                  - generic [box=76,385,316,20]: Hey, I'm Chief. What's the main thing you want me on?
+                  - img [box=400,390,10,10]
+            - button [box=8,416,414,64]:
+              - generic [box=20,426,44,44]:
+                - img [box=20,426,44,44]
+              - generic [box=76,427,334,43]:
+                - generic [box=76,427,334,23]:
+                  - generic [box=76,427,282,23]:
+                    - generic [box=76,427,47,23]: Design
+                  - generic [box=366,429,44,20]: 7:31 PM
+                - generic [box=76,449,334,20]:
+                  - generic [box=76,449,316,20]: Hey, I'm Design. What's the main thing you want me on?
+                  - img [box=400,454,10,10]
+            - button [box=8,480,414,64]:
+              - generic [box=20,490,44,44]:
+                - img [box=20,490,44,44]
+              - generic [box=76,491,334,43]:
+                - generic [box=76,491,334,23]:
+                  - generic [box=76,491,282,23]:
+                    - generic [box=76,491,93,23]: Chief of Staff
+                  - generic [box=366,493,44,20]: 7:31 PM
+                - generic [box=76,513,334,20]:
+                  - generic [box=76,513,316,20]: Hey, I'm Chief of Staff. What's the main thing you want me on?
+                  - img [box=400,518,10,10]
+    - region "Notifications alt+T" [box=0,932,430,0]
+  - menu "Settings" [active] [ref=t3-4e6ff06b-17-e285] [box=176,48,198,101]:
+    - menuitem "Plugins" [ref=t3-4e6ff06b-17-e286] [box=181,53,188,30]:
+      - img [box=189,60,15,15]
+      - text: Plugins
+    - menuitem "Providers" [ref=t3-4e6ff06b-17-e287] [box=181,83,188,30]:
+      - img [box=189,91,15,15]
+      - text: Providers
+    - menuitem "This PC" [ref=t3-4e6ff06b-17-e288] [box=181,114,188,30]:
+      - img [box=189,121,15,15]
+      - text: This PC

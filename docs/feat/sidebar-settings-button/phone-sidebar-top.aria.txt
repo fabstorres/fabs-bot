@@ -1,0 +1,71 @@
+- generic [ref=t3-4e6ff06b-15-e2] [box=0,0,430,932]:
+  - complementary "Bots" [ref=t3-4e6ff06b-15-e5] [box=0,0,430,932]:
+    - generic [ref=t3-4e6ff06b-15-e6] [box=0,0,430,60]:
+      - heading "Fabs Bot" [level=1] [ref=t3-4e6ff06b-15-e7] [box=16,20,200,28]
+      - button "PC <pc>" [ref=t3-4e6ff06b-15-e8] [cursor=pointer] [box=220,16,114,36]:
+        - img [box=232,26,16,16]
+        - generic [ref=t3-4e6ff06b-15-e9] [box=256,24,42,20]: <pc>
+        - img [box=306,26,16,16]
+      - button "Settings" [ref=t3-4e6ff06b-15-e10] [cursor=pointer] [box=338,16,36,36]:
+        - img [box=346,24,20,20]
+      - button "New bot" [ref=t3-4e6ff06b-15-e11] [cursor=pointer] [box=378,16,36,36]:
+        - img [box=386,24,20,20]
+    - generic [ref=t3-4e6ff06b-15-e12] [box=12,60,406,39]:
+      - img [ref=t3-4e6ff06b-15-e13] [box=24,71,16,16]
+      - textbox "Search bots" [ref=t3-4e6ff06b-15-e16] [box=48,68,358,23]:
+        - /placeholder: Search
+    - generic [ref=t3-4e6ff06b-15-e17] [box=0,107,430,118]:
+      - button "Open Chief of Staff" [ref=t3-4e6ff06b-15-e18] [cursor=pointer] [box=34,115,96,94]:
+        - img [ref=t3-4e6ff06b-15-e20] [box=48,115,68,68]
+        - generic [ref=t3-4e6ff06b-15-e46] [box=34,189,96,20]: Chief of Staff
+      - button "Open Chief" [ref=t3-4e6ff06b-15-e47] [cursor=pointer] [box=167,115,96,94]:
+        - img [ref=t3-4e6ff06b-15-e49] [box=181,115,68,68]
+        - generic [ref=t3-4e6ff06b-15-e75] [box=167,189,96,20]: Chief
+      - button "Open Design" [ref=t3-4e6ff06b-15-e76] [cursor=pointer] [box=300,115,96,94]:
+        - img [ref=t3-4e6ff06b-15-e78] [box=314,115,68,68]
+        - generic [ref=t3-4e6ff06b-15-e104] [box=300,189,96,20]: Design
+    - navigation "Chats" [ref=t3-4e6ff06b-15-e105] [box=0,224,430,708]:
+      - button "Bot Careful" [ref=t3-4e6ff06b-15-e106] [cursor=pointer] [box=8,224,414,64]:
+        - img [ref=t3-4e6ff06b-15-e108] [box=20,234,44,44]
+        - generic [ref=t3-4e6ff06b-15-e134] [box=76,235,334,43]:
+          - generic [ref=t3-4e6ff06b-15-e135] [box=76,235,334,23]:
+            - generic [ref=t3-4e6ff06b-15-e137] [box=76,235,50,23]: Careful
+            - generic [ref=t3-4e6ff06b-15-e138] [box=366,237,44,20]: 7:31 PM
+          - generic [ref=t3-4e6ff06b-15-e140] [box=76,257,334,20]: Hey, I'm Careful. What's the main thing you want me on?
+      - button "Bot Engineer" [ref=t3-4e6ff06b-15-e141] [cursor=pointer] [box=8,288,414,64]:
+        - img [ref=t3-4e6ff06b-15-e143] [box=20,298,44,44]
+        - generic [ref=t3-4e6ff06b-15-e169] [box=76,299,334,43]:
+          - generic [ref=t3-4e6ff06b-15-e170] [box=76,299,334,23]:
+            - generic [ref=t3-4e6ff06b-15-e172] [box=76,299,60,23]: Engineer
+            - generic [ref=t3-4e6ff06b-15-e173] [box=366,301,44,20]: 7:31 PM
+          - generic [ref=t3-4e6ff06b-15-e174] [box=76,321,334,20]:
+            - generic [ref=t3-4e6ff06b-15-e175] [box=76,321,316,20]: Hey, I'm Engineer. What's the main thing you want me on?
+            - img "Unread" [ref=t3-4e6ff06b-15-e176] [box=400,326,10,10]
+      - button "Bot Chief" [ref=t3-4e6ff06b-15-e177] [cursor=pointer] [box=8,352,414,64]:
+        - img [ref=t3-4e6ff06b-15-e179] [box=20,362,44,44]
+        - generic [ref=t3-4e6ff06b-15-e205] [box=76,363,334,43]:
+          - generic [ref=t3-4e6ff06b-15-e206] [box=76,363,334,23]:
+            - generic [ref=t3-4e6ff06b-15-e208] [box=76,363,37,23]: Chief
+            - generic [ref=t3-4e6ff06b-15-e209] [box=366,365,44,20]: 7:31 PM
+          - generic [ref=t3-4e6ff06b-15-e210] [box=76,385,334,20]:
+            - generic [ref=t3-4e6ff06b-15-e211] [box=76,385,316,20]: Hey, I'm Chief. What's the main thing you want me on?
+            - img "Unread" [ref=t3-4e6ff06b-15-e212] [box=400,390,10,10]
+      - button "Bot Design" [ref=t3-4e6ff06b-15-e213] [cursor=pointer] [box=8,416,414,64]:
+        - img [ref=t3-4e6ff06b-15-e215] [box=20,426,44,44]
+        - generic [ref=t3-4e6ff06b-15-e241] [box=76,427,334,43]:
+          - generic [ref=t3-4e6ff06b-15-e242] [box=76,427,334,23]:
+            - generic [ref=t3-4e6ff06b-15-e244] [box=76,427,47,23]: Design
+            - generic [ref=t3-4e6ff06b-15-e245] [box=366,429,44,20]: 7:31 PM
+          - generic [ref=t3-4e6ff06b-15-e246] [box=76,449,334,20]:
+            - generic [ref=t3-4e6ff06b-15-e247] [box=76,449,316,20]: Hey, I'm Design. What's the main thing you want me on?
+            - img "Unread" [ref=t3-4e6ff06b-15-e248] [box=400,454,10,10]
+      - button "Bot Chief of Staff" [ref=t3-4e6ff06b-15-e249] [cursor=pointer] [box=8,480,414,64]:
+        - img [ref=t3-4e6ff06b-15-e251] [box=20,490,44,44]
+        - generic [ref=t3-4e6ff06b-15-e277] [box=76,491,334,43]:
+          - generic [ref=t3-4e6ff06b-15-e278] [box=76,491,334,23]:
+            - generic [ref=t3-4e6ff06b-15-e280] [box=76,491,93,23]: Chief of Staff
+            - generic [ref=t3-4e6ff06b-15-e281] [box=366,493,44,20]: 7:31 PM
+          - generic [ref=t3-4e6ff06b-15-e282] [box=76,513,334,20]:
+            - generic [ref=t3-4e6ff06b-15-e283] [box=76,513,316,20]: Hey, I'm Chief of Staff. What's the main thing you want me on?
+            - img "Unread" [ref=t3-4e6ff06b-15-e284] [box=400,518,10,10]
+  - region "Notifications alt+T" [box=0,932,430,0]

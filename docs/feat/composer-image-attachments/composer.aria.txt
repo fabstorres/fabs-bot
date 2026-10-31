@@ -5,14 +5,14 @@
   - textbox "Search bots":
     - /placeholder: Search
   - navigation "Chats":
-    - button "Bot Design": Design 7:21 PM (no reply)
-    - button "Bot Chief": Chief 7:20 PM (no reply)
-    - button "Bot Engineer": Engineer 7:18 PM Hey, I'm Engineer. What's the main thing you want me on?
+    - button "Bot Engineer": Engineer 7:45 PM Hey, I'm Engineer. What's the main thing you want me on?
+    - button "Bot Design": Design 7:45 PM Hey, I'm Design. What's the main thing you want me on?
     - button "Bot Careful":
-      - text: Careful 7:18 PM Hey, I'm Careful. What's the main thing you want me on?
+      - text: Careful 7:45 PM Hey, I'm Careful. What's the main thing you want me on?
       - img "Unread"
+    - button "Bot Chief": Chief 7:45 PM Hey, I'm Chief. What's the main thing you want me on?
     - button "Bot Chief of Staff":
-      - text: Chief of Staff 7:18 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - text: Chief of Staff 7:45 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
       - img "Unread"
   - button "Plugins"
   - button "Providers"
@@ -26,46 +26,17 @@
       - paragraph: Hey, I'm Chief. What's the main thing you want me on?
       - 'group "Question: What should I own for you?"':
         - text: What should I own for you?
-        - button "A Day-to-day ops" [disabled]
-        - button "B A specific project" [disabled]
-        - button "C Research and writing" [disabled]
-        - button "D Something else" [disabled]
-      - group "Image attachments":
-        - button "File mountains.jpg":
-          - img "mountains.jpg"
-        - button "File lake.jpg":
-          - img "lake.jpg"
-      - button "File notes.txt": TXT notes.txt 18 B
-      - paragraph: Please read notes.txt and name the four photos in one short sentence.
-      - paragraph:
-        - emphasis: (no reply)
-      - group "Image attachments":
-        - button "File hills.jpg":
-          - img "hills.jpg"
-        - button "File mountains.jpg":
-          - img "mountains.jpg"
-        - button "File lake.jpg":
-          - img "lake.jpg"
-      - button "File notes.txt": TXT notes.txt 18 B
-      - paragraph: Which of these places would you pick for a weekend trip?
-      - paragraph:
-        - emphasis: (no reply)
-    - button "Preview mountains.jpg":
-      - img "mountains.jpg"
-    - button "Remove mountains.jpg"
-    - button "Preview lake.jpg":
-      - img "lake.jpg"
-    - button "Remove lake.jpg"
-    - button "Preview portrait.jpg":
-      - img "portrait.jpg"
-    - button "Remove portrait.jpg"
-    - button "Preview panorama.jpg":
-      - img "panorama.jpg"
-    - button "Remove panorama.jpg"
-    - button "Attach"
+        - button "A Day-to-day ops"
+        - button "B A specific project"
+        - button "C Research and writing"
+        - button "D Something else"
+    - button "Preview release.png":
+      - img "release.png"
+    - button "Remove release.png"
     - textbox "Message":
       - /placeholder: Message Chief
-      - text: Here are all four photo references.
+      - text: Release integration draft
+    - button "Attach"
     - button "Dictate"
     - button "Send"
 - region "Notifications alt+T"

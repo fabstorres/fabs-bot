@@ -1,0 +1,10 @@
+# http://<tailnet-ip>:4870/  viewport=window
+- region "Notifications alt+T"
+- menu "PC Studio":
+  - text: All quiet
+  - group:
+    - menuitemradio "This PC"
+    - menuitemradio "Studio" [checked]
+  - separator
+  - menuitem "Change icon"
+  - menuitem "Manage PCs…"

@@ -1,0 +1,9 @@
+# http://127.0.0.1:4918/  viewport=window
+- menu "Change icon":
+  - group:
+    - menuitemradio "Monitor" [checked]
+    - menuitemradio "Laptop"
+    - menuitemradio "Tower"
+    - menuitemradio "Server"
+    - menuitemradio "Home"
+    - menuitemradio "Work"
