@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
-import { Plug, Plus, Search, SquareTerminal } from "lucide-react";
+import { Monitor, Plug, Plus, Search, Settings, SquareTerminal } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
-import { api, formatTime } from "../api";
-import { useLoad } from "../hooks";
-import { isConnected, openDirect, openModal, openNestedThread, openThread, startCreating, threadTitle, useStore } from "../store";
+import { formatTime } from "../api";
+import { openDirect, openModal, openNestedThread, openThread, startCreating, threadTitle, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
+import { PcMenu } from "./PcMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 type Row = { kind: "bot"; bot: Bot; threads: Thread[]; pending?: Thread; at: number } | { kind: "group"; thread: Thread; at: number };
@@ -46,9 +47,11 @@ export function Sidebar() {
 
   return (
     <aside aria-label="Bots" className="flex h-full w-full flex-col bg-sidebar md:w-80 md:border-r md:border-sidebar-border">
-      <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+      <div className="flex items-center gap-1 px-4 pt-4 pb-2">
         <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only">Fabs Bot</h1>
-        <Button variant="ghost" size="icon" className="ml-auto rounded-full" onClick={startCreating} aria-label="New bot" title="New bot">
+        <PcMenu />
+        <SettingsMenu />
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={startCreating} aria-label="New bot" title="New bot">
           <Plus className="size-5" />
         </Button>
       </div>
@@ -87,23 +90,30 @@ export function Sidebar() {
         )}
         {search && rows.length === 0 && <p className="mt-10 text-center text-sm text-muted-foreground">Nothing matches "{search}".</p>}
       </nav>
-
-      <footer className="flex flex-col gap-1 border-t border-sidebar-border p-2">
-        <button className="flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-sidebar-accent" onClick={() => openModal({ kind: "connectors" })}>
-          <span className="grid size-8 place-items-center rounded-full border bg-background">
-            <Plug className="size-4" />
-          </span>
-          <span className="font-medium">Plugins</span>
-        </button>
-        <button className="flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-sidebar-accent" onClick={() => openModal({ kind: "providers" })}>
-          <span className="grid size-8 place-items-center rounded-full border bg-background">
-            <SquareTerminal className="size-4" />
-          </span>
-          <span className="font-medium">Providers</span>
-        </button>
-        <HostChip />
-      </footer>
     </aside>
+  );
+}
+
+function SettingsMenu() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="rounded-full" aria-label="Settings" title="Settings">
+          <Settings className="size-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem onSelect={() => openModal({ kind: "connectors" })}>
+          <Plug /> Plugins
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openModal({ kind: "providers" })}>
+          <SquareTerminal /> Providers
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openModal({ kind: "settings" })}>
+          <Monitor /> This PC
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -229,31 +239,5 @@ function GroupRow({ thread }: { thread: Thread }) {
       preview={thread.preview}
       flag={thread.needsYou ? "needs" : thread.unread > 0 ? "unread" : null}
     />
-  );
-}
-
-function HostChip() {
-  const connected = useStore(isConnected);
-  const statuses = useStore((s) => s.statuses);
-  const busy = Object.values(statuses).filter((s) => s.state === "thinking" || s.state === "working").length;
-  const host = useLoad(() => api.get<{ hostname: string }>("/api/host"), []).data?.hostname ?? "";
-  return (
-    <button
-      className="flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-sidebar-accent"
-      onClick={() => openModal({ kind: "settings" })}
-      title="This PC & devices"
-      aria-label="This PC"
-    >
-      <span className="grid size-8 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
-        {(host || "pc").slice(0, 2).toUpperCase()}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium">{host || "…"}</span>
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <i className={cn("size-1.5 rounded-full", connected ? "bg-working" : "bg-muted-foreground")} />
-          {connected ? (busy ? `${busy} bot${busy > 1 ? "s" : ""} working` : "All quiet") : "Reconnecting…"}
-        </span>
-      </span>
-    </button>
   );
 }

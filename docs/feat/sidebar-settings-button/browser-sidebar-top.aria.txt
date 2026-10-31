@@ -1,0 +1,99 @@
+- generic [ref=t3-4e6ff06b-n-e2] [box=0,0,1440,900]:
+  - generic [ref=t3-4e6ff06b-n-e3] [box=0,0,1440,900]:
+    - complementary "Bots" [ref=t3-4e6ff06b-n-e292] [box=0,0,320,900]:
+      - generic [ref=t3-4e6ff06b-n-e6] [box=0,0,319,60]:
+        - heading "Fabs Bot" [level=1] [ref=t3-4e6ff06b-n-e293] [box=15,34,1,1]
+        - button "PC <pc>" [ref=t3-4e6ff06b-n-e294] [cursor=pointer] [box=16,16,114,36]:
+          - img [box=28,26,16,16]
+          - generic [ref=t3-4e6ff06b-n-e9] [box=52,24,42,20]: <pc>
+          - img [box=102,26,16,16]
+        - button "Settings" [active] [ref=t3-4e6ff06b-n-e295] [cursor=pointer] [box=227,16,36,36]:
+          - img [box=235,24,20,20]
+        - button "New bot" [ref=t3-4e6ff06b-n-e296] [cursor=pointer] [box=267,16,36,36]:
+          - img [box=275,24,20,20]
+      - generic [ref=t3-4e6ff06b-n-e12] [box=12,60,295,39]:
+        - img [ref=t3-4e6ff06b-n-e13] [box=24,71,16,16]
+        - textbox "Search bots" [ref=t3-4e6ff06b-n-e297] [box=48,68,247,23]:
+          - /placeholder: Search
+      - navigation "Chats" [ref=t3-4e6ff06b-n-e298] [box=0,107,319,794]:
+        - button "Bot Careful" [ref=t3-4e6ff06b-n-e299] [cursor=pointer] [box=8,107,303,64]:
+          - img [ref=t3-4e6ff06b-n-e20] [box=20,117,44,44]
+          - generic [ref=t3-4e6ff06b-n-e46] [box=76,117,223,43]:
+            - generic [ref=t3-4e6ff06b-n-e47] [box=76,117,223,23]:
+              - generic [ref=t3-4e6ff06b-n-e49] [box=76,117,50,23]: Careful
+              - generic [ref=t3-4e6ff06b-n-e50] [box=255,119,44,20]: 7:31 PM
+            - generic [ref=t3-4e6ff06b-n-e52] [box=76,140,223,20]: Hey, I'm Careful. What's the main thing you want me on?
+        - button "Bot Engineer" [ref=t3-4e6ff06b-n-e300] [cursor=pointer] [box=8,171,303,64]:
+          - img [ref=t3-4e6ff06b-n-e55] [box=20,181,44,44]
+          - generic [ref=t3-4e6ff06b-n-e81] [box=76,181,223,43]:
+            - generic [ref=t3-4e6ff06b-n-e82] [box=76,181,223,23]:
+              - generic [ref=t3-4e6ff06b-n-e84] [box=76,181,60,23]: Engineer
+              - generic [ref=t3-4e6ff06b-n-e85] [box=255,183,44,20]: 7:31 PM
+            - generic [ref=t3-4e6ff06b-n-e86] [box=76,204,223,20]:
+              - generic [ref=t3-4e6ff06b-n-e87] [box=76,204,205,20]: Hey, I'm Engineer. What's the main thing you want me on?
+              - img "Unread" [ref=t3-4e6ff06b-n-e301] [box=289,209,10,10]
+        - button "Bot Chief" [ref=t3-4e6ff06b-n-e302] [cursor=pointer] [box=8,235,303,64]:
+          - img [ref=t3-4e6ff06b-n-e91] [box=20,245,44,44]
+          - generic [ref=t3-4e6ff06b-n-e117] [box=76,245,223,43]:
+            - generic [ref=t3-4e6ff06b-n-e118] [box=76,245,223,23]:
+              - generic [ref=t3-4e6ff06b-n-e120] [box=76,245,37,23]: Chief
+              - generic [ref=t3-4e6ff06b-n-e121] [box=255,247,44,20]: 7:31 PM
+            - generic [ref=t3-4e6ff06b-n-e122] [box=76,268,223,20]:
+              - generic [ref=t3-4e6ff06b-n-e123] [box=76,268,205,20]: Hey, I'm Chief. What's the main thing you want me on?
+              - img "Unread" [ref=t3-4e6ff06b-n-e303] [box=289,273,10,10]
+        - button "Bot Design" [ref=t3-4e6ff06b-n-e304] [cursor=pointer] [box=8,299,303,64]:
+          - img [ref=t3-4e6ff06b-n-e127] [box=20,309,44,44]
+          - generic [ref=t3-4e6ff06b-n-e153] [box=76,309,223,43]:
+            - generic [ref=t3-4e6ff06b-n-e154] [box=76,309,223,23]:
+              - generic [ref=t3-4e6ff06b-n-e156] [box=76,309,47,23]: Design
+              - generic [ref=t3-4e6ff06b-n-e157] [box=255,311,44,20]: 7:31 PM
+            - generic [ref=t3-4e6ff06b-n-e158] [box=76,332,223,20]:
+              - generic [ref=t3-4e6ff06b-n-e159] [box=76,332,205,20]: Hey, I'm Design. What's the main thing you want me on?
+              - img "Unread" [ref=t3-4e6ff06b-n-e305] [box=289,337,10,10]
+        - button "Bot Chief of Staff" [ref=t3-4e6ff06b-n-e306] [cursor=pointer] [box=8,363,303,64]:
+          - img [ref=t3-4e6ff06b-n-e163] [box=20,373,44,44]
+          - generic [ref=t3-4e6ff06b-n-e189] [box=76,373,223,43]:
+            - generic [ref=t3-4e6ff06b-n-e190] [box=76,373,223,23]:
+              - generic [ref=t3-4e6ff06b-n-e192] [box=76,373,93,23]: Chief of Staff
+              - generic [ref=t3-4e6ff06b-n-e193] [box=255,375,44,20]: 7:31 PM
+            - generic [ref=t3-4e6ff06b-n-e194] [box=76,396,223,20]:
+              - generic [ref=t3-4e6ff06b-n-e195] [box=76,396,205,20]: Hey, I'm Chief of Staff. What's the main thing you want me on?
+              - img "Unread" [ref=t3-4e6ff06b-n-e307] [box=289,401,10,10]
+    - main [ref=t3-4e6ff06b-n-e197] [box=320,0,1120,900]:
+      - region "Thread with Careful" [ref=t3-4e6ff06b-n-e308] [box=320,0,1120,900]:
+        - generic [ref=t3-4e6ff06b-n-e199] [box=320,0,1120,56]:
+          - generic [ref=t3-4e6ff06b-n-e200] [box=340,14,992,28]:
+            - img [ref=t3-4e6ff06b-n-e202] [box=340,14,28,28]
+            - generic [ref=t3-4e6ff06b-n-e228] [box=376,15,57,26]: Careful
+          - button "Open desk" [ref=t3-4e6ff06b-n-e309] [cursor=pointer] [box=1340,10,36,36]:
+            - img [box=1348,18,20,20]
+          - button "More" [ref=t3-4e6ff06b-n-e310] [cursor=pointer] [box=1384,10,36,36]:
+            - img [box=1392,18,20,20]
+        - log "Conversation" [ref=t3-4e6ff06b-n-e311] [box=320,56,1120,774]:
+          - generic [ref=t3-4e6ff06b-n-e233] [box=496,72,768,316]:
+            - paragraph [ref=t3-4e6ff06b-n-e235] [box=514,84,404,23]: Hey, I'm Careful. What's the main thing you want me on?
+            - 'group "Question: What should I own for you?" [ref=t3-4e6ff06b-n-e312] [box=496,125,448,263]':
+              - generic [ref=t3-4e6ff06b-n-e237] [box=513,142,414,23]: What should I own for you?
+              - generic [ref=t3-4e6ff06b-n-e238] [box=513,177,414,194]:
+                - button "A Day-to-day ops" [ref=t3-4e6ff06b-n-e313] [cursor=pointer] [box=513,177,414,44]:
+                  - generic [ref=t3-4e6ff06b-n-e240] [box=525,187,24,24]: A
+                  - generic [ref=t3-4e6ff06b-n-e241] [box=561,187,354,23]: Day-to-day ops
+                - button "B A specific project" [ref=t3-4e6ff06b-n-e314] [cursor=pointer] [box=513,227,414,44]:
+                  - generic [ref=t3-4e6ff06b-n-e243] [box=525,237,24,24]: B
+                  - generic [ref=t3-4e6ff06b-n-e244] [box=561,237,354,23]: A specific project
+                - button "C Research and writing" [ref=t3-4e6ff06b-n-e315] [cursor=pointer] [box=513,277,414,44]:
+                  - generic [ref=t3-4e6ff06b-n-e246] [box=525,287,24,24]: C
+                  - generic [ref=t3-4e6ff06b-n-e247] [box=561,287,354,23]: Research and writing
+                - button "D Something else" [ref=t3-4e6ff06b-n-e316] [cursor=pointer] [box=513,327,414,44]:
+                  - generic [ref=t3-4e6ff06b-n-e249] [box=525,337,24,24]: D
+                  - generic [ref=t3-4e6ff06b-n-e250] [box=561,337,354,23]: Something else
+        - generic [ref=t3-4e6ff06b-n-e253] [box=503,837,754,36]:
+          - button "Attach" [ref=t3-4e6ff06b-n-e317] [cursor=pointer] [box=503,837,36,36]:
+            - img [box=511,845,20,20]
+          - textbox "Message" [ref=t3-4e6ff06b-n-e318] [box=543,837,634,36]:
+            - /placeholder: Message Careful
+          - button "Dictate" [ref=t3-4e6ff06b-n-e319] [cursor=pointer] [box=1181,837,36,36]:
+            - img [box=1189,845,20,20]
+          - button "Send" [disabled] [box=1221,837,36,36]:
+            - img [box=1229,845,20,20]
+  - region "Notifications alt+T" [box=0,900,1440,0]

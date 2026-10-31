@@ -1,0 +1,5 @@
+# http://127.0.0.1:4918/  viewport=1440x900
+- menu "PC <pc>":
+  - text: All quiet
+  - group:
+    - menuitemradio "<pc>" [checked]

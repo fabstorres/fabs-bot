@@ -1,0 +1,22 @@
+browser 1440x900, loopback      -> sidebar top: heading "Fabs Bot", button "PC <pc>", button "Settings", button "New bot"; no Plugins/Providers/This PC buttons left in the sidebar
+browser PC menu                 -> "All quiet", one menuitemradio "<pc>" [checked]; no Change icon or Manage PCs (no desktop app)
+Settings menu                   -> menuitems Plugins, Providers, This PC
+Settings > Plugins              -> dialog "Plugins"; Escape returns focus to "Settings"
+Settings > Providers            -> dialog "Providers"; Escape returns focus to "Settings"
+Settings > This PC              -> dialog "This PC"; Escape returns focus to "Settings"
+phone 430x932                   -> one row: title 16-216px, PC menu 220-334px, Settings 338-374px, New bot 378-414px
+desktop fresh start             -> sidebar, no launcher; [typeof fabsDesktop, typeof fabsPcs] = ["undefined", "object"]
+desktop fabsPcs.list()          -> [{"id":"local","name":"This PC","current":true}] (no origins)
+desktop PC menu                 -> "All quiet", "This PC" [checked], Change icon, Manage PCs…
+Change icon > Laptop            -> pcs.json localIcon "laptop"; trigger icon class lucide-laptop
+Manage PCs…                     -> launcher; [typeof fabsDesktop, typeof fabsPcs] = ["object", "undefined"]
+launcher add a saved PC (@pair-link) -> opens the saved PC; fabsPcs.list() = This PC (laptop, current false) + saved PC (current true), ids/names/icons only
+saved PC: Change icon > Server  -> pcs.json pcs[0].icon "server", localIcon still "laptop"
+PC menu > This PC               -> window on 127.0.0.1, icon lucide-laptop, app still running
+PC menu > the saved PC          -> window on <tailnet-ip>, icon lucide-server
+PC menu > unreachable stub PC   -> toast "Couldn't reach that PC. Check that it's on, running Fabs Bot, and on your tailnet."; window stays on <tailnet-ip>
+launcher re-add the saved PC    -> pcs.json keeps icon "server"
+launcher Forget the saved PC    -> pcs [] and localIcon still "laptop"; Open This PC shows lucide-laptop
+before fix, PC menu > This PC   -> the whole app quit (old window destroyed before the new one existed); fixed by opening the new window first
+bun test                        -> 14 pass, 0 fail
+control-fabs privacy-check      -> ok  nothing tailnet-identifying found

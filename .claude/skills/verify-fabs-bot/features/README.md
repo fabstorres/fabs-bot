@@ -51,8 +51,8 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Bots](./bots.md): the starter bot on a fresh install, create a bot in the New Bot pane (from scratch or a suggestion), the greeting card, inline settings with a label, the full editor, and retiring.
 - [Pairing and access](./pairing-and-access.md): unpaired devices are refused, a one-time pairing link signs in one device over Tailscale, This PC lists paired devices and removes any one of them, and the bot MCP endpoint stays loopback-only.
 - [Tailscale HTTPS](./tailscale-https.md): the This PC switch that serves the app over HTTPS on its own port, leaves other apps' serve ports alone, and trusts only pairing.
-- [Desktop app](./desktop-app.md): the Electron launcher, opening This PC or a remote PC by pairing link, staying signed in across restarts, Switch PC, forgetting a PC, and keeping PC pages away from the launcher's controls.
+- [Desktop app](./desktop-app.md): the Electron launcher, opening This PC or a remote PC by pairing link, staying signed in across restarts, the PC menu (switch PCs, change a PC's icon, Manage PCs…), Switch PC, forgetting a PC, and keeping PC pages away from the launcher's controls.
 - [Providers](./providers.md): the Providers dialog that lists the agent CLIs, turns them on or off for the Brain picker, and sets each one's display name, binary path, launch arguments, and environment variables for every bot run.
 - [Server offline](./server-offline.md): the banner above the composer when the PC's server stops answering or the device goes offline, what it blocks, the refused-send toast, recovery, and the first-load notice.
 
-Not yet mapped: running routines (settings → Routines → "Run now", or the desk panel's play button), plugins (sidebar → Plugins), and sidebar search.
+Not yet mapped: running routines (settings → Routines → "Run now", or the desk panel's play button), plugins (sidebar → Settings → Plugins), and sidebar search.

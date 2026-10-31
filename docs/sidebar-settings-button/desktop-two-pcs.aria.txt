@@ -1,0 +1,9 @@
+# http://<tailnet-ip>:4918/  viewport=window
+- menu "PC <pc>":
+  - text: All quiet
+  - group:
+    - menuitemradio "This PC"
+    - menuitemradio "<pc>" [checked]
+  - separator
+  - menuitem "Change icon"
+  - menuitem "Manage PCs…"
