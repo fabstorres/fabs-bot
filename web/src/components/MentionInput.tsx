@@ -83,7 +83,7 @@ export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ari
           aria-label={ariaLabel}
           autoFocus={autoFocus}
           onPaste={onPaste}
-          className="max-h-44 resize-none overflow-y-auto scrollbar-none bg-transparent px-1 py-[7px] text-base leading-snug outline-none [grid-area:1/1] placeholder:text-muted-foreground"
+          className="max-h-44 resize-none overflow-y-auto scrollbar-thin bg-transparent px-1 py-[7px] text-base leading-snug outline-none [grid-area:1/1] placeholder:text-muted-foreground"
           onChange={(e) => {
             onChange(e.target.value);
             detect(e.target.value, e.target.selectionStart);
