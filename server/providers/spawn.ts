@@ -47,6 +47,7 @@ export async function spawnLines(o: SpawnLinesOptions): Promise<{ code: number; 
     force = setTimeout(() => proc.kill("SIGKILL"), 3000);
   };
   o.signal.addEventListener("abort", kill, { once: true });
+  if (o.signal.aborted) kill();
 
   if (o.stdin !== undefined && proc.stdin) {
     proc.stdin.write(o.stdin);
