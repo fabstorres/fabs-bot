@@ -86,11 +86,11 @@ export const codex: Provider = {
             break;
           case "turn.failed":
             failed = true;
-            emit({ type: "error", message: ev.error?.message ?? "Codex turn failed" });
+            emit({ type: "error", message: readableError(ev.error?.message ?? "Codex turn failed") });
             break;
           case "error":
             failed = true;
-            emit({ type: "error", message: ev.message ?? "Codex error" });
+            emit({ type: "error", message: readableError(ev.message ?? "Codex error") });
             break;
         }
       },
@@ -133,6 +133,12 @@ async function accountDefaultModel(launch: Launch, signal: AbortSignal): Promise
     proc.kill();
   }
   return DEFAULT_MODEL;
+}
+
+export function readableError(message: string): string {
+  const body = parseJson(message);
+  const text = body?.error?.message ?? body?.detail;
+  return typeof text === "string" ? text : message;
 }
 
 function tomlTable(obj: Record<string, string>) {
