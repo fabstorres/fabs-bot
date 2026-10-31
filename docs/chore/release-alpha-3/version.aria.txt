@@ -1,0 +1,43 @@
+# http://127.0.0.1:4870/  viewport=window
+- region "Notifications alt+T"
+- dialog "Settings":
+  - heading "Settings" [level=2]
+  - paragraph: Manage providers, plugins, this PC, and appearance.
+  - navigation "Settings sections":
+    - heading "Settings" [level=1]
+    - group:
+      - group
+      - textbox "Search settings":
+        - /placeholder: Search
+    - button "Providers"
+    - button "Plugins"
+    - button "This PC"
+    - button "Appearance"
+  - banner:
+    - navigation "breadcrumb":
+      - list:
+        - listitem: Settings
+        - listitem:
+          - link "This PC" [disabled]
+    - button "Close settings"
+  - region "This PC":
+    - heading "This PC" [level=2]
+    - text: <pc> Tailscale · <pc>.<tailnet>.ts.net v0.1.0-alpha.3 <peer> macOS
+    - group "Pair your phone or laptop":
+      - heading "Pair your phone or laptop" [level=3]
+      - paragraph: Scan with a device on your tailnet. Each link works once and expires after 5 minutes. The device stays signed in until you remove it.
+      - button "Pair a device"
+      - group "Tailscale HTTPS":
+        - text: Tailscale HTTPS
+        - switch "Tailscale HTTPS"
+        - paragraph: Serves this PC over HTTPS on port 8443 of your tailnet. It turns on the mic and install-to-home-screen. Each device still pairs once with the QR code. Other apps using Tailscale HTTPS are left alone.
+    - region "Paired devices":
+      - heading "Paired devices" [level=3]
+      - paragraph: No devices yet.
+    - heading "Where bots work" [level=3]
+    - paragraph:
+      - text: Desks live in
+      - code: /run/user/1000/fabs-verify/run-20261031191547/work
+      - text: .
+      - code: /run/user/1000/fabs-verify/run-20261031191547/work/shared
+      - text: is visible to every bot and holds your uploads.
