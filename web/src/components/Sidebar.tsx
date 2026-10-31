@@ -57,7 +57,7 @@ export function Sidebar() {
         </Button>
       </div>
       {bots.length > 0 && (
-        <label className="mx-3 mb-2 flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-muted-foreground transition-[color,box-shadow] focus-within:bg-black/7 focus-within:ring-[3px] focus-within:ring-ring/50">
+        <label className="mx-3 mb-2 flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-muted-foreground transition-[color,box-shadow] focus-within:bg-black/7 focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/40 dark:inset-ring dark:inset-ring-input dark:focus-within:bg-input/60">
           <Search className="size-4" />
           <input
             value={search}

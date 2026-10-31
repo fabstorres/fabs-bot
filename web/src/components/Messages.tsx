@@ -102,8 +102,8 @@ function Part({ part, index, message, bot, error }: { part: MessagePart; index: 
         <div
           className={cn(
             "bubble max-w-[88%] rounded-3xl px-[18px] py-3 text-base leading-[1.45] wrap-anywhere",
-            mine ? "bubble-user bg-foreground text-background" : "bg-bubble",
-            error && "bg-red-50",
+            mine ? "bubble-user bg-bubble-user text-bubble-user-foreground" : "bg-bubble",
+            error && "bg-red-50 dark:bg-red-500/15",
           )}
         >
           <Markdown remarkPlugins={[remarkGfm, remarkBreaks]} components={{ a: (p) => <a {...p} target="_blank" rel="noreferrer" /> }}>
@@ -235,7 +235,7 @@ export function FileChip({ fileId, name, size }: { fileId: string; name: string;
       aria-label={`File ${name}`}
       onClick={() => openModal({ kind: "file", url: `/files/${fileId}`, name })}
     >
-      <span className="grid size-10 flex-none place-items-center rounded-lg bg-red-50 text-[10px] font-bold text-red-600">{badge}</span>
+      <span className="grid size-10 flex-none place-items-center rounded-lg bg-red-50 text-[10px] font-bold text-red-600 dark:bg-red-500/15 dark:text-red-400">{badge}</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{name}</span>
         <span className="block text-[13px] text-muted-foreground">{formatSize(size)}</span>
@@ -266,7 +266,7 @@ function QuestionCard({ part, index, message }: { part: Extract<MessagePart, { t
               await api.post(`/api/messages/${message.id}/answer`, { partIndex: index, option: i }).finally(() => setBusy(false));
             }}
           >
-            <span className="grid size-6 flex-none place-items-center rounded-full bg-black/8 text-xs font-semibold">{String.fromCharCode(65 + i)}</span>
+            <span className="grid size-6 flex-none place-items-center rounded-full bg-black/8 text-xs font-semibold dark:bg-white/10">{String.fromCharCode(65 + i)}</span>
             <span className="flex-1">{o}</span>
             {part.answered === i && <Check className="size-4" />}
           </button>
@@ -285,7 +285,7 @@ function ApprovalCard({ part }: { part: Extract<MessagePart, { type: "approval" 
   };
   return (
     <div
-      className={cn("w-full max-w-md rounded-3xl border bg-background p-4", !part.decision && "border-amber-300 bg-amber-50/40")}
+      className={cn("w-full max-w-md rounded-3xl border bg-background p-4", !part.decision && "border-amber-300 bg-amber-50/40 dark:border-amber-500/40 dark:bg-amber-500/10")}
       role="group"
       aria-label={`Approval: ${part.tool}`}
     >
