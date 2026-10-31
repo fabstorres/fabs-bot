@@ -1,8 +1,10 @@
-import { clip, parseJson, spawnLines, summarizeToolInput } from "./spawn";
-import type { Provider } from "./types";
+import { childEnv, clip, parseJson, spawnLines, summarizeToolInput, which } from "./spawn";
+import type { Launch, Provider } from "./types";
 
 /** Codex `-c key=value` values are parsed as TOML; JSON strings are valid TOML basic strings. */
 const toml = (v: unknown) => JSON.stringify(v);
+
+const DEFAULT_MODEL = "gpt-6.1-sol";
 
 export const codex: Provider = {
   id: "codex",
@@ -14,6 +16,8 @@ export const codex: Provider = {
   models: ["", "gpt-5.5", "gpt-5.5-codex", "gpt-5.4-mini"],
 
   async run(o, emit) {
+    const launchModel = o.launch.args.some((arg) => arg.startsWith("-m") || arg === "--model" || arg.startsWith("--model="));
+    const model = o.bot.model || (launchModel ? "" : await accountDefaultModel(o.launch, o.signal));
     const cfg: string[] = [
       `mcp_servers.fabsbot.url=${toml(o.mcpUrl)}`,
       "mcp_servers.fabsbot.tool_timeout_sec=3600",
@@ -36,7 +40,7 @@ export const codex: Provider = {
     if (o.sessionId) cmd.push("resume", o.sessionId);
     cmd.push("--json", "--skip-git-repo-check");
     for (const c of cfg) cmd.push("-c", c);
-    if (o.bot.model) cmd.push("-m", o.bot.model);
+    if (model) cmd.push("-m", model);
     if (o.bot.autonomy === "full") cmd.push("--dangerously-bypass-approvals-and-sandbox");
     cmd.push("-");
 
@@ -83,11 +87,11 @@ export const codex: Provider = {
             break;
           case "turn.failed":
             failed = true;
-            emit({ type: "error", message: ev.error?.message ?? "Codex turn failed" });
+            emit({ type: "error", message: readableError(ev.error?.message ?? "Codex turn failed") });
             break;
           case "error":
             failed = true;
-            emit({ type: "error", message: ev.message ?? "Codex error" });
+            emit({ type: "error", message: readableError(ev.message ?? "Codex error") });
             break;
         }
       },
@@ -98,6 +102,45 @@ export const codex: Provider = {
     }
   },
 };
+
+async function accountDefaultModel(launch: Launch, signal: AbortSignal): Promise<string> {
+  const bin = which(launch.bin);
+  if (!bin) return DEFAULT_MODEL;
+  const proc = Bun.spawn([bin, "app-server"], {
+    env: { ...childEnv, ...launch.env },
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "ignore",
+    timeout: 10_000,
+    signal,
+  });
+  const requests = [
+    { id: 1, method: "initialize", params: { clientInfo: { name: "fabs_bot", title: "Fabs Bot", version: "1" } } },
+    { method: "initialized" },
+    { id: 2, method: "model/list", params: {} },
+  ];
+  try {
+    proc.stdin.write(requests.map((r) => `${JSON.stringify(r)}\n`).join(""));
+    proc.stdin.flush();
+    const decoder = new TextDecoder();
+    let out = "";
+    for await (const chunk of proc.stdout) {
+      out += decoder.decode(chunk, { stream: true });
+      const reply = out.split("\n").map(parseJson).find((r) => r?.id === 2);
+      if (reply) return reply.result?.data?.find((m: any) => m.isDefault)?.model ?? DEFAULT_MODEL;
+    }
+  } catch {
+  } finally {
+    proc.kill();
+  }
+  return DEFAULT_MODEL;
+}
+
+export function readableError(message: string): string {
+  const body = parseJson(message);
+  const text = body?.error?.message ?? body?.detail;
+  return typeof text === "string" ? text : message;
+}
 
 function tomlTable(obj: Record<string, string>) {
   return `{ ${Object.entries(obj).map(([k, v]) => `${JSON.stringify(k)} = ${JSON.stringify(v)}`).join(", ")} }`;
