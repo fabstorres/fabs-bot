@@ -16,7 +16,8 @@ export const codex: Provider = {
   models: ["", "gpt-5.5", "gpt-5.5-codex", "gpt-5.4-mini"],
 
   async run(o, emit) {
-    const model = o.bot.model || (await accountDefaultModel(o.launch, o.signal));
+    const launchModel = o.launch.args.some((arg) => arg.startsWith("-m") || arg === "--model" || arg.startsWith("--model="));
+    const model = o.bot.model || (launchModel ? "" : await accountDefaultModel(o.launch, o.signal));
     const cfg: string[] = [
       `mcp_servers.fabsbot.url=${toml(o.mcpUrl)}`,
       "mcp_servers.fabsbot.tool_timeout_sec=3600",
@@ -39,7 +40,7 @@ export const codex: Provider = {
     if (o.sessionId) cmd.push("resume", o.sessionId);
     cmd.push("--json", "--skip-git-repo-check");
     for (const c of cfg) cmd.push("-c", c);
-    cmd.push("-m", model);
+    if (model) cmd.push("-m", model);
     if (o.bot.autonomy === "full") cmd.push("--dangerously-bypass-approvals-and-sandbox");
     cmd.push("-");
 

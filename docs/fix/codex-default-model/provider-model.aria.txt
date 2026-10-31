@@ -1,0 +1,48 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Engineer": Engineer 7:46 PM resumed
+    - button "Bot Design":
+      - text: Design 7:46 PM Hey, I'm Design. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Careful":
+      - text: Careful 7:46 PM Hey, I'm Careful. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief":
+      - text: Chief 7:46 PM Hey, I'm Chief. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 7:46 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+  - button "Plugins"
+  - button "Providers"
+  - button "This PC": FE <pc> All quiet
+- main:
+  - region "Thread with Engineer":
+    - text: Engineer
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Engineer. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops" [disabled]
+        - button "B A specific project" [disabled]
+        - button "C Research and writing" [disabled]
+        - button "D Something else" [disabled]
+      - paragraph: "Reply with exactly one word: pong"
+      - paragraph: pong
+      - paragraph: "Reply with exactly one word: ping"
+      - paragraph: ping
+      - paragraph: "Reply with exactly one word: resumed"
+      - paragraph: resumed
+    - button "Attach"
+    - textbox "Message":
+      - /placeholder: Message Engineer
+    - button "Dictate"
+    - button "Send" [disabled]
+- region "Notifications alt+T"
