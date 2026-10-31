@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { loginShellPath, mergePath } from "./login-shell";
 
 const home = homedir();
 /** Make CLIs installed in user-local dirs reachable even when we run as a service with a bare PATH. */
@@ -12,9 +13,11 @@ const extraPath = [
   "/usr/local/bin",
   "/opt/homebrew/bin",
 ];
+const shellPath = loginShellPath();
+if (!shellPath) console.warn("  could not read PATH from your login shell; agent CLIs use the inherited PATH");
 export const childEnv: Record<string, string> = {
   ...(process.env as Record<string, string>),
-  PATH: [process.env.PATH ?? "", ...extraPath].filter(Boolean).join(":"),
+  PATH: mergePath(shellPath, process.env.PATH, ...extraPath),
 };
 
 export function which(bin: string): string | null {
