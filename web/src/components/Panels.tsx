@@ -106,7 +106,7 @@ function PairDevice({ host, onChange }: { host?: HostInfo; onChange: () => void 
   };
   return (
     <Card className="flex flex-col gap-4 sm:flex-row">
-      {link && <div className="pair-qr size-40 flex-none self-center [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: link.qr }} />}
+      {link && <div className="pair-qr size-40 flex-none self-center dark:rounded-xl dark:bg-white dark:p-2 [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: link.qr }} />}
       <div role="group" aria-label="Pair your phone or laptop" className="flex min-w-0 flex-1 flex-col gap-2">
         <h3 className="font-semibold">Pair your phone or laptop</h3>
         <p className="text-sm text-muted-foreground">

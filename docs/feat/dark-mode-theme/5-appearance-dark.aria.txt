@@ -1,0 +1,23 @@
+# http://127.0.0.1:4930/  viewport=1440x900
+- navigation "Settings sections":
+  - heading "Settings" [level=1]
+  - group:
+    - group
+    - textbox "Search settings":
+      - /placeholder: Search
+  - button "Providers"
+  - button "Plugins"
+  - button "This PC"
+  - button "Appearance"
+- banner:
+  - navigation "breadcrumb":
+    - list:
+      - listitem: Settings
+      - listitem:
+        - link "Appearance" [disabled]
+  - button "Close settings"
+- region "Appearance":
+  - heading "Appearance" [level=2]
+  - text: Theme Saved on this device. System follows your device's light or dark setting.
+  - combobox "Theme": Dark
+- region "Notifications alt+T"

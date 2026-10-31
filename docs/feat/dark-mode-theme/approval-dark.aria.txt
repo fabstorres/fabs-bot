@@ -1,0 +1,5 @@
+# http://127.0.0.1:4930/  viewport=1440x900
+- 'group "Approval: Bash"':
+  - text: Wants to use Bash touch approved.txt && ls -l approved.txt
+  - button "Deny"
+  - button "Allow"

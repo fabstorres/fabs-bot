@@ -5,7 +5,7 @@ import { api, Unpaired } from "./api";
 
 export type Modal = { kind: "bot"; botId: string } | { kind: "file"; url: string; name: string } | null;
 
-export type SettingsSection = "providers" | "plugins" | "pc";
+export type SettingsSection = "providers" | "plugins" | "pc" | "appearance";
 
 type SettingsView = { section?: SettingsSection };
 

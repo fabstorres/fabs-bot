@@ -1,0 +1,5 @@
+# http://127.0.0.1:4930/  viewport=1440x900
+- listbox:
+  - option "System" [selected]
+  - option "Light"
+  - option "Dark"

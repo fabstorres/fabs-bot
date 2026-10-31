@@ -1,17 +1,26 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Monitor, Plug, Search, SquareTerminal, X, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Monitor, Palette, Plug, Search, SquareTerminal, X, type LucideIcon } from "lucide-react";
 import { goBack, openSettingsSection, type SettingsSection } from "../store";
+import { setTheme, useTheme, type Theme } from "../theme";
 import { PluginsSettings, ThisPcSettings } from "./Panels";
 import { ProvidersSettings } from "./Providers";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 const SECTIONS: { id: SettingsSection; label: string; Icon: LucideIcon; keywords: string }[] = [
   { id: "providers", label: "Providers", Icon: SquareTerminal, keywords: "agent cli claude codex cursor opencode gemini binary path launch arguments environment variables models" },
   { id: "plugins", label: "Plugins", Icon: Plug, keywords: "mcp servers connectors notion google drive github browser" },
   { id: "pc", label: "This PC", Icon: Monitor, keywords: "pair device phone laptop qr code paired devices tailscale https version desks folder" },
+  { id: "appearance", label: "Appearance", Icon: Palette, keywords: "theme dark mode light mode system colors" },
+];
+
+const THEMES: { value: Theme; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
 ];
 
 export function SettingsPage({ section }: { section?: SettingsSection }) {
@@ -34,7 +43,7 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
             Settings
           </h1>
         </div>
-        <InputGroup className="mx-3 mb-2 w-auto rounded-xl border-0 bg-black/5 shadow-none has-[[data-slot=input-group-control]:focus-visible]:bg-black/7">
+        <InputGroup className="mx-3 mb-2 w-auto rounded-xl border-0 bg-black/5 shadow-none has-[[data-slot=input-group-control]:focus-visible]:bg-black/7 dark:bg-input/40 dark:inset-ring dark:inset-ring-input dark:has-[[data-slot=input-group-control]:focus-visible]:bg-input/60">
           <InputGroupAddon>
             <Search />
           </InputGroupAddon>
@@ -90,10 +99,35 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
               {shown.id === "providers" && <ProvidersSettings />}
               {shown.id === "plugins" && <PluginsSettings />}
               {shown.id === "pc" && <ThisPcSettings />}
+              {shown.id === "appearance" && <AppearanceSettings />}
             </section>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function AppearanceSettings() {
+  const theme = useTheme((s) => s.theme);
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border p-4">
+      <div className="flex flex-col">
+        <span className="font-medium">Theme</span>
+        <span className="text-sm text-muted-foreground">Saved on this device. System follows your device's light or dark setting.</span>
+      </div>
+      <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+        <SelectTrigger aria-label="Theme" className="w-32 flex-none">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {THEMES.map((t) => (
+            <SelectItem key={t.value} value={t.value}>
+              {t.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

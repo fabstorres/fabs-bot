@@ -10,6 +10,9 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <title>Fabs Bot</title>
+    <script>
+      document.documentElement.classList.toggle("dark", localStorage.theme === "dark" || (localStorage.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches));
+    </script>
   </head>
   <body>
     <div id="root"></div>

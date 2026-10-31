@@ -28,10 +28,41 @@
   --sidebar-accent: #e9e9e9;
   --sidebar-border: #ececec;
   --bubble: #f1f1f1;
+  --bubble-user: #111111;
+  --bubble-user-foreground: #ffffff;
   --working: #22b55e;
   --waiting: #ffa41b;
   --failing: #ff3b30;
   color-scheme: light;
+}
+
+.dark {
+  --background: #232323;
+  --foreground: #ececec;
+  --card: #232323;
+  --card-foreground: #ececec;
+  --popover: #2a2a2a;
+  --popover-foreground: #ececec;
+  --primary: #f0f0f0;
+  --primary-foreground: #151514;
+  --secondary: #323232;
+  --secondary-foreground: #ececec;
+  --muted: #2b2b2b;
+  --muted-foreground: #8f8f8f;
+  --accent: #333333;
+  --accent-foreground: #ececec;
+  --destructive: #ff5c50;
+  --border: #3e3e3e;
+  --input: #404040;
+  --ring: #6b6b6b;
+  --sidebar: #151514;
+  --sidebar-foreground: #ececec;
+  --sidebar-accent: #262626;
+  --sidebar-border: #262626;
+  --bubble: #2e2e2e;
+  --bubble-user: #3d3d3d;
+  --bubble-user-foreground: #ececec;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -64,6 +95,8 @@
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-border: var(--sidebar-border);
   --color-bubble: var(--bubble);
+  --color-bubble-user: var(--bubble-user);
+  --color-bubble-user-foreground: var(--bubble-user-foreground);
   --color-working: var(--working);
   --color-waiting: var(--waiting);
   --color-failing: var(--failing);
@@ -139,23 +172,23 @@
     @apply mt-[0.6em] mb-[0.3em] text-[1.1em] font-semibold;
   }
   .bubble a {
-    @apply text-blue-600 underline-offset-2 hover:underline;
+    @apply text-blue-600 underline-offset-2 hover:underline dark:text-blue-400;
   }
   .bubble code {
-    @apply rounded-md bg-black/7 px-1 py-px font-mono text-[0.88em];
+    @apply rounded-md bg-black/7 px-1 py-px font-mono text-[0.88em] dark:bg-white/10;
   }
   .bubble pre {
-    @apply overflow-x-auto rounded-xl bg-black/6 px-3.5 py-3 text-[13px];
+    @apply overflow-x-auto rounded-xl bg-black/6 px-3.5 py-3 text-[13px] dark:bg-black/25;
   }
   .bubble pre code {
-    @apply bg-transparent p-0;
+    @apply bg-transparent p-0 dark:bg-transparent;
   }
   .bubble table {
     @apply my-[0.4em] border-collapse text-sm;
   }
   .bubble th,
   .bubble td {
-    @apply border-b border-black/10 py-1 pr-2.5 text-left;
+    @apply border-b border-black/10 py-1 pr-2.5 text-left dark:border-white/10;
   }
   .bubble-user code {
     @apply bg-white/15;
@@ -257,6 +290,9 @@
 }
 .bot-ribbons-front path {
   stroke-width: 5.5;
+}
+:where(.dark) .bot-avatar [fill="#111111"] {
+  fill: #444444;
 }
 
 .state-idle .bot-body {

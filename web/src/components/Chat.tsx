@@ -289,7 +289,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
               ) : (
                 <Badge key={f.fileId} variant="secondary" className="max-w-full gap-1 py-1 pr-1">
                   <Paperclip className="shrink-0" /> <span className="truncate">{f.name}</span>
-                  <button className="shrink-0 rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
+                  <button className="shrink-0 rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
                     <X className="size-3" />
                   </button>
                 </Badge>
@@ -318,7 +318,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
           </Button>
           <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && attach(e.target.files)} />
           {SpeechRecognition && (
-            <Button variant="ghost" size="icon" className={cn("rounded-full", listening && "bg-red-50 text-red-600")} onClick={dictate} aria-label="Dictate">
+            <Button variant="ghost" size="icon" className={cn("rounded-full", listening && "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400")} onClick={dictate} aria-label="Dictate">
               <Mic className="size-5" />
             </Button>
           )}
