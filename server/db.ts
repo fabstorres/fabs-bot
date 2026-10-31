@@ -231,7 +231,6 @@ export function updateThread(id: string, patch: Partial<Pick<Thread, "title" | "
 export function addMember(threadId: string, botId: string) {
   const pos = (db.query("SELECT COUNT(*) AS n FROM thread_members WHERE thread_id = ?").get(threadId) as { n: number }).n;
   db.query("INSERT OR IGNORE INTO thread_members (thread_id, bot_id, position) VALUES (?, ?, ?)").run(threadId, botId, pos);
-  if (pos >= 1) db.query("UPDATE threads SET kind = 'group' WHERE id = ? AND kind = 'direct'").run(threadId);
 }
 export function deleteThread(id: string) {
   db.query("DELETE FROM threads WHERE id = ?").run(id);

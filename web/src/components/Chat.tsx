@@ -3,7 +3,7 @@ import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, 
 import type { Bot, Thread } from "../../../shared/types";
 import { api, isImage } from "../api";
 import { toast } from "sonner";
-import { attachFiles, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
+import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, mentionedBots } from "./MentionInput";
 import { MessageList } from "./Messages";
@@ -78,7 +78,7 @@ export function Chat({ thread }: { thread: Thread }) {
               </span>
             </div>
           )}
-          {messages && messages.length === 0 && members[0] && <Hello bot={members[0]} />}
+          {messages && messages.length === 0 && members[0] && <Hello members={members} title={title} />}
           {messages && <MessageList messages={messages} bots={bots} multi={multi} />}
         </div>
       </div>
@@ -88,12 +88,13 @@ export function Chat({ thread }: { thread: Thread }) {
   );
 }
 
-function Hello({ bot }: { bot: Bot }) {
+function Hello({ members, title }: { members: Bot[]; title: string }) {
+  const solo = members.length === 1 ? members[0] : undefined;
   return (
     <div className="m-auto flex flex-col items-center gap-2 py-10 text-center">
-      <BotAvatar shape={bot.shape} color={bot.color} size={112} />
-      <h3 className="mt-2 text-xl font-semibold">{bot.name}</h3>
-      <p className="max-w-sm text-muted-foreground">{bot.role || "Ready when you are."}</p>
+      <AvatarStack bots={members} size={112} />
+      <h3 className="mt-2 text-xl font-semibold">{solo?.name ?? title}</h3>
+      {solo && <p className="max-w-sm text-muted-foreground">{solo.role || "Ready when you are."}</p>}
     </div>
   );
 }
@@ -103,6 +104,12 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
   const others = bots.filter((b) => !thread.memberIds.includes(b.id));
   const [renaming, setRenaming] = useState(false);
   const more = useRef<HTMLButtonElement>(null);
+
+  async function bringIn(botId: string) {
+    const t = await api.post<Thread>(`/api/threads/${thread.id}/members`, { botId });
+    if (t.id !== thread.id) enterThread(t);
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -121,7 +128,7 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               {others.map((b) => (
-                <DropdownMenuItem key={b.id} onSelect={() => api.post(`/api/threads/${thread.id}/members`, { botId: b.id })}>
+                <DropdownMenuItem key={b.id} onSelect={() => void bringIn(b.id)}>
                   <BotAvatar shape={b.shape} color={b.color} size={18} /> {b.name}
                 </DropdownMenuItem>
               ))}
@@ -231,18 +238,23 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       });
       return;
     }
-    if (thread.kind !== "backchannel") {
-      for (const b of mentionedBots(body, bots)) {
-        if (!thread.memberIds.includes(b.id)) await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
-      }
-    }
+    const joining = thread.kind === "backchannel" ? [] : mentionedBots(body, bots).filter((b) => !thread.memberIds.includes(b.id));
+    const regroup = thread.kind === "direct" && joining.length > 0;
+    if (!regroup) for (const b of joining) await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
     const sending = files;
+    const message = { text: body, fileIds: sending.map((f) => f.fileId) };
     draft("");
     updateAttachments(thread.id, () => []);
-    await api.post(`/api/threads/${thread.id}/messages`, { text: body, fileIds: sending.map((f) => f.fileId) }).catch(() => {
+    const restore = () => {
       draft([body, sessionStorage.getItem(draftKey)].filter(Boolean).join("\n"));
       updateAttachments(thread.id, (f) => [...sending, ...f]);
-    });
+    };
+    if (regroup) {
+      const group = await api.post<Thread>("/api/threads", { ...message, botIds: [...thread.memberIds, ...joining.map((b) => b.id)] }).catch(restore);
+      if (group) enterThread(group);
+    } else {
+      await api.post(`/api/threads/${thread.id}/messages`, message).catch(restore);
+    }
   }
 
   const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
