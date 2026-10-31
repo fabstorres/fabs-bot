@@ -2,7 +2,7 @@
 
 `bun run desktop` opens straight into a PC: the last saved PC opened, else the newest paired, else `This PC`. The launcher, listing `This PC` and saved PCs, only shows from `Manage PCs…` in the PC menu, `Switch PC…` (`Ctrl/Cmd+Shift+O`), or when the chosen PC doesn't answer. Opening a PC shows its Fabs Bot in its own window. This is how a laptop works with the bots on another PC over the tailnet. Adding a PC takes a one-time pairing link from that PC's `Settings` → `This PC` → `Pair a device`; a bare address connects but shows `Not paired yet`. The app remembers the PC, reopens it on the next start, and stays signed in. The PC menu at the top of the sidebar lists `This PC` and every saved PC with its icon, switches between them in one click, and changes the open PC's icon. `Switch PC…` (`Ctrl/Cmd+Shift+O`) returns to the launcher. Pages from a PC can't reach the launcher or its controls: they only get the PC menu's names and icons (never addresses), switching, changing an icon, and opening the launcher.
 
-On Windows and Linux neither window shows a menu bar, but the menu’s shortcuts still work; macOS keeps its system menu.
+On Windows and Linux neither window shows a menu bar. On macOS the system menu bar only has the Fabs Bot app menu (About, Services, Hide, Quit), with no File / Edit / View / Window. The shortcuts still work on every platform.
 
 ## Sub-features
 
@@ -12,7 +12,7 @@ On Windows and Linux neither window shows a menu bar, but the menu’s shortcuts
 - `desktop-local` opens This PC when its server is running.
 - `desktop-remote-pair` pairs with another PC from its one-time pairing link and shows its bots. The reachability checks before it don't use up the link, and the PC lists the app as `Desktop app on <OS>`.
 - `desktop-remember` reopens the last PC after a restart, still signed in.
-- `desktop-no-menu-bar` keeps the menu bar hidden on Windows and Linux, in the launcher and PC windows, even after Alt.
+- `desktop-no-menu-bar` keeps the menu bar hidden on Windows and Linux, in the launcher and PC windows, even after Alt. On macOS only the app menu is left.
 - `desktop-switch` goes back to the launcher from the menu or `Manage PCs…`.
 - `desktop-pc-menu` lists This PC and saved PCs with their icons, switches in one click, shows an error toast for a PC that doesn't answer, and saves each PC's icon next to its name in the app's PC list.
 - `desktop-forget` forgets a PC and its sign-in; adding it again needs a new pairing link.
@@ -37,7 +37,7 @@ Preconditions:
 - **First run.** Run `$C desktop start --fresh` and `$C browser wait --role button --name "Settings"`: no launcher. Capture `desktop/1-first-run` with `--role complementary --name "Bots"`. `browser eval "[typeof window.fabsDesktop, typeof window.fabsPcs]"` prints `["undefined", "object"]`.
 - **Launcher.** Run `$C desktop menu "Switch PC…"` and `$C browser wait --role button --name "Connect"`. Capture `desktop/2-launcher`. `$C browser eval "[typeof window.fabsDesktop, typeof window.fabsPcs]"` prints `["object", "undefined"]`. Click `Open` on `This PC` to go back.
 - **Isolation.** In that window, run `$C browser eval "location.href = 'fabs-app://launcher/desktop.html'; 1"`, then `browser eval "location.href"`: the page hasn't moved. `browser eval "window.open('fabs-app://launcher/desktop.html') === null"` prints `true`.
-- **No menu bar.** In the PC window and again in the launcher, `browser eval "innerHeight === outerHeight"` prints `true`. A visible menu bar makes `innerHeight` smaller.
+- **No menu bar.** In the PC window and again in the launcher, `browser eval "innerHeight === outerHeight"` prints `true`. A visible menu bar makes `innerHeight` smaller. The harness runs on Linux, so check the macOS system menu bar on a Mac by hand.
 - **Remember.** Run `$C desktop stop` and `$C desktop start`. The app lands straight in the sidebar.
 - **Switch.** Run `$C desktop menu "Switch PC…"` and wait for `--role region --name "PCs"`.
 - **Pair a remote PC.** Run `$C browser fill --label "Pairing link or address" --value @pair-link`, then `fill --label "Name (optional)" --value Fedora`, then `click --role button --name "Connect"`. Wait for `--role button --name "Settings"`: the link survived the app's reachability checks. `browser eval "location.hostname"` is the tailnet address (redacted). Capture `desktop/5-remote-paired`. In the app, `Settings` → `This PC` → `Paired devices` lists `Desktop app on Linux` with `This device`.
