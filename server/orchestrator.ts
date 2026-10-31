@@ -1,5 +1,6 @@
 import { hostname, userInfo } from "node:os";
 import { mkdirSync } from "node:fs";
+import { handleOf, mentionedBots } from "../shared/mentions";
 import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { LOCAL_BASE, MAX_HOPS, SHARED_DIR } from "./config";
 import * as db from "./db";
@@ -98,7 +99,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
     .map((b) => `- ${b.name}: ${b.role || "general helper"}`)
     .join("\n");
   const supportsTools = providers[bot.provider].supportsTools;
-  const members = thread.memberIds.filter((id) => id !== bot.id).map((id) => db.getBot(id)?.name).filter(Boolean);
+  const members = thread.memberIds.filter((id) => id !== bot.id).map((id) => db.getBot(id)?.name).filter((name): name is string => !!name);
   const user = userInfo().username;
 
   const lines = [
@@ -110,7 +111,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
     `- ${SHARED_DIR} is shared by every bot. Use it to hand files to teammates.`,
     team ? `\nYour teammates:\n${team}` : "\nYou have no teammates yet.",
     thread.kind === "group" && members.length
-      ? `\nThis is a group thread with ${members.join(", ")}. Write @Name to hand a teammate the floor; only do that when you need them.`
+      ? `\nThis is a group thread with ${members.join(", ")}. Write a teammate's handle (${members.map((name) => `@${handleOf(name)}`).join(", ")}) to hand them the floor; only do that when you need them.`
       : "",
     thread.kind === "backchannel"
       ? `\nThis is a private channel between you and another bot. Answer them directly and completely; the user may read it later.`
@@ -372,14 +373,8 @@ function lastPartSummary(parts: MessagePart[]): string {
 
 /** Thread members whose name is @mentioned in `text` (excluding `selfId`). */
 export function mentioned(text: string, thread: Thread, selfId: string | null): string[] {
-  const lower = text.toLowerCase();
-  return thread.memberIds.filter((id) => {
-    if (id === selfId) return false;
-    const b = db.getBot(id);
-    if (!b) return false;
-    const n = b.name.toLowerCase();
-    return lower.includes(`@${n}`) || lower.includes(`@${db.slug(n)}`) || lower.includes(`@${n.replace(/\s+/g, "")}`);
-  });
+  const named = mentionedBots(text, db.listBots()).map((b) => b.id);
+  return thread.memberIds.filter((id) => id !== selfId && named.includes(id));
 }
 
 /** The user posts in a thread; decide who answers. */
