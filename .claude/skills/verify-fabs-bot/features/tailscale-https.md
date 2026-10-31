@@ -1,6 +1,6 @@
 # Tailscale HTTPS
 
-The This PC panel has a Tailscale HTTPS switch. Turning it on serves the app at `https://<pc>.<tailnet>.ts.net:<port>` (8443 unless `FABS_TAILSCALE_SERVE_PORT` says otherwise), so phones get the mic and install-to-home-screen. Devices still pair once; while it's on, the QR code and pairing link use the HTTPS address. Turning it off removes only that port. Fabs Bot never touches 443 or a port another app already serves; it refuses and says why. Requests through HTTPS are never trusted as this PC: they need a device sign-in from a pairing link, whatever Tailscale login header they carry, and the bot MCP endpoint refuses them.
+Settings → This PC has a Tailscale HTTPS switch. Turning it on serves the app at `https://<pc>.<tailnet>.ts.net:<port>` (8443 unless `FABS_TAILSCALE_SERVE_PORT` says otherwise), so phones get the mic and install-to-home-screen. Devices still pair once; while it's on, the QR code and pairing link use the HTTPS address. Turning it off removes only that port. Fabs Bot never touches 443 or a port another app already serves; it refuses and says why. Requests through HTTPS are never trusted as this PC: they need a device sign-in from a pairing link, whatever Tailscale login header they carry, and the bot MCP endpoint refuses them.
 
 ## Sub-features
 
@@ -24,7 +24,7 @@ Preconditions:
 - Launch with `$C launch --tailnet --tailscale-shim`. The shim simulates `tailscale serve`, starting from the user's real serve config, so the user's Tailscale never changes. Never flip the switch on an instance launched without it.
 - `$C doctor` reports `tailscale serve is simulated by the shim`.
 
-- **Off.** Run `$C browser click --role button --name "Settings"` and `$C browser click --role menuitem --name "This PC"`, then `$C browser wait --role switch --name "Tailscale HTTPS"`. Capture `tailscale-https/1-off.aria.txt` with `--role group --name "Tailscale HTTPS"`, and `.png`. Run `$C serve-shim state --path tailscale-https/1-serve-before.txt`, which lists the user's existing mappings only.
+- **Off.** Run `$C browser click --role button --name "Settings"` and `$C browser click --role button --name "This PC"`, then `$C browser wait --role switch --name "Tailscale HTTPS"`. Capture `tailscale-https/1-off.aria.txt` with `--role group --name "Tailscale HTTPS"`, and `.png`. Run `$C serve-shim state --path tailscale-https/1-serve-before.txt`, which lists the user's existing mappings only.
 - **On.** Run `$C browser click --role switch --name "Tailscale HTTPS"` and `$C browser wait --text "The QR code and pairing link use this address"`. Capture `2-on`. `$C serve-shim state` adds exactly `https :8443 → http://127.0.0.1:<port+1>`, and every earlier line is unchanged.
 - **Auth.** Run `$C serve-check`. All twelve lines read `ok`; the matrix is saved to `tailscale-https/serve-check.txt`. It pairs one device through the HTTPS listener and removes it at the end.
 - **Off again.** Click the switch and wait for `Other apps using Tailscale HTTPS are left alone`. `$C serve-shim state` is back to the "before" list.

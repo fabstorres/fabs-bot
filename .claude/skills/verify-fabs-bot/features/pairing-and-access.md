@@ -8,9 +8,9 @@ Fabs Bot is reachable only from the PC itself and from the user's Tailscale netw
 - `access-unpaired` shows "Not paired yet" to a tailnet browser without a sign-in, and refuses API calls (401).
 - `access-pair` makes a pairing link only when asked. The link sets a per-device cookie and redirects into the app. It works once and expires after 5 minutes. A wrong, reused or expired code is refused. A device token works as a cookie or bearer header, never as `?token=`.
 - `access-retired-token` refuses the shared token that older builds gave every device: as an old `/pair?token=` link, a cookie, or a bearer header.
-- `access-devices` lists paired devices in the This PC panel (label, paired, last seen, `This device`), and updates while the panel is open. Neither the list nor any API returns a token. `Remove` signs out that device only: its API calls get 401, its open WebSocket closes, and an open app shows "Not paired yet".
+- `access-devices` lists paired devices in Settings → This PC (label, paired, last seen, `This device`), and updates while it is open. Neither the list nor any API returns a token. `Remove` signs out that device only: its API calls get 401, its open WebSocket closes, and an open app shows "Not paired yet".
 - `access-mcp-local` refuses the bot MCP endpoint from anything but loopback.
-- `access-panel` shows the Fabs Bot version, Tailscale status, peers, `Pair a device`, `Paired devices`, and the Tailscale HTTPS switch in the This PC panel.
+- `access-panel` shows the Fabs Bot version, Tailscale status, peers, `Pair a device`, `Paired devices`, and the Tailscale HTTPS switch in Settings → This PC.
 
 ## How to get to it (user POV)
 
@@ -32,12 +32,12 @@ Preconditions:
 - **Loopback.** Run `$C browser open /` and `$C browser wait --role button --name "Settings"`. The sidebar loads with no pairing.
 - **Unpaired over the tailnet.** The browser has no cookie yet (loopback never sets one). Run `$C browser open / --via tailnet` and `$C browser wait --role heading --name "Not paired yet"`. Capture `pairing/unpaired.aria.txt`.
 - **Pair.** Run `$C browser pair`, then `$C browser wait --role button --name "Settings"`. The app loads over the tailnet. Run `$C browser open / --via tailnet` again; it still loads, so the cookie persisted. Capture `pairing/paired.aria.txt`.
-- **Device list.** Click `Settings`, then the `This PC` menu item, and snapshot `--role region --name "Paired devices"`. It lists `Chrome on Linux` with `This device`.
+- **Device list.** Click `Settings`, then the `This PC` section in the settings nav, and snapshot `--role region --name "Paired devices"`. It lists `Chrome on Linux` with `This device`.
 - **Pairing link.** Snapshot `--role group --name "Pair your phone or laptop"`: only `Pair a device`. Click `--role button --name "Pair a device"` and wait for `Copy pairing link`. The snapshot shows the link with `code=•••••`, `Works once, until <time>`, `New link`, and `Copy pairing link`.
-- **Live update.** With the panel open, pair a second client from a script: `POST /api/pairing-links` on the run's loopback URL, then open the returned `url` with an iPhone Safari user agent, never printing it. `--role button --name "Remove Safari on iPhone"` appears without a reload.
+- **Live update.** With This PC open, pair a second client from a script: `POST /api/pairing-links` on the run's loopback URL, then open the returned `url` with an iPhone Safari user agent, never printing it. `--role button --name "Remove Safari on iPhone"` appears without a reload.
 - **Remove another device.** Hold that client's WebSocket open, then click `Remove Safari on iPhone`. The socket closes with code 1008 `device removed`, its cookie gets 401, and a new WebSocket is refused. The row leaves the list.
 - **Remove this device.** Click `Remove Chrome on Linux`. The open app shows `Not paired yet` without reloading, and still does after `browser open / --via tailnet`.
-- **Panel.** Over loopback, `Paired devices` reads `No devices yet.` once every device is removed. Snapshot only the `Paired devices` region and the `Pair your phone or laptop` group, never the whole dialog: it lists peer device names.
+- **Panel.** Over loopback, `Paired devices` reads `No devices yet.` once every device is removed. Snapshot only the `Paired devices` region and the `Pair your phone or laptop` group, never the whole section: it lists peer device names.
 - **Version.** With the panel open, run `$C browser snapshot --text "v<version>" --path pairing/version.aria.txt`, where `<version>` is `version` in `package.json`. `$C logs` starts with `fabs-bot <version>`.
 - **Proof.** `pairing/pair-check.txt`, the snapshots above, and the socket probe's output. Run `$C privacy-check` before sharing any of them.
 
@@ -48,5 +48,5 @@ Preconditions:
 - `launch` without `--tailnet` is loopback-only, so `pair-check`, `--via tailnet`, and `browser pair` refuse to run.
 - Pairing codes live in memory. Restarting the server (`$C server stop|start`) throws away links that haven't been used yet; paired devices stay.
 - `$C api POST /api/pairing-links` prints the link redacted, so it can't pair anything. A script that pairs a client reads `.url` from the loopback API itself and never prints it.
-- The This PC panel prints the real tailnet hostname and lists peers. Never capture it unmasked, and never paste `$C api GET /api/host` output into a PR. Hostnames and IPs are redacted, but it still lists your peer device names; prefer `doctor`.
+- The This PC section prints the real tailnet hostname and lists peers. Never capture it unmasked, and never paste `$C api GET /api/host` output into a PR. Hostnames and IPs are redacted, but it still lists your peer device names; prefer `doctor`.
 - Requests through Tailscale HTTPS need a device sign-in too; the Tailscale login header earns nothing. Never turn it on against the real `tailscale`. Prove it with [tailscale-https](./tailscale-https.md), which runs on the simulated serve config.

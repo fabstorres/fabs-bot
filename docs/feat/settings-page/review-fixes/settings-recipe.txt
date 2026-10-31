@@ -1,0 +1,14 @@
+== settings.md Open, Search and Close, as written, 1440x900 ==
+history.length before Settings: 2
+$ browser click --role button --name Settings; wait region Providers
+button[aria-current=page]: "Providers"
+$ browser fill --label 'Search settings' --value tailscale
+  nav: "This PC"
+$ browser fill --label 'Search settings' --value zzz
+  nav text: Settings  Nothing matches "zzz". 
+$ browser fill --label 'Search settings' --value ''
+  nav: "Providers | Plugins | This PC"
+$ browser click --role button --name Plugins; then 'This PC'
+  breadcrumb: Settings / This PC 
+$ browser click --role button --name 'Close settings'
+history.length after close: 3

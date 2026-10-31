@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
-import { Monitor, Plug, Plus, Search, Settings, SquareTerminal } from "lucide-react";
+import { Plus, Search, Settings } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { formatTime } from "../api";
-import { openDirect, openModal, openNestedThread, openThread, startCreating, threadTitle, useStore } from "../store";
+import { openDirect, openNestedThread, openSettings, openThread, startCreating, threadTitle, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { PcMenu } from "./PcMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 type Row = { kind: "bot"; bot: Bot; threads: Thread[]; pending?: Thread; at: number } | { kind: "group"; thread: Thread; at: number };
@@ -50,7 +49,9 @@ export function Sidebar() {
       <div className="flex items-center gap-1 px-4 pt-4 pb-2">
         <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only">Fabs Bot</h1>
         <PcMenu />
-        <SettingsMenu />
+        <Button id="open-settings" variant="ghost" size="icon" className="rounded-full" onClick={openSettings} aria-label="Settings" title="Settings">
+          <Settings className="size-5" />
+        </Button>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={startCreating} aria-label="New bot" title="New bot">
           <Plus className="size-5" />
         </Button>
@@ -91,29 +92,6 @@ export function Sidebar() {
         {search && rows.length === 0 && <p className="mt-10 text-center text-sm text-muted-foreground">Nothing matches "{search}".</p>}
       </nav>
     </aside>
-  );
-}
-
-function SettingsMenu() {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full" aria-label="Settings" title="Settings">
-          <Settings className="size-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem onSelect={() => openModal({ kind: "connectors" })}>
-          <Plug /> Plugins
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => openModal({ kind: "providers" })}>
-          <SquareTerminal /> Providers
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => openModal({ kind: "settings" })}>
-          <Monitor /> This PC
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 

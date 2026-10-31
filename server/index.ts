@@ -498,6 +498,7 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 setInterval(() => publish(heartbeat), HEARTBEAT_MS);
 console.log(`fabs-bot ${VERSION}`);
+void providerInfo();
 if (serveEnabled()) void applyServe();
 if (process.env.FABS_HOST) {
   listen(process.env.FABS_HOST);

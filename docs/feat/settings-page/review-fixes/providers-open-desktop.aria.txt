@@ -1,0 +1,27 @@
+# http://127.0.0.1:4930/  viewport=1440x900
+- group "Agent CLIs":
+  - button "Claude Code v2.1.314 Ready · full team tools" [pressed]:
+    - text: Claude Code
+    - code: v2.1.314
+    - text: Ready · full team tools
+  - switch "Enable Claude Code" [checked]
+  - button "Codex v0.165.0 Ready · full team tools":
+    - text: Codex
+    - code: v0.165.0
+    - text: Ready · full team tools
+  - switch "Enable Codex" [checked]
+  - button "Cursor Agent v2026.03.20-44cb435 Ready · chat + workspace":
+    - text: Cursor Agent
+    - code: v2026.03.20-44cb435
+    - text: Ready · chat + workspace
+  - switch "Enable Cursor Agent" [checked]
+  - button "OpenCode v1.17.11 Ready · chat + workspace":
+    - text: OpenCode
+    - code: v1.17.11
+    - text: Ready · chat + workspace
+  - switch "Enable OpenCode" [checked]
+  - button "Gemini CLI v0.1.3 Ready · chat + workspace":
+    - text: Gemini CLI
+    - code: v0.1.3
+    - text: Ready · chat + workspace
+  - switch "Enable Gemini CLI" [checked]

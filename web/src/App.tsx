@@ -6,8 +6,8 @@ import { BotEditor } from "./components/BotEditor";
 import { Chat } from "./components/Chat";
 import { DeskPanel } from "./components/DeskPanel";
 import { NewBot } from "./components/NewBot";
-import { ConnectorsPanel, FileViewer, SettingsPanel } from "./components/Panels";
-import { ProvidersPanel } from "./components/Providers";
+import { FileViewer } from "./components/Panels";
+import { SettingsPage } from "./components/Settings";
 import { Sidebar } from "./components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ export function App() {
   const panelOpen = useStore((s) => s.panelOpen);
   const thread = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
   const modal = useStore((s) => s.modal);
+  const settings = useStore((s) => s.settings);
 
   useWindowEvent("popstate", restoreView);
 
@@ -50,6 +51,8 @@ export function App() {
       </div>
     );
 
+  if (settings) return <SettingsPage section={settings.section} />;
+
   const showMain = creating || !!thread;
   return (
     <div className="flex h-dvh">
@@ -69,9 +72,6 @@ export function App() {
         )}
       </main>
       {modal?.kind === "bot" && <BotEditor botId={modal.botId} />}
-      {modal?.kind === "settings" && <SettingsPanel />}
-      {modal?.kind === "connectors" && <ConnectorsPanel />}
-      {modal?.kind === "providers" && <ProvidersPanel />}
       {modal?.kind === "file" && <FileViewer url={modal.url} name={modal.name} />}
     </div>
   );

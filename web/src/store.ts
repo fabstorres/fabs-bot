@@ -1,17 +1,15 @@
+import { flushSync } from "react-dom";
 import { create } from "zustand";
 import type { Bot, BotStatus, HostInfo, Link, Message, ServerEvent, Thread } from "../../shared/types";
 import { api, Unpaired } from "./api";
 
-export type Modal =
-  | { kind: "bot"; botId: string }
-  | { kind: "connectors" }
-  | { kind: "providers" }
-  | { kind: "settings" }
-  | { kind: "file"; url: string; name: string }
-  | null;
+export type Modal = { kind: "bot"; botId: string } | { kind: "file"; url: string; name: string } | null;
 
-/** What the main pane shows. Each one is a history entry, so the phone's back button walks back through them. */
-type View = { thread?: string; creating?: boolean };
+export type SettingsSection = "providers" | "plugins" | "pc";
+
+type SettingsView = { section?: SettingsSection };
+
+type View = { thread?: string; creating?: boolean; settings?: SettingsView };
 
 export type Attachment = { fileId: string; name: string; size: number };
 
@@ -32,6 +30,7 @@ interface State {
   messages: Record<string, Message[]>;
   openThreadId: string | null;
   creating: boolean;
+  settings: SettingsView | null;
   panelOpen: boolean;
   modal: Modal;
   /** The control focus returns to once the modal closes. */
@@ -56,6 +55,7 @@ export const useStore = create<State>(() => ({
   messages: {},
   openThreadId: null,
   creating: false,
+  settings: null,
   panelOpen: false,
   modal: null,
   modalOpener: null,
@@ -257,8 +257,17 @@ export async function loadMessages(threadId: string) {
   set({ messages: { ...get().messages, [threadId]: msgs } });
 }
 
+function settingsFocus(from: SettingsView | null, to: SettingsView | undefined) {
+  if (from && !to) return "open-settings";
+  if (!to) return null;
+  if (to.section) return from?.section ? null : "settings-section-title";
+  return from?.section ? `settings-nav-${from.section}` : "settings-title";
+}
+
 function show(view: View) {
-  set({ openThreadId: view.thread ?? null, creating: !!view.creating });
+  const target = settingsFocus(get().settings, view.settings);
+  flushSync(() => set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: view.settings ?? null }));
+  if (target) document.getElementById(target)?.focus();
   if (view.thread) {
     void loadMessages(view.thread);
     void api.post(`/api/threads/${view.thread}/read`).catch(() => {});
@@ -271,9 +280,11 @@ function go(view: View, stack: boolean) {
   show(view);
 }
 
+const wide = () => window.matchMedia("(min-width: 768px)").matches;
+
 /** On desktop, start in the latest chat instead of an empty pane. */
 function land(threads: Thread[]) {
-  if (get().creating || !window.matchMedia("(min-width: 768px)").matches) return;
+  if (get().creating || !wide()) return;
   const latest = threads.find((t) => t.kind !== "backchannel");
   if (!latest) return;
   history.replaceState({ view: { thread: latest.id } }, "");
@@ -284,6 +295,8 @@ export const openThread = (threadId: string) => go({ thread: threadId }, false);
 /** Stacks on top of the current chat, so Back returns to it. */
 export const openNestedThread = (threadId: string) => go({ thread: threadId }, true);
 export const startCreating = () => go({ creating: true }, false);
+export const openSettings = () => go({ settings: wide() ? { section: "providers" } : {} }, true);
+export const openSettingsSection = (section: SettingsSection) => go({ settings: { section } }, !wide());
 export const restoreView = () => show(history.state?.view ?? {});
 
 export function goBack() {

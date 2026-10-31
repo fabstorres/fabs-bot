@@ -1,0 +1,8 @@
+# http://127.0.0.1:4930/?phone  viewport=430x932
+- banner:
+  - button "Back"
+  - navigation "breadcrumb":
+    - list:
+      - listitem: Settings
+      - listitem:
+        - link "Providers" [disabled]

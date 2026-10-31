@@ -3,7 +3,6 @@ import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { ENV_NAME, type ProviderId, type ProviderInfo, type ProviderSettings } from "../../../shared/types";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
-import { Modal } from "./Modal";
 import { ProviderIcon } from "./ProviderIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,13 +22,16 @@ function providerStatus(p: ProviderInfo) {
   return p.supportsTools ? "Ready · full team tools" : "Ready · chat + workspace";
 }
 
-export function ProvidersPanel() {
-  const loaded = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []);
+export function ProvidersSettings() {
+  const saved = useLoad(() => api.get<ProviderInfo[]>("/api/providers"), []);
+  const checked = useLoad(() => api.get<ProviderInfo[]>("/api/providers?refresh"), []);
   const [latest, setLatest] = useState<Partial<Record<ProviderId, ProviderInfo>>>({});
   const [selectedId, setSelectedId] = useState<ProviderId>("claude");
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const list = (loaded.data ?? []).map((p) => latest[p.id] ?? p);
+  const known = checked.data ?? saved.data;
+  const checking = refreshing || (!checked.data && !checked.error);
+  const list = (known ?? []).map((p) => latest[p.id] ?? p);
   const selected = list.find((p) => p.id === selectedId);
   const checkedAt = Math.max(0, ...list.map((p) => p.checkedAt));
   const remember = (fresh: ProviderInfo[]) => setLatest((l) => ({ ...l, ...Object.fromEntries(fresh.map((p) => [p.id, p])) }));
@@ -47,41 +49,39 @@ export function ProvidersPanel() {
   };
 
   return (
-    <Modal title="Providers" className="sm:max-w-5xl">
-      <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            The agent CLIs bots run on this PC, with your existing logins. Settings here are passed on each run. Fabs Bot never edits the CLIs' own configs.
-          </p>
-          <Button variant="ghost" size="sm" className="flex-none rounded-full text-muted-foreground" onClick={refresh} disabled={refreshing || !loaded.data}>
-            <RefreshCw className={cn(refreshing && "animate-spin")} />
-            <span className="sr-only">Refresh</span>
-            {refreshing ? "Checking…" : checkedAt ? `Checked ${formatTime(checkedAt)}` : "Check"}
-          </Button>
-        </div>
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-        {loaded.error && !loaded.data && (
-          <p role="alert" className="text-sm text-destructive">
-            {loaded.error}
-          </p>
-        )}
-        {!loaded.data && !loaded.error && <p className="text-sm text-muted-foreground">Checking the agent CLIs on this PC…</p>}
-        {loaded.data && (
-          <div className="overflow-hidden rounded-2xl border md:grid md:grid-cols-[17rem_minmax(0,1fr)]">
-            <div role="group" aria-label="Agent CLIs" className="divide-y border-b bg-muted/30 md:border-r md:border-b-0">
-              {list.map((p) => (
-                <ProviderRow key={p.id} provider={p} selected={p.id === selectedId} onSelect={() => setSelectedId(p.id)} onToggle={(on) => toggle(p.id, on)} />
-              ))}
-            </div>
-            {selected && <ProviderDetail key={selected.id} provider={selected} onSave={(patch) => save(selected.id, patch)} />}
-          </div>
-        )}
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          The agent CLIs bots run on this PC, with your existing logins. Settings here are passed on each run. Fabs Bot never edits the CLIs' own configs.
+        </p>
+        <Button variant="ghost" size="sm" className="flex-none rounded-full text-muted-foreground" onClick={refresh} disabled={checking}>
+          <RefreshCw className={cn(checking && "animate-spin")} />
+          <span className="sr-only">Refresh</span>
+          {checking ? "Checking…" : checkedAt ? `Checked ${formatTime(checkedAt)}` : "Check"}
+        </Button>
       </div>
-    </Modal>
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      {checked.error && !known && (
+        <p role="alert" className="text-sm text-destructive">
+          {checked.error}
+        </p>
+      )}
+      {!known && !checked.error && <p className="text-sm text-muted-foreground">Checking the agent CLIs on this PC…</p>}
+      {known && (
+        <div className="overflow-hidden rounded-2xl border md:grid md:grid-cols-[17rem_minmax(0,1fr)]">
+          <div role="group" aria-label="Agent CLIs" className="divide-y border-b bg-muted/30 md:border-r md:border-b-0">
+            {list.map((p) => (
+              <ProviderRow key={p.id} provider={p} selected={p.id === selectedId} onSelect={() => setSelectedId(p.id)} onToggle={(on) => toggle(p.id, on)} />
+            ))}
+          </div>
+          {selected && <ProviderDetail key={selected.id} provider={selected} onSave={(patch) => save(selected.id, patch)} />}
+        </div>
+      )}
+    </div>
   );
 }
 

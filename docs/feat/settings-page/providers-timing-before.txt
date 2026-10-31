@@ -1,0 +1,9 @@
+Before (main @ 586bc3e), headless Chromium 1440x900, isolated instance on 127.0.0.1:4932.
+Each line: open the Settings menu from Chief's chat, click Providers, time until the first row in 'Agent CLIs' is in the DOM (MutationObserver).
+open 1: "http://127.0.0.1:4932  first row 1126 ms (5 CLIs)  requests: /api/providers?refresh 1113 ms"
+open 2: "http://127.0.0.1:4932  first row 1143 ms (5 CLIs)  requests: /api/providers?refresh 1133 ms"
+open 3: "http://127.0.0.1:4932  first row 6659 ms (5 CLIs)  requests: /api/providers?refresh 6653 ms"
+open 4: "http://127.0.0.1:4932  first row 1203 ms (5 CLIs)  requests: /api/providers?refresh 1194 ms"
+open 5: "http://127.0.0.1:4932  first row 1148 ms (5 CLIs)  requests: /api/providers?refresh 1141 ms"
+$ browser open /   (reload)
+after reload: "http://127.0.0.1:4932  first row 1126 ms (5 CLIs)  requests: /api/providers?refresh 1117 ms"
