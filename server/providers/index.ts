@@ -27,17 +27,33 @@ export function launchFor(id: ProviderId): Launch {
   };
 }
 
+const VERSION_DEADLINE_MS = 5000;
+
+async function readVersion(path: string, env: Record<string, string>): Promise<string> {
+  const proc = Bun.spawn([path, "--version"], { env, stdout: "pipe", stderr: "ignore" });
+  const stdout = proc.stdout.getReader();
+  const deadline = setTimeout(() => {
+    proc.kill("SIGKILL");
+    void stdout.cancel();
+  }, VERSION_DEADLINE_MS);
+  const decoder = new TextDecoder();
+  let text = "";
+  try {
+    for (let chunk = await stdout.read(); !chunk.done; chunk = await stdout.read()) text += decoder.decode(chunk.value, { stream: true });
+  } finally {
+    clearTimeout(deadline);
+  }
+  return text;
+}
+
 async function inspect(p: Provider): Promise<ProviderInfo> {
   const launch = launchFor(p.id);
   const path = which(launch.bin);
   let version = "";
   if (path) {
     try {
-      const proc = Bun.spawn([path, "--version"], { env: { ...childEnv, ...launch.env }, stdout: "pipe", stderr: "ignore" });
-      const timer = setTimeout(() => proc.kill(), 5000);
-      const line = (await new Response(proc.stdout).text()).trim().split("\n")[0] ?? "";
+      const line = (await readVersion(path, { ...childEnv, ...launch.env })).trim().split("\n")[0] ?? "";
       version = line.match(/\d+\.\d+[\w.+-]*/)?.[0] ?? line;
-      clearTimeout(timer);
     } catch {}
   }
   return {
