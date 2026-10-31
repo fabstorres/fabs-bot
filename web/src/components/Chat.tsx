@@ -275,14 +275,14 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
               isImage(f.name) ? (
                 <div key={f.fileId} className="relative">
                   <img src={`/files/${f.fileId}`} alt={f.name} className="h-20 max-w-40 rounded-2xl border bg-muted object-contain" />
-                  <Button variant="secondary" size="icon-xs" className="absolute top-1 right-1 rounded-full" onClick={() => remove(f.fileId)} aria-label="Remove">
+                  <Button variant="secondary" size="icon-xs" className="absolute top-1 right-1 rounded-full" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
                     <X />
                   </Button>
                 </div>
               ) : (
                 <Badge key={f.fileId} variant="secondary" className="gap-1 py-1 pr-1">
                   <Paperclip /> {f.name}
-                  <button className="rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label="Remove">
+                  <button className="rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
                     <X className="size-3" />
                   </button>
                 </Badge>
