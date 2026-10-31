@@ -1,11 +1,12 @@
 import { type RefObject, useId, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, X } from "lucide-react";
+import { mentionedBots } from "../../../shared/mentions";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, isImage } from "../api";
 import { toast } from "sonner";
 import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
-import { MentionInput, mentionedBots } from "./MentionInput";
+import { MentionInput, type MentionInputHandle } from "./MentionInput";
 import { MessageList } from "./Messages";
 import { Modal } from "./Modal";
 import { OfflineBanner } from "./OfflineBanner";
@@ -272,10 +273,16 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
   const uploading = useStore((s) => !!s.uploads[thread.id]);
   const [listening, setListening] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const input = useRef<MentionInputHandle>(null);
 
   function draft(next: string) {
     setText(next);
     sessionStorage.setItem(draftKey, next);
+  }
+
+  function redraft(next: string) {
+    draft(next);
+    input.current?.setText(next);
   }
 
   function attach(list: FileList | File[]) {
@@ -286,8 +293,8 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     updateAttachments(thread.id, (f) => f.filter((x) => x.fileId !== fileId));
   }
 
-  async function send() {
-    const body = text.trim();
+  async function send(current = text) {
+    const body = current.trim();
     if ((!body && !files.length) || uploading) return;
     if (!online) {
       toast.warning("Not connected: message not sent", {
@@ -301,10 +308,10 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     if (!regroup) for (const b of joining) await api.post(`/api/threads/${thread.id}/members`, { botId: b.id });
     const sending = files;
     const message = { text: body, fileIds: sending.map((f) => f.fileId) };
-    draft("");
+    redraft("");
     updateAttachments(thread.id, () => []);
     const restore = () => {
-      draft([body, sessionStorage.getItem(draftKey)].filter(Boolean).join("\n"));
+      redraft([body, sessionStorage.getItem(draftKey)].filter(Boolean).join("\n"));
       updateAttachments(thread.id, (f) => [...sending, ...f]);
     };
     if (regroup) {
@@ -322,7 +329,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
     rec.interimResults = false;
     rec.onresult = (e: any) => {
       const current = sessionStorage.getItem(draftKey) ?? "";
-      draft((current ? current + " " : "") + e.results[0][0].transcript);
+      redraft((current ? current + " " : "") + e.results[0][0].transcript);
     };
     rec.onend = () => setListening(false);
     setListening(true);
@@ -338,7 +345,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       onDrop={(e) => (e.preventDefault(), attach(e.dataTransfer.files))}
     >
       <OfflineBanner />
-      <div className="mx-auto max-w-3xl rounded-2xl border bg-muted/50 p-2 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
+      <div className="mx-auto max-w-3xl rounded-2xl border bg-muted/50 p-2 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[.ProseMirror-focused]:border-ring has-[.ProseMirror-focused]:ring-[3px] has-[.ProseMirror-focused]:ring-ring/50">
         {(files.length > 0 || uploading) && (
           <div className="flex flex-wrap items-center gap-2 px-2 pt-2 pb-2">
             {files.map((f) =>
@@ -373,6 +380,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
           </div>
         )}
         <MentionInput
+          ref={input}
           value={text}
           onChange={draft}
           autoFocus={window.matchMedia("(pointer: fine)").matches}
@@ -380,7 +388,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
           bots={bots}
           ariaLabel="Message"
           placeholder={`Message ${name}`}
-          onPaste={(e) => e.clipboardData.files.length && (e.preventDefault(), attach(e.clipboardData.files))}
+          onPasteFiles={attach}
         />
         <div className="mt-1 flex items-center gap-1">
           <Button variant="ghost" size="icon" className="mr-auto rounded-full text-muted-foreground" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading || !online}>
@@ -397,7 +405,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
               <Square className="size-3.5 fill-current" />
             </Button>
           ) : (
-            <Button size="icon" className="rounded-full" onClick={send} disabled={!ready || uploading || !online} aria-label={online ? "Send" : "Environment disconnected"}>
+            <Button size="icon" className="rounded-full" onClick={() => send()} disabled={!ready || uploading || !online} aria-label={online ? "Send" : "Environment disconnected"}>
               <ArrowUp className="size-5" strokeWidth={2.4} />
             </Button>
           )}

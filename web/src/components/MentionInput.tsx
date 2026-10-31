@@ -1,47 +1,123 @@
-import { useRef, useState } from "react";
+import { type Ref, useImperativeHandle, useState } from "react";
+import type { JSONContent } from "@tiptap/core";
+import Document from "@tiptap/extension-document";
+import HardBreak from "@tiptap/extension-hard-break";
+import Mention from "@tiptap/extension-mention";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
+import { Fragment, Slice } from "@tiptap/pm/model";
+import { EditorContent, type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
+import type { SuggestionProps } from "@tiptap/suggestion";
+import { handleOf, splitMentions } from "../../../shared/mentions";
 import type { Bot } from "../../../shared/types";
+import { useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
+import { MentionChip } from "./MentionChip";
 import { cn } from "@/lib/utils";
 
-interface Props {
-  value: string;
-  onChange(v: string): void;
-  onSubmit(): void;
-  bots: Bot[];
-  placeholder: string;
-  /** Accessible name; the placeholder changes with context, so it isn't a stable handle. */
-  ariaLabel: string;
-  autoFocus?: boolean;
-  onPaste?: (e: React.ClipboardEvent) => void;
+export interface MentionInputHandle {
+  setText(text: string): void;
 }
 
-/** Auto-growing textarea with @mention autocomplete for bots. Enter sends, Shift+Enter breaks. */
-export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ariaLabel, autoFocus, onPaste }: Props) {
-  const el = useRef<HTMLTextAreaElement>(null);
-  const [query, setQuery] = useState<string | null>(null);
+interface Props {
+  ref?: Ref<MentionInputHandle>;
+  value: string;
+  onChange(v: string): void;
+  onSubmit(text: string): void;
+  bots: Bot[];
+  placeholder: string;
+  ariaLabel: string;
+  autoFocus?: boolean;
+  onPasteFiles?: (files: FileList) => void;
+}
+
+interface Suggest {
+  query: string;
+  pick(bot: Bot): void;
+}
+
+function toContent(text: string, bots: Bot[]): JSONContent[] {
+  return text.split(/\r?\n/).flatMap((line, i) => [
+    ...(i ? [{ type: "hardBreak" }] : []),
+    ...splitMentions(line, bots).map((p) => (typeof p === "string" ? { type: "text", text: p } : { type: "mention", attrs: { id: p.bot.id, label: p.bot.name } })),
+  ]);
+}
+
+const toDoc = (text: string, bots: Bot[]): JSONContent => ({ type: "doc", content: [{ type: "paragraph", content: toContent(text, bots) }] });
+
+function ComposerChip({ node }: NodeViewProps) {
+  const bot = useStore((s) => s.bots.find((b) => b.id === node.attrs.id));
+  return <NodeViewWrapper as="span">{bot ? <MentionChip bot={bot} /> : `@${handleOf(node.attrs.label ?? "")}`}</NodeViewWrapper>;
+}
+
+const BotMention = Mention.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(ComposerChip);
+  },
+});
+
+export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder, ariaLabel, autoFocus, onPasteFiles }: Props) {
+  const [suggest, setSuggest] = useState<Suggest | null>(null);
   const [active, setActive] = useState(0);
 
-  const matches =
-    query === null ? [] : bots.filter((b) => b.name.toLowerCase().replace(/\s+/g, "").startsWith(query.toLowerCase())).slice(0, 6);
+  const matches = suggest ? bots.filter((b) => handleOf(b.name).toLowerCase().startsWith(suggest.query.toLowerCase())).slice(0, 6) : [];
 
-  function detect(v: string, caret: number) {
-    const m = v.slice(0, caret).match(/(?:^|\s)@([\w-]*)$/);
-    setQuery(m ? m[1]! : null);
+  function show({ query, command }: SuggestionProps) {
+    setSuggest({ query, pick: (b) => command({ id: b.id, label: b.name }) });
     setActive(0);
   }
 
-  function pick(b: Bot) {
-    const t = el.current!;
-    const caret = t.selectionStart;
-    const before = value.slice(0, caret).replace(/@([\w-]*)$/, `@${b.name.replace(/\s+/g, "")} `);
-    const next = before + value.slice(caret);
-    onChange(next);
-    setQuery(null);
-    requestAnimationFrame(() => {
-      t.focus();
-      t.setSelectionRange(before.length, before.length);
-    });
+  function keyDown(e: KeyboardEvent): boolean {
+    if (suggest && matches.length) {
+      if (e.key === "ArrowDown") setActive((active + 1) % matches.length);
+      else if (e.key === "ArrowUp") setActive((active - 1 + matches.length) % matches.length);
+      else if (e.key === "Enter" || e.key === "Tab") suggest.pick(matches[active]!);
+      else return false;
+      return true;
+    }
+    if (e.key !== "Enter" || e.shiftKey || e.isComposing) return false;
+    onSubmit(editor.getText({ blockSeparator: "\n" }));
+    return true;
   }
+
+  const editor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      Text,
+      HardBreak,
+      BotMention.configure({
+        deleteTriggerWithBackspace: true,
+        renderText: ({ node }) => `@${handleOf(node.attrs.label ?? "")}`,
+        suggestion: { render: () => ({ onStart: show, onUpdate: show, onExit: () => setSuggest(null) }) },
+      }),
+    ],
+    content: toDoc(value, bots),
+    autofocus: autoFocus ? "end" : false,
+    onUpdate: ({ editor }) => onChange(editor.getText({ blockSeparator: "\n" })),
+    editorProps: {
+      attributes: {
+        "aria-label": ariaLabel,
+        "aria-multiline": "true",
+        "aria-placeholder": placeholder,
+        class: "px-2 py-1 text-base leading-snug wrap-anywhere outline-none",
+      },
+      handleKeyDown: (_view, e) => keyDown(e),
+      handlePaste: (view, e) => {
+        const files = e.clipboardData?.files;
+        if (files?.length) {
+          onPasteFiles?.(files);
+          return true;
+        }
+        const text = e.clipboardData?.getData("text/plain");
+        if (!text) return false;
+        view.dispatch(view.state.tr.replaceSelection(new Slice(Fragment.fromJSON(view.state.schema, toContent(text, bots)), 0, 0)).scrollIntoView());
+        return true;
+      },
+    },
+  });
+
+  useImperativeHandle(ref, () => ({ setText: (text) => editor.commands.setContent(toDoc(text, bots), { emitUpdate: false }) }));
 
   return (
     <div className="relative min-w-0 flex-1">
@@ -61,7 +137,7 @@ export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ari
               className={cn("flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left", i === active && "bg-accent")}
               onMouseDown={(e) => {
                 e.preventDefault();
-                pick(b);
+                suggest?.pick(b);
               }}
             >
               <BotAvatar shape={b.shape} color={b.color} size={24} />
@@ -71,51 +147,14 @@ export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ari
           ))}
         </div>
       )}
-      <div
-        className="grid after:invisible after:max-h-60 after:px-2 after:py-1 after:text-base after:leading-snug after:wrap-anywhere after:whitespace-pre-wrap after:content-[attr(data-value)_'_'] after:[grid-area:1/1]"
-        data-value={value}
-      >
-        <textarea
-          ref={el}
-          rows={1}
-          value={value}
-          placeholder={placeholder}
-          aria-label={ariaLabel}
-          autoFocus={autoFocus}
-          onPaste={onPaste}
-          className="composer-scrollbar max-h-60 min-w-0 resize-none overflow-y-auto bg-transparent px-2 py-1 text-base leading-snug outline-none [grid-area:1/1] placeholder:text-muted-foreground"
-          onChange={(e) => {
-            onChange(e.target.value);
-            detect(e.target.value, e.target.selectionStart);
-          }}
-          onKeyDown={(e) => {
-            if (matches.length) {
-              if (e.key === "ArrowDown") return e.preventDefault(), setActive((active + 1) % matches.length);
-              if (e.key === "ArrowUp") return e.preventDefault(), setActive((active - 1 + matches.length) % matches.length);
-              if (e.key === "Enter" || e.key === "Tab") return e.preventDefault(), pick(matches[active]!);
-              if (e.key === "Escape") return setQuery(null);
-            }
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              onSubmit();
-            }
-          }}
-        />
+      <div className="composer-scrollbar relative max-h-60 overflow-y-auto">
+        {!value && (
+          <span aria-hidden className="pointer-events-none absolute inset-x-2 top-1 truncate text-base leading-snug text-muted-foreground">
+            {placeholder}
+          </span>
+        )}
+        <EditorContent editor={editor} />
       </div>
     </div>
   );
-}
-
-/** Bots @mentioned in text, in order of first mention. */
-export function mentionedBots(text: string, bots: Bot[]): Bot[] {
-  const lower = text.toLowerCase();
-  return bots
-    .map((b) => {
-      const keys = [b.name.toLowerCase(), b.name.toLowerCase().replace(/\s+/g, "")];
-      const at = Math.min(...keys.map((k) => lower.indexOf("@" + k)).filter((i) => i >= 0), Infinity);
-      return { b, at };
-    })
-    .filter((x) => x.at !== Infinity)
-    .sort((a, b) => a.at - b.at)
-    .map((x) => x.b);
 }
