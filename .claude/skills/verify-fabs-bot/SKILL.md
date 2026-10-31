@@ -79,7 +79,8 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 
 | UI | handle |
 |---|---|
-| sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`), `"Plugins"`, `"Providers"`, `"This PC"` |
+| sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`); `"Settings"` opens `--role menu --name "Settings"` with `--role menuitem` `Plugins` / `Providers` / `This PC` |
+| PC menu | trigger `--role button --name "PC <name>"` (`This PC` or a saved PC's name in the desktop app, else the PC's hostname); menu `--role menu --name "PC <name>"` with the status (`All quiet` / `<n> bots working` / `Reconnecting…`) and one `--role menuitemradio` per PC, the open one `[checked]`; desktop app only: `"Change icon"` (`menuitemradio` `Monitor` / `Laptop` / `Tower` / `Server` / `Home` / `Work`) and `"Manage PCs…"` |
 | phone favorites | `--role button --name "Open <Name>"` (big faces above the list, 430px only) |
 | new bot pane | `--role region --name "New bot"`; `--role radio` in groups `Color` / `Shape`; `--label "Name"`; suggestions `"Suggestion <Template>"`; `"Get started"` |
 | open thread | `--role region --name "Thread with <title>"`; conversation `--role log --name "Conversation"`; composer `--label "Message"`, `"Send"` (`"Environment disconnected"` while offline), `"Stop"`, `"Attach"`; offline banner `--role alert` with `"Reconnect"` |

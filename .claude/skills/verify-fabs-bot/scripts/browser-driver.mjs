@@ -106,8 +106,7 @@ try {
         flags["no-mask"] === true
           ? []
           : [
-              page.getByRole("button", { name: "This PC", exact: true, includeHidden: true }),
-              page.locator(".pair-qr, .mono-box, .host-line, .host-peers"),
+              page.locator(".pair-qr, .mono-box, .host-line, .host-peers, .pc-name"),
               ...(PC_NAME ? [page.getByText(PC_NAME)] : []),
             ];
       await page.screenshot({ path: out, fullPage: flags["full-page"] === true, mask, maskColor: "#d9d9d4" });
