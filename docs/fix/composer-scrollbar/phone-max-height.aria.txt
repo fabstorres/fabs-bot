@@ -1,0 +1,22 @@
+# http://127.0.0.1:4871/  viewport=430x932
+- main:
+  - region "Thread with Design":
+    - button "Back"
+    - text: Design
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Design. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops"
+        - button "B A specific project"
+        - button "C Research and writing"
+        - button "D Something else"
+    - textbox "Message":
+      - /placeholder: Message Design
+      - text: "Line 01: A longer draft can scroll. Line 02: A longer draft can scroll. Line 03: A longer draft can scroll. Line 04: A longer draft can scroll. Line 05: A longer draft can scroll. Line 06: A longer draft can scroll. Line 07: A longer draft can scroll. Line 08: A longer draft can scroll. Line 09: A longer draft can scroll. Line 10: A longer draft can scroll. Line 11: A longer draft can scroll. Line 12: A longer draft can scroll. Line 13: A longer draft can scroll. Line 14: A longer draft can scroll. Line 15: A longer draft can scroll. Line 16: A longer draft can scroll. Line 17: A longer draft can scroll. Line 18: A longer draft can scroll. Line 19: A longer draft can scroll. Line 20: A longer draft can scroll. Line 21: A longer draft can scroll. Line 22: A longer draft can scroll. Line 23: A longer draft can scroll. Line 24: A longer draft can scroll."
+    - button "Attach"
+    - button "Dictate"
+    - button "Send"
+- region "Notifications alt+T"
