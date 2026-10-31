@@ -47,7 +47,7 @@ export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ari
     <div className="relative min-w-0 flex-1">
       {matches.length > 0 && (
         <div
-          className="absolute bottom-[calc(100%+14px)] -left-12 z-50 w-72 rounded-2xl border bg-popover p-1.5 shadow-lg animate-in fade-in-0 zoom-in-95"
+          className="absolute bottom-[calc(100%+14px)] left-0 z-50 w-72 max-w-full rounded-2xl border bg-popover p-1.5 shadow-lg animate-in fade-in-0 zoom-in-95"
           role="listbox"
           aria-label="Mention a bot"
         >
@@ -72,7 +72,7 @@ export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ari
         </div>
       )}
       <div
-        className="grid after:invisible after:max-h-44 after:px-1 after:py-[7px] after:text-base after:leading-snug after:wrap-anywhere after:whitespace-pre-wrap after:content-[attr(data-value)_'_'] after:[grid-area:1/1]"
+        className="grid after:invisible after:max-h-60 after:px-2 after:py-1 after:text-base after:leading-snug after:wrap-anywhere after:whitespace-pre-wrap after:content-[attr(data-value)_'_'] after:[grid-area:1/1]"
         data-value={value}
       >
         <textarea
@@ -83,7 +83,7 @@ export function MentionInput({ value, onChange, onSubmit, bots, placeholder, ari
           aria-label={ariaLabel}
           autoFocus={autoFocus}
           onPaste={onPaste}
-          className="max-h-44 resize-none overflow-y-auto bg-transparent px-1 py-[7px] text-base leading-snug outline-none [grid-area:1/1] placeholder:text-muted-foreground"
+          className="composer-scrollbar max-h-60 min-w-0 resize-none overflow-y-auto bg-transparent px-2 py-1 text-base leading-snug outline-none [grid-area:1/1] placeholder:text-muted-foreground"
           onChange={(e) => {
             onChange(e.target.value);
             detect(e.target.value, e.target.selectionStart);
