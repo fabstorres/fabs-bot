@@ -169,55 +169,53 @@ function PairedDevices() {
   );
 }
 
-export function SettingsPanel() {
+export function ThisPcSettings() {
   const hostLoad = useLoad(() => api.get<HostInfo>("/api/host"), []);
   const host = hostLoad.data;
   const reload = hostLoad.reload;
   const ts = host?.tailscale;
 
   return (
-    <Modal wide title="This PC">
-      <div className="flex min-w-0 flex-col gap-4">
-        <Card>
-          <div className="flex items-center justify-between gap-3">
-            <div className="host-line flex items-center gap-3">
-              <Led on={!!ts?.running} />
-              <div className="flex flex-col">
-                <b>{host?.hostname ?? "…"}</b>
-                <span className="text-sm text-muted-foreground">
-                  {ts?.running ? `Tailscale · ${ts.dnsName ?? ts.ip}` : "Tailscale not running: only this PC can connect"}
-                </span>
-              </div>
+    <div className="flex min-w-0 flex-col gap-4">
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <div className="host-line flex items-center gap-3">
+            <Led on={!!ts?.running} />
+            <div className="flex flex-col">
+              <b>{host?.hostname ?? "…"}</b>
+              <span className="text-sm text-muted-foreground">
+                {ts?.running ? `Tailscale · ${ts.dnsName ?? ts.ip}` : "Tailscale not running: only this PC can connect"}
+              </span>
             </div>
-            {host && <Badge variant="secondary">v{host.version}</Badge>}
           </div>
-          {ts && ts.peers.length > 0 && (
-            <div className="host-peers mt-3 flex flex-wrap gap-1.5">
-              {ts.peers.map((p) => (
-                <span key={p.ip} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
-                  <Led on={p.online} /> {p.name} <small className="text-muted-foreground">{p.os}</small>
-                </span>
-              ))}
-            </div>
-          )}
-        </Card>
+          {host && <Badge variant="secondary">v{host.version}</Badge>}
+        </div>
+        {ts && ts.peers.length > 0 && (
+          <div className="host-peers mt-3 flex flex-wrap gap-1.5">
+            {ts.peers.map((p) => (
+              <span key={p.ip} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
+                <Led on={p.online} /> {p.name} <small className="text-muted-foreground">{p.os}</small>
+              </span>
+            ))}
+          </div>
+        )}
+      </Card>
 
-        <PairDevice host={host} onChange={reload} />
-        <PairedDevices />
+      <PairDevice host={host} onChange={reload} />
+      <PairedDevices />
 
-        <section>
-          <h3 className="mb-1 font-semibold">Where bots work</h3>
-          <p className="text-sm text-muted-foreground">
-            Desks live in <code className="font-mono">{host?.workRoot}</code>. <code className="font-mono">{host?.workRoot}/shared</code> is visible to every bot
-            and holds your uploads.
-          </p>
-        </section>
-      </div>
-    </Modal>
+      <section>
+        <h3 className="mb-1 font-semibold">Where bots work</h3>
+        <p className="text-sm text-muted-foreground">
+          Desks live in <code className="font-mono">{host?.workRoot}</code>. <code className="font-mono">{host?.workRoot}/shared</code> is visible to every bot
+          and holds your uploads.
+        </p>
+      </section>
+    </div>
   );
 }
 
-export function ConnectorsPanel() {
+export function PluginsSettings() {
   const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []);
   const list = connectors.data ?? [];
   const presets = useLoad(() => api.get<ConnectorPreset[]>("/api/connectors/presets"), []).data ?? [];
@@ -233,66 +231,63 @@ export function ConnectorsPanel() {
     }
   };
 
-  if (form) return <ConnectorForm initial={form} onDone={() => (setForm(null), connectors.reload())} />;
-
   return (
-    <Modal wide title="Plugins">
-      <div className="flex flex-col gap-4">
-        <p className="text-muted-foreground">Give bots hands: Notion, Google Drive, GitHub, a browser… Turn plugins on per bot in its settings.</p>
+    <div className="flex flex-col gap-4">
+      <p className="text-muted-foreground">Give bots hands: Notion, Google Drive, GitHub, a browser… Turn plugins on per bot in its settings.</p>
 
-        <Card>
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <h3 className="font-semibold">Inherited by Claude bots</h3>
-              <p className="text-xs text-muted-foreground">Your Claude Code MCP servers and claude.ai connectors come along automatically.</p>
-            </div>
-            <Button variant="secondary" size="sm" className="rounded-full" onClick={() => scan(!!inherited)} disabled={scanning}>
-              <RefreshCw /> {scanning ? "Scanning…" : inherited ? "Rescan" : "Scan"}
+      <Card>
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <h3 className="font-semibold">Inherited by Claude bots</h3>
+            <p className="text-xs text-muted-foreground">Your Claude Code MCP servers and claude.ai connectors come along automatically.</p>
+          </div>
+          <Button variant="secondary" size="sm" className="rounded-full" onClick={() => scan(!!inherited)} disabled={scanning}>
+            <RefreshCw /> {scanning ? "Scanning…" : inherited ? "Rescan" : "Scan"}
+          </Button>
+        </div>
+        {inherited && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {inherited.servers.length === 0 && <span className="text-sm text-muted-foreground">None found.</span>}
+            {inherited.servers.map((s) => (
+              <span key={s.name} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
+                <Led on={s.status === "connected"} /> {s.name.replace(/^claude\.ai /, "")}
+                <small className="text-muted-foreground">{s.status}</small>
+              </span>
+            ))}
+            <span className="text-xs text-muted-foreground">scanned {formatTime(inherited.scannedAt)}</span>
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <h3 className="font-semibold">Added in Fabs Bot</h3>
+        <p className="text-xs text-muted-foreground">Passed to the CLI on each run. Works for Claude and Codex bots.</p>
+        {list.length === 0 && <p className="mt-2 text-sm text-muted-foreground">Nothing yet.</p>}
+        {list.map((c) => (
+          <div key={c.id} className="mt-2 flex items-center gap-3 border-b py-2 last:border-0">
+            <b className="text-sm">{c.name}</b>
+            <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">{c.kind === "http" ? c.url : `${c.command} ${c.args.join(" ")}`}</span>
+            <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setForm({ ...c, blurb: "", secretKeys: [] })}>
+              Edit
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => api.del(`/api/connectors/${c.id}`).then(connectors.reload)} aria-label="Remove">
+              <Trash2 />
             </Button>
           </div>
-          {inherited && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {inherited.servers.length === 0 && <span className="text-sm text-muted-foreground">None found.</span>}
-              {inherited.servers.map((s) => (
-                <span key={s.name} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
-                  <Led on={s.status === "connected"} /> {s.name.replace(/^claude\.ai /, "")}
-                  <small className="text-muted-foreground">{s.status}</small>
-                </span>
-              ))}
-              <span className="text-xs text-muted-foreground">scanned {formatTime(inherited.scannedAt)}</span>
-            </div>
-          )}
-        </Card>
-
-        <Card>
-          <h3 className="font-semibold">Added in Fabs Bot</h3>
-          <p className="text-xs text-muted-foreground">Passed to the CLI on each run. Works for Claude and Codex bots.</p>
-          {list.length === 0 && <p className="mt-2 text-sm text-muted-foreground">Nothing yet.</p>}
-          {list.map((c) => (
-            <div key={c.id} className="mt-2 flex items-center gap-3 border-b py-2 last:border-0">
-              <b className="text-sm">{c.name}</b>
-              <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">{c.kind === "http" ? c.url : `${c.command} ${c.args.join(" ")}`}</span>
-              <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setForm({ ...c, blurb: "", secretKeys: [] })}>
-                Edit
-              </Button>
-              <Button variant="ghost" size="icon-sm" onClick={() => api.del(`/api/connectors/${c.id}`).then(connectors.reload)} aria-label="Remove">
-                <Trash2 />
-              </Button>
-            </div>
+        ))}
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {presets.map((p) => (
+            <button key={p.preset} className="flex flex-col gap-1 rounded-xl border p-3 text-left hover:bg-muted/60" onClick={() => setForm(p)}>
+              <b className="flex items-center gap-1.5 text-sm">
+                <Plus className="size-3.5" /> {p.name}
+              </b>
+              <small className="text-xs text-muted-foreground">{p.blurb}</small>
+            </button>
           ))}
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {presets.map((p) => (
-              <button key={p.preset} className="flex flex-col gap-1 rounded-xl border p-3 text-left hover:bg-muted/60" onClick={() => setForm(p)}>
-                <b className="flex items-center gap-1.5 text-sm">
-                  <Plus className="size-3.5" /> {p.name}
-                </b>
-                <small className="text-xs text-muted-foreground">{p.blurb}</small>
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>
-    </Modal>
+        </div>
+      </Card>
+      {form && <ConnectorForm initial={form} onDone={() => (setForm(null), connectors.reload())} />}
+    </div>
   );
 }
 
