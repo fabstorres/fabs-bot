@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function MentionChip({ bot, onClick }: { bot: Bot; onClick?: () => void }) {
   const style = {
-    color: `color-mix(in oklab, ${bot.color} 65%, currentColor)`,
+    color: `color-mix(in oklab, ${bot.color} 35%, currentColor)`,
     backgroundColor: `color-mix(in oklab, ${bot.color} 16%, transparent)`,
   };
   const className = "inline px-1.5 py-0.5 text-[1em] font-semibold";
