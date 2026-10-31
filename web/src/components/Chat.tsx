@@ -270,19 +270,26 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       <OfflineBanner />
       <div className="mx-auto max-w-3xl rounded-[26px] border bg-background p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
         {(files.length > 0 || uploading) && (
-          <div className="flex flex-wrap items-end gap-1.5 px-2 pt-1.5 pb-1">
+          <div className="flex flex-wrap items-center gap-2 px-2 pt-2 pb-2">
             {files.map((f) =>
               isImage(f.name) ? (
-                <div key={f.fileId} className="relative">
-                  <img src={`/files/${f.fileId}`} alt={f.name} className="h-20 max-w-40 rounded-2xl border bg-muted object-contain" />
-                  <Button variant="secondary" size="icon-xs" className="absolute top-1 right-1 rounded-full" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
+                <div key={f.fileId} className="relative size-24 flex-none">
+                  <Button
+                    variant="ghost"
+                    className="size-full overflow-hidden rounded-2xl border bg-muted p-0"
+                    aria-label={`Preview ${f.name}`}
+                    onClick={() => openModal({ kind: "file", url: `/files/${f.fileId}`, name: f.name })}
+                  >
+                    <img src={`/files/${f.fileId}`} alt={f.name} className="size-full object-cover" />
+                  </Button>
+                  <Button variant="secondary" size="icon-xs" className="absolute top-1 right-1 rounded-full bg-background/95 shadow-sm" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
                     <X />
                   </Button>
                 </div>
               ) : (
-                <Badge key={f.fileId} variant="secondary" className="gap-1 py-1 pr-1">
-                  <Paperclip /> {f.name}
-                  <button className="rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
+                <Badge key={f.fileId} variant="secondary" className="max-w-full gap-1 py-1 pr-1">
+                  <Paperclip className="shrink-0" /> <span className="truncate">{f.name}</span>
+                  <button className="shrink-0 rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label={`Remove ${f.name}`}>
                     <X className="size-3" />
                   </button>
                 </Badge>
