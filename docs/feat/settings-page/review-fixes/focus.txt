@@ -1,0 +1,45 @@
+== settings.md Focus step, exact eval from the recipe, 1440x900 ==
+$ browser start --viewport 1440x900; browser open /
+  opened http://127.0.0.1:4930/
+$ browser click --role button --name 'Bot Chief' --exact
+  activeElement: ["BUTTON", "", "Chief10:58 AMHey, I'm Chief. What's the main thing you want me on?"]
+$ browser click --role button --name Settings
+  activeElement: ["H2", "settings-section-title", "Providers"]
+$ browser press --role heading --name Providers --key Tab
+  activeElement: ["BUTTON", "", "RefreshChecked 11:00 AM"]
+$ browser click --role button --name Plugins
+  activeElement: ["BUTTON", "settings-nav-plugins", "Plugins"]
+$ browser click --role button --name 'This PC'
+  activeElement: ["BUTTON", "settings-nav-pc", "This PC"]
+$ browser click --role button --name 'Close settings'
+  activeElement: ["BUTTON", "open-settings", ""]
+$ browser press --role button --name Settings --key Enter
+  activeElement: ["H2", "settings-section-title", "Providers"]
+$ browser click --role button --name Plugins
+  activeElement: ["BUTTON", "settings-nav-plugins", "Plugins"]
+$ browser eval 'history.back()'
+  activeElement: ["BUTTON", "open-settings", ""]
+$ browser press --role button --name Settings --key Enter; browser press --role button --name 'Close settings' --key Enter
+  activeElement: ["BUTTON", "open-settings", ""]
+
+== settings.md Focus step, 430x932 ==
+$ browser start --viewport 430x932; browser open /?phone
+  opened http://127.0.0.1:4930/?phone
+$ browser click --role button --name Settings
+  activeElement: ["H1", "settings-title", "Settings"]
+$ browser click --role button --name Providers
+  activeElement: ["H2", "settings-section-title", "Providers"]
+$ browser click --role button --name Back
+  activeElement: ["BUTTON", "settings-nav-providers", "Providers"]
+$ browser click --role button --name 'This PC'
+  activeElement: ["H2", "settings-section-title", "This PC"]
+$ browser eval 'history.back()'
+  activeElement: ["BUTTON", "settings-nav-pc", "This PC"]
+$ browser click --role button --name Back
+  activeElement: ["BUTTON", "open-settings", ""]
+$ browser press --role button --name Settings --key Enter; browser press --role button --name Plugins --key Enter
+  activeElement: ["H1", "settings-title", "Settings"]
+  activeElement: ["H2", "settings-section-title", "Plugins"]
+$ browser eval 'history.back()' twice
+  activeElement: ["BUTTON", "settings-nav-plugins", "Plugins"]
+  activeElement: ["BUTTON", "open-settings", ""]

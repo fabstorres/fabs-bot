@@ -1,0 +1,21 @@
+Fake CLI <runDir>/stuck-gemini: ignores SIGTERM, keeps stdout open in a child 'sleep 9', then would print 9.9.9.
+Deadline in the server: 5 s. Before this fix, the reviewer measured 9.01 s for the check and 8.81 s for an unrelated save.
+
+$ PUT /api/providers/gemini {binaryPath: <runDir>/stuck-gemini}   (the save re-checks Gemini itself)
+  took 5.00 s
+$ GET /api/providers?refresh   (full check with the stuck Gemini)
+  took 5.00 s
+$ GET /api/providers?refresh in the background, then 0.5 s later PUT /api/providers/claude {enabled: true}
+  Claude save took 4.51 s (waits for the running check, cut off at 5 s from its start)
+  the background check took 5.00 s
+$ GET /api/providers   (cached, right after)
+  took 0.00 s
+  gemini row: {'installed': True, 'version': ''}
+
+== through the UI (1440x900), with the stuck Gemini still set ==
+"rows shown at 16 ms (\"Checking…\"); Claude switch clicked then; switch off at 5014 ms; check ended at 5014 ms; Gemini row \"Gemini CLIReady · chat + workspace\""
+server cache claude enabled: False
+$ browser click --role switch --name 'Enable Claude Code'   (back on)
+server cache claude enabled: True
+$ PUT /api/providers/gemini {binaryPath: ""}   (restore)
+  gemini version: 0.1.3

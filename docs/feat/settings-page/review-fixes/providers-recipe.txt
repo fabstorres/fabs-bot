@@ -1,0 +1,26 @@
+== providers.md, run as written ==
+-- Open, 1440x900 --
+$ browser click --role button --name 'Bot Chief' --exact
+$ browser click --role button --name Settings
+clicked
+$ browser wait --role region --name 'Claude Code settings'
+ok  visible
+Agent CLIs: buttons=5 switches=5
+→ .verify/artifacts/fix2/review/providers-open-desktop.aria.txt
+-- Instant --
+$ browser click --role button --name 'Close settings'
+$ browser eval "$(cat <runDir>/instant.js)"   (from Chief's chat, 1440x900)
+{ "origin": "http://127.0.0.1:4930", "firstRowMs": 12, "checkingAtFirstRow": true, "checkDoneMs": 1152}
+$ browser click --role button --name 'Close settings'; browser open /
+$ browser eval "$(cat <runDir>/instant.js)"   (after reload)
+{ "origin": "http://127.0.0.1:4930", "firstRowMs": 11, "checkingAtFirstRow": true, "checkDoneMs": 1132}
+-- Open and Instant, 430x932 --
+$ browser click --role button --name Settings
+clicked
+$ browser click --role button --name Providers
+clicked
+$ browser wait --role region --name 'Claude Code settings'
+ok  visible
+$ browser click --role button --name Back
+$ browser eval "$(sed 's/OPEN = "gear"/OPEN = "providers"/' <runDir>/instant.js)"
+{ "origin": "http://127.0.0.1:4930", "firstRowMs": 10, "checkingAtFirstRow": true, "checkDoneMs": 1122}
