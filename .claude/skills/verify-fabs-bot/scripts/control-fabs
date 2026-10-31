@@ -529,7 +529,7 @@ const commands: Record<string, () => Promise<void>> = {
       console.log(redact(lines.join("\n")) || "(no serve calls yet)");
       return;
     }
-    if (!shim) die("the server hasn't asked tailscale about serve yet; open the This PC panel or toggle Tailscale HTTPS first");
+    if (!shim) die("the server hasn't asked tailscale about serve yet; open Settings → This PC or toggle Tailscale HTTPS first");
     if (action === "state") {
       const rows: string[] = [];
       for (const [hostPort, web] of Object.entries<any>(shim.cfg.Web ?? {}))

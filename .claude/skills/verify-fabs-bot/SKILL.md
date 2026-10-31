@@ -79,7 +79,8 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 
 | UI | handle |
 |---|---|
-| sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`); `"Settings"` opens `--role menu --name "Settings"` with `--role menuitem` `Plugins` / `Providers` / `This PC` |
+| sidebar | `--role complementary --name "Bots"`; bot rows `--role button --name "Bot <Name>"` (preview line shows live status); group rows `"Thread: <title>"`; row dots `--role img --name "Needs you"` / `"Unread"`; search `--label "Search bots"`; `"New bot"` (`+`); `"Settings"` opens the settings page |
+| settings page | nav `--role navigation --name "Settings sections"` with `--label "Search settings"` and buttons `Providers` / `Plugins` / `This PC` (the open one has `aria-current="page"`); breadcrumb `--role navigation --name "breadcrumb"` (`Settings / <Section>`); `"Close settings"` (desktop) or `"Back"` (phone); the section is `--role region --name "<Section>"`. Desktop opens on Providers; at 430px it opens the section list |
 | PC menu | trigger `--role button --name "PC <name>"` (`This PC` or a saved PC's name in the desktop app, else the PC's hostname); menu `--role menu --name "PC <name>"` with the status (`All quiet` / `<n> bots working` / `Reconnecting…`) and one `--role menuitemradio` per PC, the open one `[checked]`; desktop app only: `"Change icon"` (`menuitemradio` `Monitor` / `Laptop` / `Tower` / `Server` / `Home` / `Work`) and `"Manage PCs…"` |
 | phone favorites | `--role button --name "Open <Name>"` (big faces above the list, 430px only) |
 | new bot pane | `--role region --name "New bot"`; `--role radio` in groups `Color` / `Shape`; `--label "Name"`; suggestions `"Suggestion <Template>"`; `"Get started"` |
@@ -89,8 +90,8 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
 | bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` in groups `Shape` / `Color` / `Brain` / `Autonomy` |
-| providers dialog | `--role dialog --name "Providers"`; list `--role group --name "Agent CLIs"` with a button per CLI (`"<Name> v<version> <status>"`) and `--role switch --name "Enable <Name>"`; details `--role region --name "<Name> settings"` with `--label "Display name"`, `"Binary path"`, `"Launch arguments"`; `--role group --name "Environment variables"` with `"Add variable"`, `--label "Variable <n> name"` / `"Variable <n> value"`, `"Remove <NAME>"`; `"Refresh"` |
-| This PC panel | `--role group --name "Pair your phone or laptop"` with `"Pair a device"`, then `"New link"` / `"Copy pairing link"`; `--role region --name "Paired devices"` with `"Remove <label>"` per device (`This device` marks your own); `--role switch --name "Tailscale HTTPS"` inside `--role group --name "Tailscale HTTPS"`; version badge `--text "v<version>"` beside the PC name |
+| Providers section | `--role region --name "Providers"`; list `--role group --name "Agent CLIs"` with a button per CLI (`"<Name> v<version> <status>"`) and `--role switch --name "Enable <Name>"`; details `--role region --name "<Name> settings"` with `--label "Display name"`, `"Binary path"`, `"Launch arguments"`; `--role group --name "Environment variables"` with `"Add variable"`, `--label "Variable <n> name"` / `"Variable <n> value"`, `"Remove <NAME>"`; `"Refresh"` (reads `Checking…` while the background check runs) |
+| This PC section | `--role group --name "Pair your phone or laptop"` with `"Pair a device"`, then `"New link"` / `"Copy pairing link"`; `--role region --name "Paired devices"` with `"Remove <label>"` per device (`This device` marks your own); `--role switch --name "Tailscale HTTPS"` inside `--role group --name "Tailscale HTTPS"`; version badge `--text "v<version>"` beside the PC name |
 | desktop launcher | `--role region --name "PCs"`; rows `--role group --name "PC <name>"` with `"Open"` / `"Forget <name>"`; form `--role form --name "Add a PC"` with `--label "Pairing link or address"`, `--label "Name (optional)"`, `"Connect"`; errors `--role alert` |
 
 Other drivers:
@@ -141,7 +142,7 @@ Proof standards:
 - The harness redacts them from everything it prints and snapshots.
 - Screenshots mask the PC-name chip, any text with this PC's own name (the offline banner shows it), the pairing QR, and the pairing link by default (`--no-mask` to opt out locally). Text output redacts this PC's name to `<pc>`.
 - `pair-check` and `browser pair` resolve the tailnet URL and make pairing links internally.
-- Don't screenshot the "This PC" panel unmasked.
+- Don't screenshot the "This PC" section unmasked.
 - Before anything leaves the machine, run `$C privacy-check`. It scans text artifacts and flags any PNG that lacks a clean `.aria.txt` twin.
 - A clean ARIA twin can't prove every pixel is private, especially when the snapshot covers less than the screenshot. Look at each screenshot yourself before sharing it.
 - Redaction and scanning share one rule set in `scripts/privacy.mjs`. After changing it, run `bun test ./.claude/skills/verify-fabs-bot/scripts/privacy.test.ts`.
