@@ -1,0 +1,25 @@
+# http://127.0.0.1:4870/  viewport=window
+- region "Notifications alt+T"
+- dialog "This PC":
+  - heading "This PC" [level=2]
+  - paragraph: This PC
+  - text: <pc> Tailscale · <pc>.<tailnet>.ts.net v0.1.0-alpha.2 MICHAEL’s MacBook Air macOS
+  - group "Pair your phone or laptop":
+    - heading "Pair your phone or laptop" [level=3]
+    - paragraph: Scan with a device on your tailnet. Each link works once and expires after 5 minutes. The device stays signed in until you remove it.
+    - button "Pair a device"
+    - group "Tailscale HTTPS":
+      - text: Tailscale HTTPS
+      - switch "Tailscale HTTPS"
+      - paragraph: Serves this PC over HTTPS on port 8443 of your tailnet. It turns on the mic and install-to-home-screen. Each device still pairs once with the QR code. Other apps using Tailscale HTTPS are left alone.
+  - region "Paired devices":
+    - heading "Paired devices" [level=3]
+    - paragraph: No devices yet.
+  - heading "Where bots work" [level=3]
+  - paragraph:
+    - text: Desks live in
+    - code: /run/user/1000/fabs-verify/release-version/work
+    - text: .
+    - code: /run/user/1000/fabs-verify/release-version/work/shared
+    - text: is visible to every bot and holds your uploads.
+  - button "Close"
