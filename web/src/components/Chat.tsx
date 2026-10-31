@@ -1,7 +1,7 @@
 import { type RefObject, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Plus, Square, Trash2, UserPlus, X } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
-import { api } from "../api";
+import { api, isImage } from "../api";
 import { toast } from "sonner";
 import { attachFiles, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
@@ -270,15 +270,24 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       <OfflineBanner />
       <div className="mx-auto max-w-3xl rounded-[26px] border bg-background p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50">
         {(files.length > 0 || uploading) && (
-          <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-1">
-            {files.map((f) => (
-              <Badge key={f.fileId} variant="secondary" className="gap-1 py-1 pr-1">
-                <Paperclip /> {f.name}
-                <button className="rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label="Remove">
-                  <X className="size-3" />
-                </button>
-              </Badge>
-            ))}
+          <div className="flex flex-wrap items-end gap-1.5 px-2 pt-1.5 pb-1">
+            {files.map((f) =>
+              isImage(f.name) ? (
+                <div key={f.fileId} className="relative">
+                  <img src={`/files/${f.fileId}`} alt={f.name} className="h-20 max-w-40 rounded-2xl border bg-muted object-contain" />
+                  <Button variant="secondary" size="icon-xs" className="absolute top-1 right-1 rounded-full" onClick={() => remove(f.fileId)} aria-label="Remove">
+                    <X />
+                  </Button>
+                </div>
+              ) : (
+                <Badge key={f.fileId} variant="secondary" className="gap-1 py-1 pr-1">
+                  <Paperclip /> {f.name}
+                  <button className="rounded-full p-0.5 hover:bg-black/10" onClick={() => remove(f.fileId)} aria-label="Remove">
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              ),
+            )}
             {uploading && (
               <Badge variant="secondary" className="py-1">
                 <LoaderCircle className="animate-spin" /> Uploading…

@@ -4,7 +4,7 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { Check, ChevronDown, ChevronRight, Download, Zap } from "lucide-react";
 import type { Bot, Message, MessagePart } from "../../../shared/types";
-import { api, formatSize, formatTime } from "../api";
+import { api, formatSize, formatTime, isImage } from "../api";
 import { isConnected, openModal, openNestedThread, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Button } from "@/components/ui/button";
@@ -107,7 +107,7 @@ function Part({ part, index, message, bot, error }: { part: MessagePart; index: 
     case "tool":
       return <Exchange tool={part} from={bot} />;
     case "file":
-      return <FileChip fileId={part.fileId} name={part.name} size={part.size} />;
+      return isImage(part.name) ? <ImageFile fileId={part.fileId} name={part.name} /> : <FileChip fileId={part.fileId} name={part.name} size={part.size} />;
     case "question":
       return <QuestionCard part={part} index={index} message={message} />;
     case "approval":
@@ -173,6 +173,18 @@ function WorkLog({ tools, live }: { tools: ToolPart[]; live: boolean }) {
         </ol>
       )}
     </div>
+  );
+}
+
+function ImageFile({ fileId, name }: { fileId: string; name: string }) {
+  return (
+    <button
+      className="max-w-[88%] overflow-hidden rounded-2xl border bg-muted md:max-w-sm"
+      aria-label={`File ${name}`}
+      onClick={() => openModal({ kind: "file", url: `/files/${fileId}`, name })}
+    >
+      <img src={`/files/${fileId}`} alt={name} className="max-h-80" />
+    </button>
   );
 }
 
