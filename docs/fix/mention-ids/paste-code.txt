@@ -1,0 +1,1 @@
+"{\"chips\":[\"Chief\"],\"text\":\"`<@<id>>` is just code, [<@<id>>](https://example.com) and Chief here\"}"

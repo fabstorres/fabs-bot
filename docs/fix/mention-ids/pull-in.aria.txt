@@ -1,0 +1,17 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Thread with Chief, Design":
+  - text: Chief, Design
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph:
+      - button "@Design": Design
+      - text: "reply with exactly the word: mango"
+    - text: Design
+    - time: 10:50 AM
+    - paragraph: mango
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

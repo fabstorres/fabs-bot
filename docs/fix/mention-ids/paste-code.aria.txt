@@ -1,0 +1,18 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Thread with Design":
+  - text: Design
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Design. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops"
+      - button "B A specific project"
+      - button "C Research and writing"
+      - button "D Something else"
+  - textbox "Message":
+    - paragraph: "`<@9f89d360-c1f0-41df-a09f-2ceac0f6f0ac>` is just code, [<@9f89d360-c1f0-41df-a09f-2ceac0f6f0ac>](https://example.com) and Chief here"
+  - button "Attach"
+  - button "Dictate"
+  - button "Send"

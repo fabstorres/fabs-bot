@@ -3,6 +3,7 @@ import remarkParse from "remark-parse";
 import { unified } from "unified";
 
 interface Named {
+  id: string;
   name: string;
 }
 
@@ -15,9 +16,15 @@ export interface MdNode {
 
 export type Piece<B> = string | { bot: B; text: string };
 
+const MENTION = /<@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})>/g;
+
 const HANDLE_CHAR = "[\\p{L}\\p{N}_-]";
 
+export const DELETED_BOT = "@deleted bot";
+
 export const handleOf = (name: string) => name.replace(/\s+/g, "");
+
+export const mentionOf = (bot: { id: string }) => `<@${bot.id}>`;
 
 const slug = (name: string) =>
   name
@@ -32,6 +39,26 @@ function handlesOf(name: string): string[] {
 }
 
 export function splitMentions<B extends Named>(text: string, bots: B[]): Piece<B>[] {
+  const pieces: Piece<B>[] = [];
+  let last = 0;
+  for (const m of text.matchAll(MENTION)) {
+    const bot = bots.find((b) => b.id === m[1]);
+    if (!bot) continue;
+    pieces.push(text.slice(last, m.index), { bot, text: m[0] });
+    last = m.index + m[0].length;
+  }
+  pieces.push(text.slice(last));
+  return pieces.filter((p) => p !== "");
+}
+
+export const hideDeleted = (text: string) => text.replace(MENTION, DELETED_BOT);
+
+export const readable = (text: string, bots: Named[]) =>
+  splitMentions(text, bots)
+    .map((p) => (typeof p === "string" ? hideDeleted(p) : `@${handleOf(p.bot.name)}`))
+    .join("");
+
+function splitHandles<B extends Named>(text: string, bots: B[]): Piece<B>[] {
   if (!text.includes("@")) return text ? [text] : [];
   const owners = new Map<string, Set<B>>();
   for (const bot of bots) for (const h of handlesOf(bot.name)) owners.set(h, (owners.get(h) ?? new Set()).add(bot));
@@ -64,27 +91,31 @@ const botsIn = <B>(pieces: Piece<B>[]) => pieces.flatMap((p) => (typeof p === "s
 
 const sameBots = <B>(a: B[], b: B[]) => a.length === b.length && a.every((bot, i) => bot === b[i]);
 
-export function splitMarkdownMentions<B extends Named>(markdown: string, bots: B[]): Piece<B>[] {
+function splitMarkdown<B>(markdown: string, split: (text: string) => Piece<B>[]): Piece<B>[] {
   const pieces: Piece<B>[] = [];
   let last = 0;
   for (const { node } of textNodes(parse(markdown))) {
-    const { start, end } = node.position!;
-    let at = start.offset!;
-    const source = splitMentions(markdown.slice(at, end.offset), bots);
-    if (!sameBots(botsIn(source), botsIn(splitMentions(node.value ?? "", bots)))) continue;
+    let at = node.position!.start.offset!;
+    const source = split(markdown.slice(at, node.position!.end.offset));
+    if (!sameBots(botsIn(source), botsIn(split(node.value ?? "")))) continue;
     for (const piece of source) {
-      if (typeof piece === "string") {
-        at += piece.length;
-        continue;
+      if (typeof piece !== "string") {
+        pieces.push(markdown.slice(last, at), piece);
+        last = at + piece.text.length;
       }
-      pieces.push(markdown.slice(last, at), piece);
-      at += piece.text.length;
-      last = at;
+      at += typeof piece === "string" ? piece.length : piece.text.length;
     }
   }
   pieces.push(markdown.slice(last));
   return pieces.filter((p) => p !== "");
 }
+
+export const splitMarkdownMentions = <B extends Named>(markdown: string, bots: B[]) => splitMarkdown(markdown, (text) => splitMentions(text, bots));
+
+export const linkHandles = (markdown: string, bots: Named[]) =>
+  splitMarkdown(markdown, (text) => splitHandles(text, bots))
+    .map((p) => (typeof p === "string" ? p : mentionOf(p.bot)))
+    .join("");
 
 export function mentionedBots<B extends Named>(markdown: string, bots: B[]): B[] {
   const found = new Set<B>();

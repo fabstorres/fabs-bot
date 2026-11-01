@@ -1,6 +1,6 @@
 import { hostname, userInfo } from "node:os";
 import { mkdirSync } from "node:fs";
-import { handleOf, mentionedBots } from "../shared/mentions";
+import { handleOf, linkHandles, mentionedBots, readable } from "../shared/mentions";
 import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { LOCAL_BASE, MAX_HOPS, SHARED_DIR } from "./config";
 import * as db from "./db";
@@ -148,7 +148,7 @@ function describeMessage(m: Message, self: Bot): string {
     .map((p) => {
       switch (p.type) {
         case "text":
-          return p.text;
+          return readable(p.text, db.listBots());
         case "file":
           return `[file: ${p.name} at ${db.getFile(p.fileId)?.path ?? "(missing)"}]`;
         case "question":
@@ -313,12 +313,14 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   if (error) parts.push({ type: "text", text: `⚠️ ${error}` });
   const hasContent = parts.some((p) => p.type !== "text" || p.text.trim());
   if (!hasContent) parts.push({ type: "text", text: "_(no reply)_" });
+  const bots = db.listBots();
+  for (const p of parts) if (p.type === "text") p.text = linkHandles(p.text, bots);
   msg = db.updateMessage(msg.id, parts, error ? "error" : "done");
   publish({ type: "message", message: msg });
 
   const replyText = textOf(msg);
   const t = db.updateThread(threadId, {
-    preview: clip(plain(replyText) || lastPartSummary(parts), 140),
+    preview: clip(plain(readable(replyText, bots)) || lastPartSummary(parts), 140),
     unread: (db.getThread(threadId)?.unread ?? 0) + 1,
   });
   if (t) publish({ type: "thread", thread: t });
@@ -387,7 +389,7 @@ export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   const m = db.addMessage({ threadId, author: "user", parts });
   publish({ type: "message", message: m });
   const text = textOf(m);
-  const t = db.updateThread(threadId, { preview: clip(text || "📎 file", 140), unread: 0 });
+  const t = db.updateThread(threadId, { preview: clip(readable(text, db.listBots()) || "📎 file", 140), unread: 0 });
   if (t) publish({ type: "thread", thread: t });
 
   const named = mentioned(text, thread, null);
@@ -411,7 +413,7 @@ export async function messageBot(from: Bot, to: Bot, text: string, depth: number
     thread = db.createThread("backchannel", [from.id, to.id], `${from.name} ↔ ${to.name}`);
     publish({ type: "thread", thread });
   }
-  const m = db.addMessage({ threadId: thread.id, author: "bot", botId: from.id, fromBotId: from.id, parts: [{ type: "text", text }] });
+  const m = db.addMessage({ threadId: thread.id, author: "bot", botId: from.id, fromBotId: from.id, parts: [{ type: "text", text: linkHandles(text, db.listBots()) }] });
   publish({ type: "message", message: m });
   const t = db.updateThread(thread.id, { preview: clip(`${from.name}: ${text}`, 140) });
   if (t) publish({ type: "thread", thread: t });
@@ -419,7 +421,7 @@ export async function messageBot(from: Bot, to: Bot, text: string, depth: number
   const link = startLink(from.id, to.id, thread.id);
   try {
     const reply = await runTurn(thread.id, to.id, { depth: depth + 1 });
-    return reply ? textOf(reply) || "(they replied without text)" : "(no reply)";
+    return reply ? readable(textOf(reply), db.listBots()) || "(they replied without text)" : "(no reply)";
   } finally {
     endLink(link);
   }

@@ -1,0 +1,5 @@
+#1 user (done): "<@f2c5a3e2-c542-4237-be82-56f4ba943e8e> of Staff, reply with exactly the word: kiwi."
+#2 Chief (done): "kiwi"
+#3 user (done): "first quote my whole message back exactly as you received it, inside a code block. Then hand the floor <@f2c5a3e2-c542-4237-be82-56f4ba943e8e> to Chief of Staff"
+#4 Chief (done): "```\nfirst quote my whole message back exactly as you received it, inside a code block. Then hand the floor @Chief to Chief of Staff by writing their handle, and"
+#5 Chief of Staff (done): "pear"

@@ -5,6 +5,7 @@
 import { copyFileSync, existsSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { Cron } from "croner";
+import { linkHandles } from "../shared/mentions";
 import type { MessagePart } from "../shared/types";
 import { FILES_DIR, VERSION } from "./config";
 import * as db from "./db";
@@ -144,7 +145,7 @@ const tools: ToolDef[] = [
     run(args, ctx) {
       const t = directThread(ctx.botId);
       if (t.id === ctx.threadId) return "You're already talking to the user here; just reply.";
-      const m = db.addMessage({ threadId: t.id, author: "bot", botId: ctx.botId, fromBotId: ctx.botId, parts: [{ type: "text", text: String(args.message) }] });
+      const m = db.addMessage({ threadId: t.id, author: "bot", botId: ctx.botId, fromBotId: ctx.botId, parts: [{ type: "text", text: linkHandles(String(args.message), db.listBots()) }] });
       publish({ type: "message", message: m });
       const updated = db.updateThread(t.id, { preview: clip(String(args.message), 140), unread: t.unread + 1 });
       if (updated) publish({ type: "thread", thread: updated });

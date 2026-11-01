@@ -1,0 +1,21 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Thread with Chief":
+  - text: Chief
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops" [disabled]
+      - button "B A specific project" [disabled]
+      - button "C Research and writing" [disabled]
+      - button "D Something else" [disabled]
+    - paragraph: "@Design reply with exactly the word: plum"
+    - button "Exchange with Design": Talked with Design plum
+    - paragraph: I sent "plum" to Design as you asked. Design replied asking whether you want a plum color for a UI or palette, or whether it was just a ping. I haven't added any context, since you only asked for the word. Tell me what you want and I'll follow up with Design.
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

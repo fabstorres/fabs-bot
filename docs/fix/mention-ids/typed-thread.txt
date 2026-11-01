@@ -1,0 +1,2 @@
+#2 user (done): "@Design reply with exactly the word: plum"
+#3 Chief (done): [tool fabsbot · message_bot done] "I sent \"plum\" to Design as you asked. Design replied asking whether you want a plum color for a UI or palette, or whether it was just a ping. I haven't added an"
