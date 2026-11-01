@@ -42,6 +42,7 @@ const PAGE_DEFAULT = 25;
 const PAGE_MAX = 50;
 const READ_BUDGET = 20_000;
 const MESSAGE_CAP = 4_000;
+const LABEL_CAP = 200;
 
 function pageLimit(value: unknown): number {
   if (value === undefined || value === null) return PAGE_DEFAULT;
@@ -66,10 +67,11 @@ function seqCursor(value: unknown): number {
 
 const botName = (id: string | null) => db.getBot(id ?? "")?.name ?? "A former teammate";
 const isoTime = (ms: number) => new Date(ms).toISOString();
+const capLabel = (text: string) => (text.length > LABEL_CAP ? `${text.slice(0, LABEL_CAP)}…` : text);
 
 function describeThread(t: Thread): string {
-  const label = [t.title && `"${t.title}"`, t.topic && `topic: ${t.topic}`].filter(Boolean).join(", ") || "untitled";
-  const members = t.memberIds.map(botName).join(", ") || "none";
+  const label = [t.title && `"${capLabel(t.title)}"`, t.topic && `topic: ${capLabel(t.topic)}`].filter(Boolean).join(", ") || "untitled";
+  const members = t.memberIds.map((id) => capLabel(botName(id))).join(", ") || "none";
   return `${t.id} · ${t.kind} · ${label} · members: ${members} · last activity ${isoTime(t.updatedAt)}`;
 }
 
@@ -214,11 +216,19 @@ const tools: ToolDef[] = [
     run(args) {
       const limit = pageLimit(args.limit);
       const rows = db.pageThreads(threadCursor(args.cursor), limit + 1);
-      const page = rows.slice(0, limit);
-      if (!page.length) return "No threads.";
-      const last = page[page.length - 1]!;
-      const next = rows.length > limit ? `next_cursor: ${last.updatedAt}:${last.id}` : "No more threads.";
-      return [...page.map((t) => `- ${describeThread(t)}`), next].join("\n");
+      if (!rows.length) return "No threads.";
+      const entries: string[] = [];
+      let used = 0;
+      let last = rows[0]!;
+      for (const t of rows.slice(0, limit)) {
+        const entry = `- ${describeThread(t)}`;
+        if (entries.length && used + entry.length > READ_BUDGET) break;
+        entries.push(entry);
+        used += entry.length;
+        last = t;
+      }
+      const next = rows.length > entries.length ? `next_cursor: ${last.updatedAt}:${last.id}` : "No more threads.";
+      return [...entries, next].join("\n");
     },
   },
   {
