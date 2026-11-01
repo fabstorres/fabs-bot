@@ -127,6 +127,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
       `- set_topic: tag this thread with a 1–3 word topic once its subject is clear.`,
       `- schedule_routine / list_routines / delete_routine: recurring work on a cron schedule.`,
       `- notify_user: ping the user in your direct thread with them, e.g. from a routine or a backchannel.`,
+      `- list_threads / read_thread: read any thread without posting to it, e.g. to summarize a group chat. Read a page at a time with next_cursor / next_after_seq instead of loading everything.`,
     );
   }
   lines.push(

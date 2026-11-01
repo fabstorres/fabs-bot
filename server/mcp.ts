@@ -5,8 +5,8 @@
 import { copyFileSync, existsSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { Cron } from "croner";
-import { linkHandles } from "../shared/mentions";
-import type { MessagePart } from "../shared/types";
+import { linkHandles, readable } from "../shared/mentions";
+import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { FILES_DIR, VERSION } from "./config";
 import * as db from "./db";
 import { getStatus, publish, setStatus } from "./bus";
@@ -36,6 +36,54 @@ export function decideApproval(requestId: string, decision: "allow" | "deny"): b
   pendingApprovals.delete(requestId);
   p.resolve(decision);
   return true;
+}
+
+const PAGE_DEFAULT = 25;
+const PAGE_MAX = 50;
+const READ_BUDGET = 20_000;
+const MESSAGE_CAP = 4_000;
+
+function pageLimit(value: unknown): number {
+  if (value === undefined || value === null) return PAGE_DEFAULT;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1 || n > PAGE_MAX) throw new Error(`limit must be a whole number from 1 to ${PAGE_MAX}.`);
+  return n;
+}
+
+function threadCursor(value: unknown) {
+  if (value === undefined || value === null || value === "") return null;
+  const match = /^(\d+):(.+)$/.exec(String(value));
+  if (!match) throw new Error(`Bad cursor "${value}". Pass next_cursor from your last list_threads call, or leave it out.`);
+  return { updatedAt: Number(match[1]), id: match[2] };
+}
+
+function seqCursor(value: unknown): number {
+  if (value === undefined || value === null) return 0;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 0) throw new Error("after_seq must be a whole number, 0 or more.");
+  return n;
+}
+
+const botName = (id: string | null) => db.getBot(id ?? "")?.name ?? "A former teammate";
+const isoTime = (ms: number) => new Date(ms).toISOString();
+
+function describeThread(t: Thread): string {
+  const label = [t.title && `"${t.title}"`, t.topic && `topic: ${t.topic}`].filter(Boolean).join(", ") || "untitled";
+  const members = t.memberIds.map(botName).join(", ") || "none";
+  return `${t.id} · ${t.kind} · ${label} · members: ${members} · last activity ${isoTime(t.updatedAt)}`;
+}
+
+function describeMessage(m: Message, bots: Bot[]): string {
+  const author = m.author === "user" ? "User" : m.author === "system" ? "System" : botName(m.botId);
+  const full = m.parts
+    .map((p) => (p.type === "text" ? readable(p.text, bots) : p.type === "question" ? `[asked: ${p.question}]` : ""))
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+  const text = full.length > MESSAGE_CAP ? `${full.slice(0, MESSAGE_CAP)}\n[truncated, ${full.length - MESSAGE_CAP} more chars]` : full;
+  const files = m.parts.flatMap((p) => (p.type === "file" ? [p.name] : []));
+  const attachments = files.length ? `\n[attachments: ${files.join(", ")}]` : "";
+  return `#${m.seq} · ${isoTime(m.createdAt)} · ${author}:\n${text || "(no text)"}${attachments}`;
 }
 
 const tools: ToolDef[] = [
@@ -150,6 +198,62 @@ const tools: ToolDef[] = [
       const updated = db.updateThread(t.id, { preview: clip(String(args.message), 140), unread: t.unread + 1 });
       if (updated) publish({ type: "thread", thread: updated });
       return "Sent.";
+    },
+  },
+  {
+    name: "list_threads",
+    description:
+      "List Fabs Bot threads (direct chats, groups, bot-to-bot channels), most recent activity first. Read-only. Pass next_cursor back to get the next page.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        cursor: str("next_cursor from your last list_threads call; leave out for the first page"),
+        limit: { type: "number", description: `Threads per page, 1–${PAGE_MAX} (default ${PAGE_DEFAULT})` },
+      },
+    },
+    run(args) {
+      const limit = pageLimit(args.limit);
+      const rows = db.pageThreads(threadCursor(args.cursor), limit + 1);
+      const page = rows.slice(0, limit);
+      if (!page.length) return "No threads.";
+      const last = page[page.length - 1]!;
+      const next = rows.length > limit ? `next_cursor: ${last.updatedAt}:${last.id}` : "No more threads.";
+      return [...page.map((t) => `- ${describeThread(t)}`), next].join("\n");
+    },
+  },
+  {
+    name: "read_thread",
+    description:
+      "Read a page of messages from any thread, oldest first, without posting to it or joining it. Pass next_after_seq back as after_seq to continue. Very long messages are truncated.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        thread_id: str("Thread id from list_threads"),
+        after_seq: { type: "number", description: "Only messages after this seq; leave out to start at the beginning" },
+        limit: { type: "number", description: `Messages per page, 1–${PAGE_MAX} (default ${PAGE_DEFAULT})` },
+      },
+      required: ["thread_id"],
+    },
+    run(args) {
+      const thread = db.getThread(String(args.thread_id ?? ""));
+      if (!thread) throw new Error(`No thread with id "${args.thread_id}". Call list_threads to find one.`);
+      const afterSeq = seqCursor(args.after_seq);
+      const limit = pageLimit(args.limit);
+      const bots = db.listBots();
+      const rows = db.pageMessages(thread.id, afterSeq, limit + 1);
+      const entries: string[] = [];
+      let used = 0;
+      let lastSeq = afterSeq;
+      for (const m of rows.slice(0, limit)) {
+        const entry = describeMessage(m, bots);
+        if (entries.length && used + entry.length > READ_BUDGET) break;
+        entries.push(entry);
+        used += entry.length;
+        lastSeq = m.seq;
+      }
+      const next = rows.length > entries.length ? `next_after_seq: ${lastSeq}` : "End of thread.";
+      const body = entries.length ? entries.join("\n\n") : `No messages after seq ${afterSeq}.`;
+      return `Thread ${describeThread(thread)}\n\n${body}\n\n${next}`;
     },
   },
   {
