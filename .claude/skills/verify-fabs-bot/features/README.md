@@ -46,7 +46,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 ## Features
 
 - [Direct chat](./direct-chat.md): open a bot from the sidebar, hand it work, watch it work, open the file it shares, find it in the desk panel and on disk, see its routines, and the phone list → chat flow.
-- [Teamwork](./teamwork.md): bot↔bot messaging shown as inline exchange cards that open the private backchannel, and group chats (sidebar rows, member switcher) driven by @mentions, shown as bot chips.
+- [Teamwork](./teamwork.md): bot↔bot messaging shown as inline exchange cards that open the private backchannel, and group chats (sidebar rows, member switcher) driven by @mentions, shown as bot chips, plus bots starting groups and inviting teammates after your approval.
 - [Needs you](./needs-you.md): tap-to-answer question cards, Allow/Deny approval cards, and the sidebar's `Needs you` dot.
 - [Bots](./bots.md): the starter bot on a fresh install, create a bot in the New Bot pane (from scratch or a suggestion), the greeting card, inline settings with a label, the full editor, and retiring.
 - [Pairing and access](./pairing-and-access.md): unpaired devices are refused, a one-time pairing link signs in one device over Tailscale, This PC lists paired devices and removes any one of them, and the bot MCP endpoint stays loopback-only.

@@ -128,6 +128,8 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
       `- schedule_routine / list_routines / delete_routine: recurring work on a cron schedule.`,
       `- notify_user: ping the user in your direct thread with them, e.g. from a routine or a backchannel.`,
       `- list_threads / read_thread: read any thread without posting to it, e.g. to summarize a group chat. Read a page at a time with next_cursor / next_after_seq instead of loading everything.`,
+      `- start_group: open a new group chat with the user, you and named teammates. The user approves it first.`,
+      `- invite_bot: add a teammate to this group chat. The user approves it first. Outside a group, use start_group.`,
     );
   }
   lines.push(
@@ -341,7 +343,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   if (thread.kind === "group" && !error && !ctrl.signal.aborted) {
     const hops = (opts.hops ?? 0) + 1;
     if (hops <= MAX_HOPS) {
-      for (const target of mentioned(replyText, thread, botId)) void runTurn(threadId, target, { hops });
+      for (const target of mentioned(replyText, db.getThread(threadId) ?? thread, botId)) void runTurn(threadId, target, { hops });
     }
   }
   return msg;
@@ -433,6 +435,21 @@ export function directThread(botId: string): Thread {
   const existing = db.listThreads().find((t) => t.kind === "direct" && t.memberIds.length === 1 && t.memberIds[0] === botId);
   if (existing) return existing;
   const t = db.createThread("direct", [botId]);
+  publish({ type: "thread", thread: t });
+  return t;
+}
+
+export function bringInBot(threadId: string, botId: string): Thread | null {
+  const thread = db.getThread(threadId);
+  if (!thread || !db.getBot(botId)) return null;
+  if (thread.memberIds.includes(botId)) return thread;
+  if (thread.kind === "direct") {
+    const group = db.createThread("group", [...thread.memberIds, botId]);
+    publish({ type: "thread", thread: group });
+    return group;
+  }
+  db.addMember(threadId, botId);
+  const t = db.getThread(threadId)!;
   publish({ type: "thread", thread: t });
   return t;
 }

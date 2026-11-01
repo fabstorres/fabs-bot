@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { linkHandles, mentionedBots, readable, splitMarkdownMentions } from "./mentions";
+import { botsNamed, linkHandles, mentionedBots, readable, splitMarkdownMentions } from "./mentions";
 
 const chief = { id: "00000000-0000-4000-8000-000000000001", name: "Chief" };
 const staff = { id: "00000000-0000-4000-8000-000000000002", name: "Chief of Staff" };
@@ -66,5 +66,19 @@ describe("handles written by bots", () => {
 
   test("a handle two bots share stays plain", () => {
     expect(linkHandles("hi @Chief", [chief, { id: "00000000-0000-4000-8000-000000000004", name: "chief" }])).toBe("hi @Chief");
+  });
+});
+
+describe("botsNamed", () => {
+  const named = (name: string, list = bots) => botsNamed(name, list).map((b) => b.name);
+
+  test("a shorter name never matches a longer one that starts with it", () => {
+    expect(named("chief")).toEqual(["Chief"]);
+    expect(named("@ChiefofStaff")).toEqual(["Chief of Staff"]);
+  });
+
+  test("names that share a handle are all returned so callers can refuse the ambiguity", () => {
+    const twin = { id: "00000000-0000-4000-8000-000000000004", name: "Github-Issues" };
+    expect(named("github-issues", [...bots, twin])).toEqual(["Github Issues", "Github-Issues"]);
   });
 });

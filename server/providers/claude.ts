@@ -67,7 +67,7 @@ export const claude: Provider = {
     const { code, stderr } = await spawnLines({
       cmd,
       cwd: o.cwd,
-      env: o.launch.env,
+      env: { MCP_TOOL_TIMEOUT: "3600000", ...o.launch.env },
       stdin: o.prompt,
       signal: o.signal,
       onLine(line) {
