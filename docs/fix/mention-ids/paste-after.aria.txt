@@ -1,0 +1,41 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Thread with Chief, Chief of Staff":
+  - text: Chief, Chief of Staff
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "of Staff, reply with exactly the word: kiwi."
+    - text: Chief
+    - time: 10:48 AM
+    - paragraph: kiwi
+    - paragraph:
+      - text: first quote my whole message back exactly as you received it, inside a code block. Then hand the floor
+      - button "@Chief": Chief
+      - text: "to Chief of Staff by writing their handle, and ask them to reply with exactly the word: pear."
+    - text: Chief
+    - time: 10:49 AM
+    - code: "first quote my whole message back exactly as you received it, inside a code block. Then hand the floor @Chief to Chief of Staff by writing their handle, and ask them to reply with exactly the word: pear."
+    - paragraph:
+      - button "@Chief of Staff": Chief of Staff
+      - text: ", please reply with exactly the word: pear."
+    - text: Chief of Staff
+    - time: 10:49 AM
+    - paragraph: pear
+    - paragraph:
+      - button "@Chief": Chief
+      - text: of Staff reply with exactly guava.
+    - text: Chief
+    - time: 10:49 AM
+    - paragraph:
+      - button "@Chief of Staff": Chief of Staff
+      - text: ", please reply with exactly the word: guava."
+    - text: Chief of Staff
+    - time: 10:49 AM
+    - paragraph: guava
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

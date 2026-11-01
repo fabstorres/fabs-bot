@@ -3,10 +3,12 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { Check, ChevronDown, ChevronRight, Download, Zap } from "lucide-react";
+import { hideDeleted, type MdNode, splitMentions, textNodes } from "../../../shared/mentions";
 import type { Bot, Message, MessagePart } from "../../../shared/types";
 import { api, formatSize, formatTime, isImage } from "../api";
-import { isConnected, openModal, openNestedThread, useStore } from "../store";
+import { isConnected, openDirect, openModal, openNestedThread, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
+import { MentionChip } from "./MentionChip";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -78,7 +80,7 @@ function MessageView({ m, bots, showAuthor, gap }: { m: Message; bots: Bot[]; sh
         ) : g.kind === "tools" ? (
           <WorkLog key={i} tools={g.tools} live={m.status === "streaming" && i === groups.length - 1} bot={bot} />
         ) : (
-          <Part key={i} part={g.part} index={g.index} message={m} bot={bot} error={m.status === "error" && i === groups.length - 1} />
+          <Part key={i} part={g.part} index={g.index} message={m} bot={bot} bots={bots} error={m.status === "error" && i === groups.length - 1} />
         ),
       )}
       {m.status === "streaming" && empty && (
@@ -94,7 +96,22 @@ function MessageView({ m, bots, showAuthor, gap }: { m: Message; bots: Bot[]; sh
   );
 }
 
-function Part({ part, index, message, bot, error }: { part: MessagePart; index: number; message: Message; bot?: Bot; error: boolean }) {
+function remarkMentions(bots: Bot[]) {
+  return () => (tree: MdNode) => {
+    for (const { node, parent } of [...textNodes(tree)]) {
+      if (!node.value?.includes("<@")) continue;
+      const pieces = splitMentions(node.value, bots);
+      const nodes = pieces.map((p) =>
+        typeof p === "string"
+          ? { type: "text", value: hideDeleted(p) }
+          : { type: "mention", data: { hName: "span", hProperties: { dataMention: p.bot.id } }, children: [{ type: "text", value: p.text }] },
+      );
+      parent.children!.splice(parent.children!.indexOf(node), 1, ...nodes);
+    }
+  };
+}
+
+function Part({ part, index, message, bot, bots, error }: { part: MessagePart; index: number; message: Message; bot?: Bot; bots: Bot[]; error: boolean }) {
   switch (part.type) {
     case "text": {
       const mine = message.author === "user";
@@ -106,7 +123,16 @@ function Part({ part, index, message, bot, error }: { part: MessagePart; index: 
             error && "bg-red-50 dark:bg-red-500/15",
           )}
         >
-          <Markdown remarkPlugins={[remarkGfm, remarkBreaks]} components={{ a: (p) => <a {...p} target="_blank" rel="noreferrer" /> }}>
+          <Markdown
+            remarkPlugins={[remarkGfm, remarkBreaks, remarkMentions(bots)]}
+            components={{
+              a: (p) => <a {...p} target="_blank" rel="noreferrer" />,
+              span: ({ node, ...p }) => {
+                const mention = bots.find((b) => b.id === node?.properties.dataMention);
+                return mention ? <MentionChip bot={mention} onClick={() => void openDirect(mention.id)} /> : <span {...p} />;
+              },
+            }}
+          >
             {part.text}
           </Markdown>
         </div>

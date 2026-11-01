@@ -1,0 +1,2 @@
+#1 user (done): "<@f2c5a3e2-c542-4237-be82-56f4ba943e8e> of Staff, reply with exactly the word: kiwi."
+#2 Chief (done): "kiwi"
