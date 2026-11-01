@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ProviderId } from "../../../shared/types";
+import { cn } from "@/lib/utils";
 
 const icons = {
   claude: (
@@ -34,9 +35,9 @@ const icons = {
   ),
 } satisfies Record<ProviderId, ReactNode>;
 
-export function ProviderIcon({ id }: { id: ProviderId }) {
+export function ProviderIcon({ id, className }: { id: ProviderId; className?: string }) {
   return (
-    <span aria-hidden className="grid size-8 flex-none place-items-center [&>svg]:size-6">
+    <span aria-hidden className={cn("grid size-8 flex-none place-items-center [&>svg]:size-6", className)}>
       {icons[id]}
     </span>
   );

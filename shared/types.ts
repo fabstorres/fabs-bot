@@ -239,3 +239,23 @@ export interface PcSwitcher {
   setIcon(id: string, icon: PcIcon): Promise<void>;
   manage(): Promise<void>;
 }
+
+export type LimitsProviderId = Extract<ProviderId, "claude" | "codex">;
+
+export interface UsageWindow {
+  id: string;
+  label: string;
+  usedPercent: number;
+  resetsAt?: number;
+}
+
+export interface ProviderLimits {
+  provider: LimitsProviderId;
+  status: "ok" | "not-installed" | "unavailable" | "error";
+  plan?: string;
+  checkedAt: number;
+  windows: UsageWindow[];
+  credits?: string;
+  resetCredits?: { available: number; nextExpiresAt?: number };
+  error?: string;
+}
