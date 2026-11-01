@@ -1,0 +1,12 @@
+# http://127.0.0.1:4870/  viewport=1440x900
+- region "Thread with Chief, Chief of Staff":
+  - text: Chief, Chief of Staff
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - heading "Chief, Chief of Staff" [level=3]
+  - textbox "Message":
+    - paragraph: "Chief of Staff, reply with exactly the word: kiwi."
+  - button "Attach"
+  - button "Dictate"
+  - button "Send"

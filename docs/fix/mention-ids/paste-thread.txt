@@ -1,0 +1,3 @@
+#6 user (done): "<@f2c5a3e2-c542-4237-be82-56f4ba943e8e>&#32;of Staff reply with exactly guava."
+#7 Chief (done): "<@7377167f-8032-410b-890c-240665171934>, please reply with exactly the word: guava."
+#8 Chief of Staff (done): "guava"
