@@ -106,7 +106,7 @@ export const claude: Provider = {
           case "result":
             gotResult = true;
             if (ev.session_id) emit({ type: "session", id: ev.session_id });
-            if (ev.is_error && ev.subtype !== "success") emit({ type: "error", message: String(ev.result ?? ev.subtype) });
+            if (ev.is_error) emit({ type: "error", message: String(ev.result ?? ev.subtype) });
             emit({ type: "done", costUsd: ev.total_cost_usd });
             break;
         }
