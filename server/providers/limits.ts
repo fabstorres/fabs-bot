@@ -190,36 +190,39 @@ async function probeCodex(bin: string, launch: Launch): Promise<Probe> {
 
 const probes = { claude: probeClaude, codex: probeCodex };
 
-const cache = new Map<LimitsProviderId, { at: number; limits: ProviderLimits }>();
-const lastGood = new Map<LimitsProviderId, ProviderLimits>();
-const checking = new Map<LimitsProviderId, Promise<ProviderLimits>>();
+const cache = new Map<string, { at: number; limits: ProviderLimits }>();
+const lastGood = new Map<string, ProviderLimits>();
+const checking = new Map<string, Promise<ProviderLimits>>();
 
-async function check(id: LimitsProviderId): Promise<ProviderLimits> {
+const configKey = (id: LimitsProviderId) => `${id}:${JSON.stringify(launchFor(id))}`;
+
+async function check(id: LimitsProviderId, key: string): Promise<ProviderLimits> {
   const checkedAt = Date.now();
   const launch = launchFor(id);
   const bin = which(launch.bin);
   try {
     const probe: Probe = bin ? await probes[id](bin, launch) : { status: "not-installed", windows: [] };
     const limits = { provider: id, checkedAt, ...probe };
-    if (limits.status === "ok") lastGood.set(id, limits);
-    else lastGood.delete(id);
+    if (limits.status === "ok") lastGood.set(key, limits);
+    else lastGood.delete(key);
     return limits;
   } catch (e) {
     const error = (e as Error).message;
-    const good = lastGood.get(id);
+    const good = lastGood.get(key);
     return good ? { ...good, error } : { provider: id, status: "error", checkedAt, windows: [], error };
   }
 }
 
 export function providerLimits(id: LimitsProviderId, refresh = false): Promise<ProviderLimits> {
-  const cached = cache.get(id);
+  const key = configKey(id);
+  const cached = cache.get(key);
   if (cached && !refresh && Date.now() - cached.at < CACHE_MS) return Promise.resolve(cached.limits);
-  let running = checking.get(id);
+  let running = checking.get(key);
   if (!running) {
-    running = check(id)
-      .then((limits) => (cache.set(id, { at: Date.now(), limits }), limits))
-      .finally(() => checking.delete(id));
-    checking.set(id, running);
+    running = check(id, key)
+      .then((limits) => (cache.set(key, { at: Date.now(), limits }), limits))
+      .finally(() => checking.delete(key));
+    checking.set(key, running);
   }
   return running;
 }
