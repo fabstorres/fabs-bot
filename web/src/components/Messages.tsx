@@ -3,7 +3,7 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { Check, ChevronDown, ChevronRight, Download, Zap } from "lucide-react";
-import { type MdNode, splitMentions, textNodes } from "../../../shared/mentions";
+import { hideDeleted, type MdNode, splitMentions, textNodes } from "../../../shared/mentions";
 import type { Bot, Message, MessagePart } from "../../../shared/types";
 import { api, formatSize, formatTime, isImage } from "../api";
 import { isConnected, openDirect, openModal, openNestedThread, useStore } from "../store";
@@ -103,7 +103,7 @@ function remarkMentions(bots: Bot[]) {
       const pieces = splitMentions(node.value, bots);
       const nodes = pieces.map((p) =>
         typeof p === "string"
-          ? { type: "text", value: p }
+          ? { type: "text", value: hideDeleted(p) }
           : { type: "mention", data: { hName: "span", hProperties: { dataMention: p.bot.id } }, children: [{ type: "text", value: p.text }] },
       );
       parent.children!.splice(parent.children!.indexOf(node), 1, ...nodes);

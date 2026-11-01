@@ -43,16 +43,19 @@ export function splitMentions<B extends Named>(text: string, bots: B[]): Piece<B
   let last = 0;
   for (const m of text.matchAll(MENTION)) {
     const bot = bots.find((b) => b.id === m[1]);
-    pieces.push(text.slice(last, m.index), bot ? { bot, text: m[0] } : DELETED_BOT);
+    if (!bot) continue;
+    pieces.push(text.slice(last, m.index), { bot, text: m[0] });
     last = m.index + m[0].length;
   }
   pieces.push(text.slice(last));
   return pieces.filter((p) => p !== "");
 }
 
+export const hideDeleted = (text: string) => text.replace(MENTION, DELETED_BOT);
+
 export const readable = (text: string, bots: Named[]) =>
   splitMentions(text, bots)
-    .map((p) => (typeof p === "string" ? p : `@${handleOf(p.bot.name)}`))
+    .map((p) => (typeof p === "string" ? hideDeleted(p) : `@${handleOf(p.bot.name)}`))
     .join("");
 
 function splitHandles<B extends Named>(text: string, bots: B[]): Piece<B>[] {
@@ -84,21 +87,35 @@ export function* textNodes(node: MdNode): Generator<{ node: MdNode; parent: MdNo
 
 const parse = (markdown: string): MdNode => unified().use(remarkParse).use(remarkGfm).parse(markdown);
 
-export function linkHandles(markdown: string, bots: Named[]): string {
-  let out = "";
+const botsIn = <B>(pieces: Piece<B>[]) => pieces.flatMap((p) => (typeof p === "string" ? [] : [p.bot]));
+
+const sameBots = <B>(a: B[], b: B[]) => a.length === b.length && a.every((bot, i) => bot === b[i]);
+
+function splitMarkdown<B>(markdown: string, split: (text: string) => Piece<B>[]): Piece<B>[] {
+  const pieces: Piece<B>[] = [];
   let last = 0;
   for (const { node } of textNodes(parse(markdown))) {
     let at = node.position!.start.offset!;
-    for (const piece of splitHandles(markdown.slice(at, node.position!.end.offset), bots)) {
+    const source = split(markdown.slice(at, node.position!.end.offset));
+    if (!sameBots(botsIn(source), botsIn(split(node.value ?? "")))) continue;
+    for (const piece of source) {
       if (typeof piece !== "string") {
-        out += markdown.slice(last, at) + mentionOf(piece.bot);
+        pieces.push(markdown.slice(last, at), piece);
         last = at + piece.text.length;
       }
       at += typeof piece === "string" ? piece.length : piece.text.length;
     }
   }
-  return out + markdown.slice(last);
+  pieces.push(markdown.slice(last));
+  return pieces.filter((p) => p !== "");
 }
+
+export const splitMarkdownMentions = <B extends Named>(markdown: string, bots: B[]) => splitMarkdown(markdown, (text) => splitMentions(text, bots));
+
+export const linkHandles = (markdown: string, bots: Named[]) =>
+  splitMarkdown(markdown, (text) => splitHandles(text, bots))
+    .map((p) => (typeof p === "string" ? p : mentionOf(p.bot)))
+    .join("");
 
 export function mentionedBots<B extends Named>(markdown: string, bots: B[]): B[] {
   const found = new Set<B>();

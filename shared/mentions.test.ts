@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { linkHandles, mentionedBots, readable, splitMentions } from "./mentions";
+import { linkHandles, mentionedBots, readable, splitMarkdownMentions } from "./mentions";
 
 const chief = { id: "00000000-0000-4000-8000-000000000001", name: "Chief" };
 const staff = { id: "00000000-0000-4000-8000-000000000002", name: "Chief of Staff" };
@@ -25,7 +25,14 @@ describe("id mentions", () => {
   });
 
   test("a deleted bot's mention reads as a deleted bot", () => {
-    expect(splitMentions(`hi ${at({ id: "00000000-0000-4000-8000-0000000000ff" })}!`, bots)).toEqual(["hi ", "@deleted bot", "!"]);
+    expect(readable(`hi ${at({ id: "00000000-0000-4000-8000-0000000000ff" })}!`, bots)).toBe("hi @deleted bot!");
+  });
+
+  test("a draft or paste only turns mentions outside code and links into chips", () => {
+    expect(splitMarkdownMentions(`\`${at(chief)}\` [${at(chief)}](https://example.com) ${at(chief)}`, bots)).toEqual([
+      `\`${at(chief)}\` [${at(chief)}](https://example.com) `,
+      { bot: chief, text: at(chief) },
+    ]);
   });
 
   test("bots read mentions as handles", () => {
@@ -51,6 +58,10 @@ describe("handles written by bots", () => {
   test("handles inside code or links stay plain, and the rest of the text is kept exactly", () => {
     const text = "run `@Chief` [@Chief](https://example.com) https://example.com/@Chief\n\n```\n@Chief\n```\nfile\\_name @Chief";
     expect(linkHandles(text, bots)).toBe(text.replace(/@Chief$/, at(chief)));
+  });
+
+  test("a handle whose escapes name a different bot once decoded stays plain", () => {
+    expect(linkHandles("@Chief&#32;of Staff reply", bots)).toBe("@Chief&#32;of Staff reply");
   });
 
   test("a handle two bots share stays plain", () => {
