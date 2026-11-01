@@ -1,56 +1,59 @@
 import { describe, expect, test } from "bun:test";
-import { mentionedBots, splitMarkdownMentions, splitMentions } from "./mentions";
+import { linkHandles, mentionedBots, readable, splitMentions } from "./mentions";
 
-const chief = { name: "Chief" };
-const staff = { name: "Chief of Staff" };
-const issues = { name: "Github Issues" };
+const chief = { id: "00000000-0000-4000-8000-000000000001", name: "Chief" };
+const staff = { id: "00000000-0000-4000-8000-000000000002", name: "Chief of Staff" };
+const issues = { id: "00000000-0000-4000-8000-000000000003", name: "Github Issues" };
 const bots = [chief, staff, issues];
 const names = (text: string, list = bots) => mentionedBots(text, list).map((b) => b.name);
+const at = (bot: { id: string }) => `<@${bot.id}>`;
 
-describe("mention matching", () => {
-  test("a longer name that starts with another bot's name wakes only the longer one", () => {
-    expect(names("@ChiefofStaff ping")).toEqual(["Chief of Staff"]);
-    expect(names("@Chief of Staff ping")).toEqual(["Chief of Staff"]);
-    expect(names("@chief-of-staff ping")).toEqual(["Chief of Staff"]);
-    expect(names("@ChiefofStaff ping", [chief])).toEqual([]);
+describe("id mentions", () => {
+  test("text typed or escaped right after a mention can't turn it into another bot", () => {
+    expect(names(`${at(chief)} of Staff, reply`)).toEqual(["Chief"]);
+    expect(names(`${at(chief)}&#32;of Staff reply`)).toEqual(["Chief"]);
+  });
+
+  test("mentions inside code or links are not mentions", () => {
+    expect(names(`run \`${at(chief)}\` now`)).toEqual([]);
+    expect(names(`\`\`\`\n${at(chief)}\n\`\`\``)).toEqual([]);
+    expect(names(`[${at(chief)}](https://example.com)`)).toEqual([]);
+  });
+
+  test("a plain @Name is not a mention", () => {
+    expect(names("@Chief ping")).toEqual([]);
+  });
+
+  test("a deleted bot's mention reads as a deleted bot", () => {
+    expect(splitMentions(`hi ${at({ id: "00000000-0000-4000-8000-0000000000ff" })}!`, bots)).toEqual(["hi ", "@deleted bot", "!"]);
+  });
+
+  test("bots read mentions as handles", () => {
+    expect(readable(`${at(staff)} and ${at(chief)}`, bots)).toBe("@ChiefofStaff and @Chief");
+  });
+});
+
+describe("handles written by bots", () => {
+  test("a longer name that starts with another bot's name links only the longer one", () => {
+    expect(linkHandles("@Chief of Staff ping", bots)).toBe(`${at(staff)} ping`);
+    expect(linkHandles("@ChiefofStaff and @chief-of-staff", bots)).toBe(`${at(staff)} and ${at(staff)}`);
+    expect(linkHandles("@ChiefofStaff ping", [chief])).toBe("@ChiefofStaff ping");
   });
 
   test("punctuation right after a handle still ends it", () => {
-    expect(names("thanks @Chief, and @GithubIssues.")).toEqual(["Chief", "Github Issues"]);
-    expect(names("@Chief's call (@ChiefofStaff)")).toEqual(["Chief", "Chief of Staff"]);
+    expect(linkHandles("thanks @Chief, and (@GithubIssues).", bots)).toBe(`thanks ${at(chief)}, and (${at(issues)}).`);
   });
 
-  test("handles glued to letters, digits or hyphens are not mentions", () => {
-    expect(names("mail fabs@chief.com")).toEqual([]);
-    expect(names("@Chief2 and @Chief-bot")).toEqual([]);
+  test("handles glued to letters, digits or hyphens stay plain", () => {
+    expect(linkHandles("mail fabs@chief.com, @Chief2 and @Chief-bot", bots)).toBe("mail fabs@chief.com, @Chief2 and @Chief-bot");
   });
 
-  test("handles inside code or links are not mentions", () => {
-    expect(names("run `@Chief` now")).toEqual([]);
-    expect(names("```\n@Chief\n```")).toEqual([]);
-    expect(names("[@Chief](https://example.com) and https://example.com/@Chief")).toEqual([]);
+  test("handles inside code or links stay plain, and the rest of the text is kept exactly", () => {
+    const text = "run `@Chief` [@Chief](https://example.com) https://example.com/@Chief\n\n```\n@Chief\n```\nfile\\_name @Chief";
+    expect(linkHandles(text, bots)).toBe(text.replace(/@Chief$/, at(chief)));
   });
 
-  test("a handle two bots share stays plain text", () => {
-    const twin = { name: "chief" };
-    expect(splitMentions("hi @Chief", [chief, twin])).toEqual(["hi @Chief"]);
-  });
-
-  test("code and links keep their exact text when a draft or paste becomes chips", () => {
-    expect(splitMarkdownMentions("`@Chief of Staff` then @Chief of Staff", bots)).toEqual(["`@Chief of Staff` then ", { bot: staff, text: "@Chief of Staff" }]);
-    expect(splitMarkdownMentions("```\n@Chief\n```\n[@Chief](https://example.com) @Chief", bots)).toEqual([
-      "```\n@Chief\n```\n[@Chief](https://example.com) ",
-      { bot: chief, text: "@Chief" },
-    ]);
-  });
-
-  test("escapes or character references that change who is mentioned leave the composer text plain", () => {
-    expect(splitMarkdownMentions("@Chief&#32;of Staff hi", bots)).toEqual(["@Chief&#32;of Staff hi"]);
-    expect(names("@Chief&#32;of Staff hi")).toEqual(["Chief of Staff"]);
-    expect(splitMarkdownMentions("hi @Chief \nfile\\_name", bots)).toEqual(["hi ", { bot: chief, text: "@Chief" }, " \nfile\\_name"]);
-  });
-
-  test("splits text around each mention and keeps what was typed", () => {
-    expect(splitMentions("ask @githubissues now", bots)).toEqual(["ask ", { bot: issues, text: "@githubissues" }, " now"]);
+  test("a handle two bots share stays plain", () => {
+    expect(linkHandles("hi @Chief", [chief, { id: "00000000-0000-4000-8000-000000000004", name: "chief" }])).toBe("hi @Chief");
   });
 });

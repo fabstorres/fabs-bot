@@ -8,7 +8,7 @@ import Text from "@tiptap/extension-text";
 import { Fragment, Slice } from "@tiptap/pm/model";
 import { EditorContent, type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
-import { handleOf, splitMarkdownMentions } from "../../../shared/mentions";
+import { DELETED_BOT, handleOf, mentionOf, splitMentions } from "../../../shared/mentions";
 import type { Bot } from "../../../shared/types";
 import { useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
@@ -41,19 +41,14 @@ const toLines = (text: string): JSONContent[] =>
   text.split(/\r?\n/).flatMap((line, i) => [...(i ? [{ type: "hardBreak" }] : []), ...(line ? [{ type: "text", text: line }] : [])]);
 
 function toContent(text: string, bots: Bot[]): JSONContent[] {
-  return splitMarkdownMentions(text, bots).flatMap((p) => (typeof p === "string" ? toLines(p) : [{ type: "mention", attrs: { id: p.bot.id, label: p.bot.name } }]));
-}
-
-function mentionText(attrs: { id?: string; label?: string }) {
-  const bot = useStore.getState().bots.find((b) => b.id === attrs.id);
-  return `@${handleOf(bot?.name ?? attrs.label ?? "")}`;
+  return splitMentions(text, bots).flatMap((p) => (typeof p === "string" ? toLines(p) : [{ type: "mention", attrs: { id: p.bot.id, label: p.bot.name } }]));
 }
 
 const toDoc = (text: string, bots: Bot[]): JSONContent => ({ type: "doc", content: [{ type: "paragraph", content: toContent(text, bots) }] });
 
 function ComposerChip({ node }: NodeViewProps) {
   const bot = useStore((s) => s.bots.find((b) => b.id === node.attrs.id));
-  return <NodeViewWrapper as="span">{bot ? <MentionChip bot={bot} /> : `@${handleOf(node.attrs.label ?? "")}`}</NodeViewWrapper>;
+  return <NodeViewWrapper as="span">{bot ? <MentionChip bot={bot} /> : DELETED_BOT}</NodeViewWrapper>;
 }
 
 const BotMention = Mention.extend({
@@ -96,7 +91,7 @@ export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder
       HardBreak,
       BotMention.configure({
         deleteTriggerWithBackspace: true,
-        renderText: ({ node }) => mentionText(node.attrs),
+        renderText: ({ node }) => mentionOf(node.attrs as { id: string }),
         suggestion: { render: () => ({ onStart: show, onUpdate: show, onExit: () => setSuggest(null) }) },
       }),
     ],

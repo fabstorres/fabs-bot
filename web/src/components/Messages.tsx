@@ -99,8 +99,8 @@ function MessageView({ m, bots, showAuthor, gap }: { m: Message; bots: Bot[]; sh
 function remarkMentions(bots: Bot[]) {
   return () => (tree: MdNode) => {
     for (const { node, parent } of [...textNodes(tree)]) {
-      const pieces = splitMentions(node.value ?? "", bots);
-      if (pieces.every((p) => typeof p === "string")) continue;
+      if (!node.value?.includes("<@")) continue;
+      const pieces = splitMentions(node.value, bots);
       const nodes = pieces.map((p) =>
         typeof p === "string"
           ? { type: "text", value: p }
