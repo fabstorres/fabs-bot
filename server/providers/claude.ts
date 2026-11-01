@@ -10,7 +10,7 @@ export function prettyToolName(name: string): string {
 }
 
 function mcpServers(mcpUrl: string, connectors: Connector[]) {
-  const servers: Record<string, unknown> = { fabsbot: { type: "http", url: mcpUrl } };
+  const servers: Record<string, unknown> = { fabsbot: { type: "http", url: mcpUrl, timeout: 3_600_000 } };
   for (const c of connectors) {
     const key = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
     servers[key] =
@@ -67,7 +67,7 @@ export const claude: Provider = {
     const { code, stderr } = await spawnLines({
       cmd,
       cwd: o.cwd,
-      env: { MCP_TOOL_TIMEOUT: "3600000", ...o.launch.env },
+      env: o.launch.env,
       stdin: o.prompt,
       signal: o.signal,
       onLine(line) {
