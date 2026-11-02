@@ -310,7 +310,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   // A turn that never produced a session (e.g. auth failure) shouldn't advance what the bot has "seen".
   if (sessionId || !provider.resumable) db.setMemberSession(threadId, botId, sessionId, snapshotSeq);
   for (const p of parts) if (p.type === "tool" && p.status === "running") p.status = error ? "error" : "done";
-  if (error) parts.push({ type: "text", text: `⚠️ ${error}` });
+  if (error) parts.push({ type: "text", text: error });
   const hasContent = parts.some((p) => p.type !== "text" || p.text.trim());
   if (!hasContent) parts.push({ type: "text", text: "_(no reply)_" });
   const bots = db.listBots();
