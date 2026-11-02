@@ -79,11 +79,11 @@ export function LimitsDialog() {
         }}
       >
         <header className="flex h-14 flex-none items-center gap-2 border-b pr-3 pl-4 md:pl-6">
-          <DialogTitle ref={title} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">
+          <DialogTitle ref={title} tabIndex={-1} className="flex-1 text-lg font-semibold tracking-tight outline-none">
             Limits
           </DialogTitle>
           <DialogDescription className="sr-only">Usage left on this PC's Claude Code and Codex logins.</DialogDescription>
-          <span role="status" className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          <span role="status" className="min-w-0 truncate text-sm text-muted-foreground">
             {checking ? "Checking…" : Number.isFinite(checkedAt) && `Checked ${ago(checkedAt, now)}`}
           </span>
           <Button
