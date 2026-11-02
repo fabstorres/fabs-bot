@@ -26,3 +26,12 @@ export function useWindowEvent<K extends keyof WindowEventMap>(type: K, handler:
     return () => window.removeEventListener(type, listener);
   }, [type]);
 }
+
+export function useNow(everyMs: number) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), everyMs);
+    return () => clearInterval(timer);
+  }, [everyMs]);
+  return now;
+}

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Plus, Search, Settings } from "lucide-react";
+import { Gauge, Plus, Search, Settings } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { formatTime } from "../api";
-import { openDirect, openNestedThread, openSettings, openThread, startCreating, threadTitle, useStore } from "../store";
+import { openDirect, openLimits, openNestedThread, openSettings, openThread, startCreating, threadTitle, useStore } from "../store";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { PcMenu } from "./PcMenu";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,9 @@ export function Sidebar() {
         <PcMenu />
         <Button id="open-settings" variant="ghost" size="icon" className="rounded-full" onClick={openSettings} aria-label="Settings" title="Settings">
           <Settings className="size-5" />
+        </Button>
+        <Button id="open-limits" variant="ghost" size="icon" className="rounded-full" onClick={openLimits} aria-label="Limits" title="Limits">
+          <Gauge className="size-5" />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={startCreating} aria-label="New bot" title="New bot">
           <Plus className="size-5" />

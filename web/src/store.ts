@@ -31,6 +31,7 @@ interface State {
   openThreadId: string | null;
   creating: boolean;
   settings: SettingsView | null;
+  limitsOpen: boolean;
   panelOpen: boolean;
   modal: Modal;
   /** The control focus returns to once the modal closes. */
@@ -56,6 +57,7 @@ export const useStore = create<State>(() => ({
   openThreadId: null,
   creating: false,
   settings: null,
+  limitsOpen: false,
   panelOpen: false,
   modal: null,
   modalOpener: null,
@@ -258,7 +260,7 @@ export async function loadMessages(threadId: string) {
 }
 
 function show(view: View) {
-  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: null });
+  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: null, limitsOpen: false });
   if (view.thread) {
     void loadMessages(view.thread);
     void api.post(`/api/threads/${view.thread}/read`).catch(() => {});
@@ -288,6 +290,8 @@ export const openNestedThread = (threadId: string) => go({ thread: threadId }, t
 export const startCreating = () => go({ creating: true }, false);
 export const openSettings = () => set({ settings: wide() ? { section: "providers" } : {} });
 export const closeSettings = () => set({ settings: null });
+export const openLimits = () => set({ limitsOpen: true });
+export const closeLimits = () => set({ limitsOpen: false });
 export function openSettingsSection(section?: SettingsSection) {
   const previous = get().settings?.section;
   flushSync(() => set({ settings: { section } }));

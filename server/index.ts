@@ -13,6 +13,7 @@ import { realPathWithin, within } from "./paths";
 import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { isProviderId, launchFor, providerInfo, updateProvider } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
+import { isLimitsProviderId, providerLimits } from "./providers/limits";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
 import { disableServe, enableServe, killRunningCommands, tailscaleState, type ServeProblem } from "./tailscale";
 
@@ -177,6 +178,11 @@ route("DELETE", "/api/devices/:id", (_r, p) => {
   return json({ ok: true });
 });
 route("GET", "/api/providers", (_r, _p, url) => providerInfo(url.searchParams.has("refresh")).then(json));
+route("GET", "/api/providers/:id/limits", (_r, p, url) => {
+  const id = p.id!;
+  if (!isLimitsProviderId(id)) return bad("not found", 404);
+  return providerLimits(id, url.searchParams.has("refresh")).then(json);
+});
 route("PUT", "/api/providers/:id", async (req, p) => {
   const id = p.id!;
   if (!isProviderId(id)) return bad("not found", 404);
