@@ -10,6 +10,7 @@ type Peer = { send: (message: object) => void; reply: (match: (message: any) => 
 
 const PROBE_TIMEOUT_MS = 15_000;
 const CACHE_MS = 60_000;
+const SESSION_MINS = 5 * 60;
 const WEEK_MINS = 7 * 24 * 60;
 const MONTH_MINS = 30 * 24 * 60;
 
@@ -79,9 +80,9 @@ function percentOf(used: unknown, limit: unknown) {
   return finite(used) && finite(limit) && used >= 0 && limit > 0 ? (used / limit) * 100 : undefined;
 }
 
-function usageWindow(id: string, label: string, usedPercent: unknown, resetsAt: number | undefined): UsageWindow[] {
+function usageWindow(id: string, label: string, usedPercent: unknown, resetsAt: number | undefined, durationMins?: number): UsageWindow[] {
   if (!finite(usedPercent)) return [];
-  return [{ id, label, usedPercent, ...(resetsAt ? { resetsAt } : {}) }];
+  return [{ id, label, usedPercent, ...(resetsAt ? { resetsAt } : {}), ...(durationMins ? { durationMins } : {}) }];
 }
 
 function fromIso(value: unknown) {
@@ -111,10 +112,10 @@ export function claudeUsage(usage: any): Probe {
     status: "ok",
     plan,
     windows: [
-      ...usageWindow("five_hour", "Session", limits.five_hour?.utilization, fromIso(limits.five_hour?.resets_at)),
-      ...usageWindow("seven_day", "Weekly", limits.seven_day?.utilization, fromIso(limits.seven_day?.resets_at)),
+      ...usageWindow("five_hour", "Session", limits.five_hour?.utilization, fromIso(limits.five_hour?.resets_at), SESSION_MINS),
+      ...usageWindow("seven_day", "Weekly", limits.seven_day?.utilization, fromIso(limits.seven_day?.resets_at), WEEK_MINS),
       ...scoped.flatMap((m: any) =>
-        typeof m?.display_name === "string" ? usageWindow(`seven_day_${m.display_name}`, `Weekly · ${m.display_name}`, m.utilization, fromIso(m.resets_at)) : [],
+        typeof m?.display_name === "string" ? usageWindow(`seven_day_${m.display_name}`, `Weekly · ${m.display_name}`, m.utilization, fromIso(m.resets_at), WEEK_MINS) : [],
       ),
       ...usageWindow("extra_usage", "Extra usage", claudeExtraUsage(limits), undefined),
     ],
@@ -137,7 +138,7 @@ export function codexUsage(result: any): Probe {
   const snapshot = result?.rateLimitsByLimitId?.codex ?? result?.rateLimits;
   const monthlyPlan = snapshot?.planType === "free" || snapshot?.planType === "go";
   const slots = [
-    ["primary", snapshot?.primary, monthlyPlan ? MONTH_MINS : 300],
+    ["primary", snapshot?.primary, monthlyPlan ? MONTH_MINS : SESSION_MINS],
     ["secondary", snapshot?.secondary, WEEK_MINS],
   ] as const;
   const expiries = (result?.rateLimitResetCredits?.credits ?? [])
@@ -147,7 +148,10 @@ export function codexUsage(result: any): Probe {
   return {
     status: "ok",
     plan: planName(snapshot?.planType),
-    windows: slots.flatMap(([id, w, fallback]) => usageWindow(id, codexLabel(finite(w?.windowDurationMins) ? w.windowDurationMins : fallback), w?.usedPercent, fromSeconds(w?.resetsAt))),
+    windows: slots.flatMap(([id, w, fallback]) => {
+      const mins = finite(w?.windowDurationMins) ? w.windowDurationMins : fallback;
+      return usageWindow(id, codexLabel(mins), w?.usedPercent, fromSeconds(w?.resetsAt), mins);
+    }),
     credits: codexCredits(snapshot?.credits),
     ...(finite(resets?.availableCount)
       ? { resetCredits: { available: resets.availableCount, ...(expiries.length ? { nextExpiresAt: fromSeconds(Math.min(...expiries)) } : {}) } }

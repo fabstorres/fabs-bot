@@ -18,7 +18,7 @@ test("a Claude window without utilization is left out instead of reading as 0% u
 
 test("a Codex free plan without window durations reads its primary window as monthly", () => {
   const usage = codexUsage({ rateLimits: { planType: "free", primary: { usedPercent: 10 }, secondary: null } });
-  expect(usage.windows).toEqual([{ id: "primary", label: "Monthly", usedPercent: 10 }]);
+  expect(usage.windows).toEqual([{ id: "primary", label: "Monthly", usedPercent: 10, durationMins: 30 * 24 * 60 }]);
 });
 
 test("Codex prefers the codex limit over the top-level snapshot", () => {

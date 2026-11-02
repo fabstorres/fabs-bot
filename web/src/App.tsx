@@ -25,7 +25,7 @@ export function App() {
   const thread = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
   const modal = useStore((s) => s.modal);
   const settings = useStore((s) => s.settings);
-  const limits = useStore((s) => s.limits);
+  const limitsOpen = useStore((s) => s.limitsOpen);
 
   useWindowEvent("popstate", restoreView);
 
@@ -72,7 +72,7 @@ export function App() {
         )}
       </main>
       {settings && <SettingsDialog section={settings.section} />}
-      {limits && <LimitsDialog section={limits.section} />}
+      {limitsOpen && <LimitsDialog />}
       {modal?.kind === "bot" && <BotEditor botId={modal.botId} />}
       {modal?.kind === "file" && <FileViewer url={modal.url} name={modal.name} />}
     </div>

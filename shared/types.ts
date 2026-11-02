@@ -247,6 +247,7 @@ export interface UsageWindow {
   label: string;
   usedPercent: number;
   resetsAt?: number;
+  durationMins?: number;
 }
 
 export interface ProviderLimits {

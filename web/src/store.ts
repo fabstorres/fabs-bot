@@ -1,6 +1,6 @@
 import { flushSync } from "react-dom";
 import { create } from "zustand";
-import type { Bot, BotStatus, HostInfo, LimitsProviderId, Link, Message, ServerEvent, Thread } from "../../shared/types";
+import type { Bot, BotStatus, HostInfo, Link, Message, ServerEvent, Thread } from "../../shared/types";
 import { api, Unpaired } from "./api";
 
 export type Modal = { kind: "bot"; botId: string } | { kind: "file"; url: string; name: string } | null;
@@ -8,8 +8,6 @@ export type Modal = { kind: "bot"; botId: string } | { kind: "file"; url: string
 export type SettingsSection = "providers" | "plugins" | "pc" | "appearance";
 
 type SettingsView = { section?: SettingsSection };
-
-type LimitsView = { section?: LimitsProviderId };
 
 type View = { thread?: string; creating?: boolean };
 
@@ -33,7 +31,7 @@ interface State {
   openThreadId: string | null;
   creating: boolean;
   settings: SettingsView | null;
-  limits: LimitsView | null;
+  limitsOpen: boolean;
   panelOpen: boolean;
   modal: Modal;
   /** The control focus returns to once the modal closes. */
@@ -59,7 +57,7 @@ export const useStore = create<State>(() => ({
   openThreadId: null,
   creating: false,
   settings: null,
-  limits: null,
+  limitsOpen: false,
   panelOpen: false,
   modal: null,
   modalOpener: null,
@@ -262,7 +260,7 @@ export async function loadMessages(threadId: string) {
 }
 
 function show(view: View) {
-  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: null, limits: null });
+  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: null, limitsOpen: false });
   if (view.thread) {
     void loadMessages(view.thread);
     void api.post(`/api/threads/${view.thread}/read`).catch(() => {});
@@ -290,27 +288,16 @@ export const openThread = (threadId: string) => go({ thread: threadId }, false);
 /** Stacks on top of the current chat, so Back returns to it. */
 export const openNestedThread = (threadId: string) => go({ thread: threadId }, true);
 export const startCreating = () => go({ creating: true }, false);
-export const openSettings = () => set({ settings: wide() ? { section: "providers" } : {}, limits: null });
+export const openSettings = () => set({ settings: wide() ? { section: "providers" } : {} });
 export const closeSettings = () => set({ settings: null });
-export const openLimits = () => set({ limits: wide() ? { section: "claude" } : {}, settings: null });
-export const closeLimits = () => set({ limits: null });
-
-function focusSection(dialog: "settings" | "limits", section: string | undefined, previous: string | undefined) {
-  if (section && wide()) return;
-  const target = section ? `${dialog}-section-title` : previous ? `${dialog}-nav-${previous}` : `${dialog}-title`;
-  document.getElementById(target)?.focus();
-}
-
+export const openLimits = () => set({ limitsOpen: true });
+export const closeLimits = () => set({ limitsOpen: false });
 export function openSettingsSection(section?: SettingsSection) {
   const previous = get().settings?.section;
   flushSync(() => set({ settings: { section } }));
-  focusSection("settings", section, previous);
-}
-
-export function openLimitsSection(section?: LimitsProviderId) {
-  const previous = get().limits?.section;
-  flushSync(() => set({ limits: { section } }));
-  focusSection("limits", section, previous);
+  if (section && wide()) return;
+  const target = section ? "settings-section-title" : previous ? `settings-nav-${previous}` : "settings-title";
+  if (target) document.getElementById(target)?.focus();
 }
 export const restoreView = () => show(history.state?.view ?? {});
 
