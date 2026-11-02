@@ -105,6 +105,27 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ring) transparent;
+
+    @supports selector(::-webkit-scrollbar) {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ring/60;
+  }
+  ::-webkit-scrollbar-button {
+    display: none;
   }
   html,
   body,
@@ -121,29 +142,6 @@
 }
 
 @layer components {
-  .composer-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: var(--ring) transparent;
-
-    @supports selector(::-webkit-scrollbar) {
-      scrollbar-width: auto;
-      scrollbar-color: auto;
-
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-      &::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      &::-webkit-scrollbar-thumb {
-        @apply rounded-full bg-ring/60;
-      }
-      &::-webkit-scrollbar-button {
-        display: none;
-      }
-    }
-  }
-
   .bubble > :first-child {
     @apply mt-0;
   }

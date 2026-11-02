@@ -155,7 +155,7 @@ export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder
           ))}
         </div>
       )}
-      <div className="composer-scrollbar relative max-h-60 overflow-y-auto">
+      <div className="relative max-h-60 overflow-y-auto">
         {!value && (
           <span aria-hidden className="pointer-events-none absolute inset-x-2 top-1 truncate text-base leading-snug text-muted-foreground">
             {placeholder}
