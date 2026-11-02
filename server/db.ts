@@ -201,6 +201,14 @@ function toThread(r: ThreadRow): Thread {
 export function listThreads(): Thread[] {
   return (db.query("SELECT * FROM threads ORDER BY updated_at DESC").all() as ThreadRow[]).map(toThread);
 }
+export function pageThreads(before: { updatedAt: number; id: string } | null, limit: number): Thread[] {
+  const rows = before
+    ? db
+        .query("SELECT * FROM threads WHERE (updated_at, id) < (?, ?) ORDER BY updated_at DESC, id DESC LIMIT ?")
+        .all(before.updatedAt, before.id, limit)
+    : db.query("SELECT * FROM threads ORDER BY updated_at DESC, id DESC LIMIT ?").all(limit);
+  return (rows as ThreadRow[]).map(toThread);
+}
 export function getThread(id: string): Thread | null {
   const r = db.query("SELECT * FROM threads WHERE id = ?").get(id) as ThreadRow | null;
   return r ? toThread(r) : null;
@@ -285,6 +293,13 @@ const toMessage = (r: MessageRow): Message => ({
 export function listMessages(threadId: string, afterSeq = 0): Message[] {
   return (
     db.query("SELECT * FROM messages WHERE thread_id = ? AND seq > ? ORDER BY seq").all(threadId, afterSeq) as MessageRow[]
+  ).map(toMessage);
+}
+export function pageMessages(threadId: string, afterSeq: number, limit: number): Message[] {
+  return (
+    db
+      .query("SELECT * FROM messages WHERE thread_id = ? AND seq > ? ORDER BY seq LIMIT ?")
+      .all(threadId, afterSeq, limit) as MessageRow[]
   ).map(toMessage);
 }
 export function getMessage(id: string): Message | null {
