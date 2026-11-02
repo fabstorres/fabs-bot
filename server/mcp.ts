@@ -5,12 +5,12 @@
 import { copyFileSync, existsSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { Cron } from "croner";
-import { linkHandles, readable } from "../shared/mentions";
+import { botsNamed, handleOf, linkHandles, readable } from "../shared/mentions";
 import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { FILES_DIR, VERSION } from "./config";
 import * as db from "./db";
 import { getStatus, publish, setStatus } from "./bus";
-import { directThread, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
+import { bringInBot, directThread, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
 import { reschedule } from "./scheduler";
 import { clip } from "./providers/spawn";
 
@@ -30,11 +30,13 @@ function publishThread(threadId: string) {
   if (t) publish({ type: "thread", thread: t });
 }
 
+const isLive = (ctx: TurnContext) => turnsByToken.get(ctx.token) === ctx;
+
 export function decideApproval(requestId: string, decision: "allow" | "deny"): boolean {
   const p = pendingApprovals.get(requestId);
   if (!p) return false;
   pendingApprovals.delete(requestId);
-  p.resolve(decision);
+  p.resolve(isLive(p.ctx) ? decision : "deny");
   return true;
 }
 
@@ -86,6 +88,32 @@ function describeMessage(m: Message, bots: Bot[]): string {
   const files = m.parts.flatMap((p) => (p.type === "file" ? [p.name] : []));
   const attachments = files.length ? `\n[attachments: ${files.join(", ")}]` : "";
   return `#${m.seq} · ${isoTime(m.createdAt)} · ${author}:\n${text || "(no text)"}${attachments}`;
+}
+
+async function askApproval(ctx: TurnContext, tool: string, summary: string): Promise<"allow" | "deny"> {
+  const requestId = crypto.randomUUID();
+  const part: MessagePart = { type: "approval", requestId, tool, summary };
+  const index = ctx.addPart(part);
+  publishThread(ctx.threadId);
+  const prev = getStatus(ctx.botId);
+  setStatus(ctx.botId, { state: "blocked", text: `Needs your OK: ${tool}`, threadId: ctx.threadId });
+  const decision = await new Promise<"allow" | "deny">((res) => {
+    pendingApprovals.set(requestId, { resolve: res, ctx, index });
+    if (ctx.signal.aborted) decideApproval(requestId, "deny");
+    else ctx.signal.addEventListener("abort", () => decideApproval(requestId, "deny"), { once: true });
+  });
+  ctx.updatePart(index, { ...part, decision });
+  publishThread(ctx.threadId);
+  if (isLive(ctx)) setStatus(ctx.botId, { state: "working", text: prev.text, threadId: ctx.threadId });
+  return decision;
+}
+
+function findTeammate(name: string, ctx: TurnContext): Bot | string {
+  const found = botsNamed(name, db.listBots());
+  if (!found.length) return `No teammate named "${name}". Call list_bots to see who exists.`;
+  if (found.length > 1) return `"${name}" matches ${found.map((b) => b.name).join(", ")}. Use their exact name.`;
+  if (found[0]!.id === ctx.botId) return `"${name}" is you.`;
+  return found[0]!;
 }
 
 const tools: ToolDef[] = [
@@ -317,6 +345,57 @@ const tools: ToolDef[] = [
     },
   },
   {
+    name: "start_group",
+    description:
+      "Start a new group chat with the user, you and the named teammates. The user must approve it first. The current chat stays as it is.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        bots: { type: "array", items: { type: "string" }, description: "Teammate names, e.g. ['Design', 'Engineer']" },
+        title: str("Group title, e.g. 'Launch plan'"),
+      },
+      required: ["bots", "title"],
+    },
+    async run(args, ctx) {
+      const names = (Array.isArray(args.bots) ? args.bots : []).map(String);
+      if (!names.length) return "Name at least one teammate.";
+      const title = clip(String(args.title ?? "").trim(), 80);
+      if (!title) return "Give the group a title.";
+      const picked: Bot[] = [];
+      for (const name of names) {
+        const bot = findTeammate(name, ctx);
+        if (typeof bot === "string") return bot;
+        if (!picked.some((b) => b.id === bot.id)) picked.push(bot);
+      }
+      const who = picked.map((b) => b.name).join(", ");
+      if ((await askApproval(ctx, "start_group", `Start "${title}" with ${who}`)) === "deny") {
+        return `The user declined starting "${title}". Nothing changed.`;
+      }
+      if (!db.getBot(ctx.botId) || picked.some((b) => !db.getBot(b.id))) return "A teammate was deleted meanwhile. Nothing changed.";
+      const thread = db.createThread("group", [ctx.botId, ...picked.map((b) => b.id)], title);
+      publish({ type: "thread", thread });
+      return `Started group "${title}" (id ${thread.id}) with the user, you and ${who}. It's empty; the user picks it up from their sidebar.`;
+    },
+  },
+  {
+    name: "invite_bot",
+    description: "Add a teammate to this group chat. The user must approve it first. Only works in group chats; elsewhere use start_group.",
+    inputSchema: { type: "object", properties: { name: str("Teammate name, e.g. 'Engineer'") }, required: ["name"] },
+    async run(args, ctx) {
+      const thread = db.getThread(ctx.threadId);
+      if (thread?.kind !== "group") return "This isn't a group chat. Use start_group to open a new group with the user and your teammates.";
+      const bot = findTeammate(String(args.name), ctx);
+      if (typeof bot === "string") return bot;
+      if (thread.memberIds.includes(bot.id)) return `${bot.name} is already in this chat.`;
+      if ((await askApproval(ctx, "invite_bot", `Add ${bot.name} to this chat`)) === "deny") {
+        return `The user declined adding ${bot.name}. Nothing changed.`;
+      }
+      if (db.getThread(ctx.threadId)?.memberIds.includes(bot.id)) return `${bot.name} is already in this chat.`;
+      if (!bringInBot(ctx.threadId, bot.id)) return "This chat or teammate no longer exists. Nothing changed.";
+      return `${bot.name} joined this chat. Write @${handleOf(bot.name)} to hand them the floor.`;
+    },
+  },
+  {
     name: "approve",
     description: "Internal: permission prompt relay. Do not call directly.",
     inputSchema: {
@@ -324,22 +403,9 @@ const tools: ToolDef[] = [
       properties: { tool_name: { type: "string" }, input: { type: "object" }, tool_use_id: { type: "string" } },
     },
     async run(args, ctx) {
-      const requestId = crypto.randomUUID();
       const input = args.input ?? {};
       const summary = clip(String(input.command ?? input.file_path ?? input.url ?? JSON.stringify(input)), 300);
-      const part: MessagePart = { type: "approval", requestId, tool: String(args.tool_name), summary };
-      const index = ctx.addPart(part);
-      publishThread(ctx.threadId);
-      const prev = getStatus(ctx.botId);
-      setStatus(ctx.botId, { state: "blocked", text: `Needs your OK: ${args.tool_name}`, threadId: ctx.threadId });
-      const decision = await new Promise<"allow" | "deny">((res) => {
-        pendingApprovals.set(requestId, { resolve: res, ctx, index });
-        if (ctx.signal.aborted) decideApproval(requestId, "deny");
-        else ctx.signal.addEventListener("abort", () => decideApproval(requestId, "deny"), { once: true });
-      });
-      ctx.updatePart(index, { ...part, decision });
-      publishThread(ctx.threadId);
-      setStatus(ctx.botId, { state: "working", text: prev.text, threadId: ctx.threadId });
+      const decision = await askApproval(ctx, String(args.tool_name), summary);
       return JSON.stringify(
         decision === "allow" ? { behavior: "allow", updatedInput: input } : { behavior: "deny", message: "The user declined this action." },
       );

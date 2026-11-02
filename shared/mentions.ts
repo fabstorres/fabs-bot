@@ -38,6 +38,11 @@ function handlesOf(name: string): string[] {
   return [name, handleOf(name), slug(name)].map((h) => h.toLowerCase()).filter(Boolean);
 }
 
+export function botsNamed<B extends Named>(name: string, bots: B[]): B[] {
+  const needle = name.trim().replace(/^@/, "").toLowerCase();
+  return bots.filter((b) => handlesOf(b.name).includes(needle));
+}
+
 export function splitMentions<B extends Named>(text: string, bots: B[]): Piece<B>[] {
   const pieces: Piece<B>[] = [];
   let last = 0;

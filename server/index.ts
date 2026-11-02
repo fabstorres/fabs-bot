@@ -10,7 +10,7 @@ import { authorized, deviceId, isLoopback, listDevices, newPairingCode, pairCook
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { realPathWithin, within } from "./paths";
-import { directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
+import { bringInBot, directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { isProviderId, launchFor, providerInfo, updateProvider } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { isLimitsProviderId, providerLimits } from "./providers/limits";
@@ -293,18 +293,8 @@ route("POST", "/api/threads/:id/stop", (_r, p) => {
 });
 route("POST", "/api/threads/:id/members", async (req, p) => {
   const { botId } = await body(req);
-  const thread = db.getThread(p.id!);
-  if (!db.getBot(botId) || !thread) return bad("not found", 404);
-  if (thread.memberIds.includes(botId)) return json(thread);
-  if (thread.kind === "direct") {
-    const group = db.createThread("group", [...thread.memberIds, botId]);
-    publish({ type: "thread", thread: group });
-    return json(group);
-  }
-  db.addMember(p.id!, botId);
-  const t = db.getThread(p.id!)!;
-  publish({ type: "thread", thread: t });
-  return json(t);
+  const thread = bringInBot(p.id!, String(botId));
+  return thread ? json(thread) : bad("not found", 404);
 });
 
 route("POST", "/api/messages/:id/answer", async (req, p) => {

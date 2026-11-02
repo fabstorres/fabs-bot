@@ -48,5 +48,5 @@ Preconditions:
 - History survives `browser open /`. `Back` after a reload can land in a chat from before it; `browser start` gives a clean history.
 - Approval cards only come from Claude bots in "ask" mode. A Codex bot in that mode is sandboxed to its desk instead and never shows a card.
 - Reads (`Read`, `Grep`, web fetches) never prompt in ask mode. Use a command or a file write to trigger a card.
-- Decide an approval card within about a minute. After that Claude gives up on it and asks again with a new card. The old card stays `pending` until Stop, so the thread keeps waiting on you.
+- An approval card waits up to an hour. A card left open after its bot's turn has ended (the CLI crashed or was killed) reads `Denied` when you tap either button, and nothing happens.
 - An approval blocks the bot's turn until answered. Always click Allow or Deny, or run `cleanup`, so the CLI doesn't hang.

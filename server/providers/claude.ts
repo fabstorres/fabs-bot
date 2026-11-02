@@ -10,7 +10,7 @@ export function prettyToolName(name: string): string {
 }
 
 function mcpServers(mcpUrl: string, connectors: Connector[]) {
-  const servers: Record<string, unknown> = { fabsbot: { type: "http", url: mcpUrl } };
+  const servers: Record<string, unknown> = { fabsbot: { type: "http", url: mcpUrl, timeout: 3_600_000 } };
   for (const c of connectors) {
     const key = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
     servers[key] =

@@ -11,6 +11,8 @@ Bots work together. A bot can message a teammate privately and get the reply bac
 - `team-pull-in` brings a bot in when it is picked from the `@` list in the composer or chosen from `More` → `Bring in a bot`. From a 1:1 it opens a new, empty group with both bots (an @mention message lands there); in a group it joins in place.
 - `team-mention-chips` turns a bot picked from the `@` list into a chip in the composer, and shows every bot @mention in a sent message, from you or a bot, as a chip in the bot's color. Clicking a sent chip opens that bot's 1:1. Mentions in code or links stay plain text.
 - `team-mention-exact` wakes exactly the bot on the chip: a `Chief` chip followed by typed ` of Staff` wakes Chief, never Chief of Staff, and typed `@Chief` text wakes nobody.
+- `team-start-group` lets a bot open a new group with the user, itself and named teammates (`start_group`) after the user taps Allow on an approval card. The chat it was asked in stays as it was.
+- `team-invite` lets a bot in a group add a teammate to that group (`invite_bot`) after the user taps Allow. The teammate joins silently and answers once handed the floor. Outside a group the bot is told to use `start_group`.
 - `team-delete` asks before deleting a thread: the dialog names the thread, lists its bots, and says each bot's 1:1 chat stays.
 
 ## How to get to it (user POV)
@@ -18,6 +20,7 @@ Bots work together. A bot can message a teammate privately and get the reply bac
 - Ask a bot to consult a teammate ("ask Design for …") in any chat.
 - Click the `Exchange with <Bot>` card to read their conversation. It's also listed under `Chats` in either bot's desk panel.
 - Type `@` in a chat's composer and pick a bot from the list, or choose `More` → `Bring in a bot`.
+- Ask a bot to start a group with teammates ("start a group with Design and Engineer called Launch plan"), or, in a group, to add a teammate ("add Careful to this chat"). Allow or Deny the card.
 - Click a bot's chip in a sent message to open its 1:1.
 - Choose `More` → `Delete thread` in any chat.
 
@@ -39,6 +42,9 @@ Preconditions:
 - **Send a picked chip.** `browser fill` replaces the whole draft with plain text, so fill the text first, press `Home`, then `@`, `D` and `Enter` to put the chip in front, and `Enter` again to send. The sent message shows `--role button --name "@Design" --exact`.
 - **Exact matching.** In a group with Chief and Chief of Staff, fill ` of Staff, reply with exactly the word: kiwi.`, press `Home`, type `@`, `Chief`, move to `--role option --name "Chief" --exact` with the arrow keys and press `Enter`, then `Enter` to send. `$C thread <G>` shows a reply from Chief only, and the sent chip reads `@Chief`. Send `` `@Chief` is only code here. `` followed by a picked `Design` chip and `reply with exactly the word: plum`: only Design answers and the code stays plain.
 - **Bot mentions.** Ask `@Design` to hand the floor to Chief using Chief's handle. Design's reply shows `--role button --name "@Chief" --exact` and Chief answers next. Click that chip: `Thread with Chief` (the 1:1) opens.
+- **Bot starts a group.** In `Thread with Chief`, send `Use the start_group tool to start a group with Design and Engineer called Launch plan. Then tell me the result in one sentence.` After `$C wait <T> --for approval`, `--role group --name "Approval: start_group"` reads `Start "Launch plan" with Design, Engineer`. Click `Allow`: `--role button --name "Thread: Launch plan"` appears in the sidebar, `$C api GET /api/threads` shows it as a `group` with Chief, Design and Engineer and no messages, and Chief's 1:1 still has only Chief. Repeat with another title and click `Deny`: Chief says it was declined and no group appears.
+- **Bot invites a teammate.** In a group without Careful, pick `Design` from the `@` list and send `use invite_bot to add Careful, then ask Careful by handle to reply with exactly: pear`. Allow `--role group --name "Approval: invite_bot"`. The group gains Careful once (`$C api GET /api/threads`), and Careful replies `pear` after Design hands it the floor.
+- **Invite refusals.** Ask a bot to call `invite_bot` from its 1:1 (it's told to use `start_group`), with an unknown name, with a member's name, with its own name, and with a name two bots share (`Ops Bot` and `Ops-Bot` both answer to `ops-bot`). Each returns a clear result and shows no approval card.
 - **Delete.** In the group, click `More`, then `$C browser click --role menuitem --name "Delete thread"`. `--role dialog` reads `Delete “<title>”?` with `--role list --name "Bots in this thread"`; `Cancel` keeps the thread, `Delete` removes it, and each bot's 1:1 still opens with its history.
 - **Proof.** Capture `teamwork/exchange-live.png`, `teamwork/backchannel.aria.txt` plus `.png`, `teamwork/group.aria.txt` plus `.png`, and `$C thread` dumps for `<T>` and `<G>`.
 
@@ -54,4 +60,6 @@ Preconditions:
 - Bots read mentions as handles (`@ChiefofStaff`) and write handles back. A bot's handle becomes `<@<botId>>` when its turn ends, so its chip appears only after the reply finishes streaming. A handle glued to letters, digits or `-` (`a@Chief`, `@Chief-bot`) is not a mention.
 - Messages sent before mentions used ids keep their `@Name` text as plain text.
 - Composer chips render a moment after the edit. Read them in the next command, not in the same `browser eval` that changed the draft.
+- `start_group` and `invite_bot` ask for approval even from full-autonomy bots. Haiku sometimes calls them once with guessed arguments first; that call returns a hint and shows no card.
+- A new member's sidebar row and the group's title update live; the group itself has no message announcing the join.
 - Backchannel titles use `↔` (U+2194). Copy it exactly in `--name`.
