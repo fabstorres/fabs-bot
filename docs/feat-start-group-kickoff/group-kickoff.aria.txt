@@ -1,0 +1,24 @@
+# http://127.0.0.1:4940/  viewport=1440x900
+- region "Thread with Launch plan":
+  - text: Launch plan
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - text: Chief
+    - time: 7:30 PM
+    - paragraph: Welcome to Launch plan. Chief coordinates.
+    - paragraph:
+      - button "@Design": Design
+      - text: ": write a one-line coffee shop tagline."
+      - button "@Careful": Careful
+      - text: ": name one launch risk, one line."
+    - paragraph: One line each, please.
+    - text: Design
+    - time: 7:30 PM
+    - text: Careful
+    - time: 7:30 PM
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Stop"

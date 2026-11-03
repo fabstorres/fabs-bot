@@ -1,0 +1,29 @@
+# http://127.0.0.1:4940/  viewport=1440x900
+- region "Thread with Lighthouse":
+  - text: Lighthouse
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - text: Chief
+    - time: 7:32 PM
+    - paragraph: Welcome to Lighthouse. Chief coordinates.
+    - paragraph:
+      - button "@Design": Design
+      - text: ": write a 400-word short story about a lighthouse."
+      - button "@Careful": Careful
+      - text: ": write a 400-word risk review of opening a cafe."
+    - paragraph:
+      - text: When you're done, hand back to
+      - button "@Chief": Chief
+      - text: .
+    - text: Design
+    - time: 7:32 PM
+    - paragraph: Stopped.
+    - text: Careful
+    - time: 7:32 PM
+    - paragraph: Stopped.
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]
