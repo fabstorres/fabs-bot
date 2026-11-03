@@ -18,7 +18,7 @@ type ToolDef = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  run(args: any, ctx: TurnContext): Promise<string> | string;
+  run(args: any, ctx: TurnContext, callId: string): Promise<string> | string;
 };
 
 const str = (description: string) => ({ type: "string", description });
@@ -36,7 +36,8 @@ const reject = (code: string, message: string): never => {
   throw new ToolRejection(code, message);
 };
 
-const pendingApprovals = new Map<string, { resolve: (d: "allow" | "deny") => void; ctx: TurnContext; index: number }>();
+type ApprovalOutcome = "approved" | "denied" | "cancelled";
+const pendingApprovals = new Map<string, { resolve: (o: ApprovalOutcome) => void; ctx: TurnContext; index: number }>();
 
 function publishThread(threadId: string) {
   const t = db.getThread(threadId);
@@ -45,12 +46,18 @@ function publishThread(threadId: string) {
 
 const isLive = (ctx: TurnContext) => turnsByToken.get(ctx.token) === ctx;
 
-export function decideApproval(requestId: string, decision: "allow" | "deny"): boolean {
+export function decideApproval(requestId: string, decision: "allow" | "deny" | "cancel"): boolean {
   const p = pendingApprovals.get(requestId);
   if (!p) return false;
   pendingApprovals.delete(requestId);
-  p.resolve(isLive(p.ctx) ? decision : "deny");
+  p.resolve(decision === "cancel" || !isLive(p.ctx) ? "cancelled" : decision === "allow" ? "approved" : "denied");
   return true;
+}
+
+const threadKind = (threadId: string) => db.getThread(threadId)?.kind ?? null;
+
+function logTurnEvent(ctx: TurnContext, callId: string, e: Pick<db.TrailEvent, "type" | "approvalId" | "toolName" | "outcome"> & { actor?: db.EventActor }) {
+  db.logEvent({ actor: "bot", ...e, threadId: ctx.threadId, threadKind: threadKind(ctx.threadId), turnId: ctx.turnId, callId });
 }
 
 const PAGE_DEFAULT = 25;
@@ -103,26 +110,32 @@ function describeMessage(m: Message, bots: Bot[]): string {
   return `#${m.seq} · ${isoTime(m.createdAt)} · ${author}:\n${text || "(no text)"}${attachments}`;
 }
 
-async function askApproval(ctx: TurnContext, tool: string, summary: string): Promise<"allow" | "deny"> {
+async function askApproval(ctx: TurnContext, callId: string, tool: string, summary: string): Promise<"allow" | "deny"> {
   const requestId = crypto.randomUUID();
   const part: MessagePart = { type: "approval", requestId, tool, summary };
+  logTurnEvent(ctx, callId, { type: "approval.request", approvalId: requestId, toolName: tool });
   const index = ctx.addPart(part);
   publishThread(ctx.threadId);
   const prev = getStatus(ctx.botId);
   setStatus(ctx.botId, { state: "blocked", text: `Needs your OK: ${tool}`, threadId: ctx.threadId });
-  const decision = await new Promise<"allow" | "deny">((res) => {
+  const outcome = await new Promise<ApprovalOutcome>((res) => {
     pendingApprovals.set(requestId, { resolve: res, ctx, index });
-    if (ctx.signal.aborted) decideApproval(requestId, "deny");
-    else ctx.signal.addEventListener("abort", () => decideApproval(requestId, "deny"), { once: true });
+    if (ctx.signal.aborted) decideApproval(requestId, "cancel");
+    else ctx.signal.addEventListener("abort", () => decideApproval(requestId, "cancel"), { once: true });
   });
+  const actor = outcome === "cancelled" ? "system" : "api";
+  logTurnEvent(ctx, callId, { type: "approval.decision", actor, approvalId: requestId, toolName: tool, outcome });
+  const decision = outcome === "approved" ? "allow" : "deny";
   ctx.updatePart(index, { ...part, decision });
   publishThread(ctx.threadId);
   if (isLive(ctx)) setStatus(ctx.botId, { state: "working", text: prev.text, threadId: ctx.threadId });
   return decision;
 }
 
-async function leadOrApproved(ctx: TurnContext, tool: string, summary: string): Promise<boolean> {
-  return !!db.getBot(ctx.botId)?.isTeamLead || (await askApproval(ctx, tool, summary)) === "allow";
+async function leadOrApproved(ctx: TurnContext, callId: string, tool: string, summary: string): Promise<boolean> {
+  if (!db.getBot(ctx.botId)?.isTeamLead) return (await askApproval(ctx, callId, tool, summary)) === "allow";
+  logTurnEvent(ctx, callId, { type: "approval.decision", toolName: tool, outcome: "bypassed" });
+  return true;
 }
 
 function findTeammate(name: string, ctx: TurnContext): Bot {
@@ -237,8 +250,8 @@ const tools: ToolDef[] = [
     description:
       "Post a message to the user in your direct thread with them. Use from routines or bot-to-bot channels when something needs their attention.",
     inputSchema: { type: "object", properties: { message: str("Message") }, required: ["message"] },
-    run(args, ctx) {
-      const t = directThread(ctx.botId);
+    run(args, ctx, callId) {
+      const t = directThread(ctx.botId, { actor: "bot", turnId: ctx.turnId, callId });
       if (t.id === ctx.threadId) return reject("already_direct", "You're already talking to the user here; just reply.");
       const m = db.addMessage({ threadId: t.id, author: "bot", botId: ctx.botId, fromBotId: ctx.botId, parts: [{ type: "text", text: linkHandles(String(args.message), db.listBots()) }] });
       publish({ type: "message", message: m });
@@ -374,7 +387,7 @@ const tools: ToolDef[] = [
       },
       required: ["bots", "title", "kickoff"],
     },
-    async run(args, ctx) {
+    async run(args, ctx, callId) {
       const names = (Array.isArray(args.bots) ? args.bots : []).map(String);
       if (!names.length) return reject("no_teammates", "Name at least one teammate.");
       const title = clip(String(args.title ?? "").trim(), 80);
@@ -390,11 +403,11 @@ const tools: ToolDef[] = [
       const named = mentionedBots(linked, picked);
       if (!named.length) return reject("kickoff_names_no_teammate", `Your kickoff names no teammate. Hand each one their part with their @handle: ${picked.map((b) => `@${handleOf(b.name)}`).join(", ")}.`);
       const who = picked.map((b) => b.name).join(", ");
-      if (!(await leadOrApproved(ctx, "start_group", `Start "${title}" with ${who}`))) {
+      if (!(await leadOrApproved(ctx, callId, "start_group", `Start "${title}" with ${who}`))) {
         return `The user declined starting "${title}". Nothing changed.`;
       }
       if (!db.getBot(ctx.botId) || picked.some((b) => !db.getBot(b.id))) return reject("bot_deleted", "A teammate was deleted meanwhile. Nothing changed.");
-      const thread = db.createThread("group", [ctx.botId, ...picked.map((b) => b.id)], title);
+      const thread = db.createThread("group", [ctx.botId, ...picked.map((b) => b.id)], title, { actor: "bot", turnId: ctx.turnId, callId });
       publish({ type: "thread", thread });
       const started = kickoff(thread.id, ctx.botId, linked, ctx.hops).map(botName);
       publish({ type: "thread.open", threadId: thread.id, fromThreadId: ctx.threadId });
@@ -406,12 +419,12 @@ const tools: ToolDef[] = [
     name: "invite_bot",
     description: "Add a teammate to this group chat. The user must approve it first unless you are the team lead. Only works in group chats; elsewhere use start_group.",
     inputSchema: { type: "object", properties: { name: str("Teammate name, e.g. 'Engineer'") }, required: ["name"] },
-    async run(args, ctx) {
+    async run(args, ctx, callId) {
       const thread = db.getThread(ctx.threadId);
       if (thread?.kind !== "group") return reject("not_a_group", "This isn't a group chat. Use start_group to open a new group with the user and your teammates.");
       const bot = findTeammate(String(args.name), ctx);
       if (thread.memberIds.includes(bot.id)) return reject("already_member", `${bot.name} is already in this chat.`);
-      if (!(await leadOrApproved(ctx, "invite_bot", `Add ${bot.name} to this chat`))) {
+      if (!(await leadOrApproved(ctx, callId, "invite_bot", `Add ${bot.name} to this chat`))) {
         return `The user declined adding ${bot.name}. Nothing changed.`;
       }
       if (db.getThread(ctx.threadId)?.memberIds.includes(bot.id)) return reject("already_member", `${bot.name} is already in this chat.`);
@@ -426,10 +439,10 @@ const tools: ToolDef[] = [
       type: "object",
       properties: { tool_name: { type: "string" }, input: { type: "object" }, tool_use_id: { type: "string" } },
     },
-    async run(args, ctx) {
+    async run(args, ctx, callId) {
       const input = args.input ?? {};
       const summary = clip(String(input.command ?? input.file_path ?? input.url ?? JSON.stringify(input)), 300);
-      const decision = await askApproval(ctx, String(args.tool_name), summary);
+      const decision = await askApproval(ctx, callId, String(args.tool_name), summary);
       return JSON.stringify(
         decision === "allow" ? { behavior: "allow", updatedInput: input } : { behavior: "deny", message: "The user declined this action." },
       );
@@ -471,16 +484,24 @@ async function handleRpc(r: RpcRequest, ctx: TurnContext) {
     case "tools/list":
       return ok({ tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
     case "tools/call": {
+      const callId = crypto.randomUUID();
       const tool = tools.find((t) => t.name === r.params?.name);
-      if (!tool) return fail(-32602, `Unknown tool ${r.params?.name}`);
+      logTurnEvent(ctx, callId, { type: "tool.call", toolName: tool?.name });
+      if (!tool) {
+        logTurnEvent(ctx, callId, { type: "tool.result", outcome: "rejected" });
+        return fail(-32602, `Unknown tool ${r.params?.name}`);
+      }
       try {
-        const text = await tool.run(r.params?.arguments ?? {}, ctx);
+        const text = await tool.run(r.params?.arguments ?? {}, ctx, callId);
+        logTurnEvent(ctx, callId, { type: "tool.result", toolName: tool.name, outcome: "succeeded" });
         return ok({ content: [{ type: "text", text }] });
       } catch (e) {
         if (e instanceof ToolRejection) {
           console.warn(`mcp ${tool.name} rejected: ${e.code}`);
+          logTurnEvent(ctx, callId, { type: "tool.result", toolName: tool.name, outcome: "rejected" });
           return ok({ content: [{ type: "text", text: e.message }], isError: true });
         }
+        logTurnEvent(ctx, callId, { type: "tool.result", toolName: tool.name, outcome: "error" });
         return ok({ content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true });
       }
     }

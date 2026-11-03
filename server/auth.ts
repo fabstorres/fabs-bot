@@ -57,10 +57,12 @@ export function deviceId(req: Request): string | null {
   return device.id;
 }
 
+export function localOwner(req: Request, ip: string | undefined, viaServe = false): boolean {
+  return isLoopback(ip) && !req.headers.get("tailscale-user-login") && !viaServe && loopbackHost(req);
+}
+
 export function authorized(req: Request, ip: string | undefined, viaServe = false): boolean {
-  const tsUser = req.headers.get("tailscale-user-login");
-  if (isLoopback(ip) && !tsUser && !viaServe && loopbackHost(req)) return true;
-  return deviceId(req) !== null;
+  return localOwner(req, ip, viaServe) || deviceId(req) !== null;
 }
 
 /**

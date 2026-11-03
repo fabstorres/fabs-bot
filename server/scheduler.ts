@@ -30,7 +30,7 @@ export async function fireRoutine(id: string) {
   const { runTurn } = await import("./orchestrator");
   let thread = r.threadId ? db.getThread(r.threadId) : null;
   if (!thread) {
-    thread = db.createThread("direct", [r.botId], r.name);
+    thread = db.createThread("direct", [r.botId], r.name, { actor: "scheduler" });
     db.updateThread(thread.id, { topic: "Routine" });
   }
   db.markRoutineRun(r.id, thread.id);

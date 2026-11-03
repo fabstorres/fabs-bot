@@ -6,7 +6,7 @@ import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, 
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
-import { authorized, deviceId, isLoopback, listDevices, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
+import { authorized, deviceId, isLoopback, localOwner, listDevices, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { realPathWithin, within } from "./paths";
@@ -18,6 +18,7 @@ import { fireRoutine, reschedule, withNextRun } from "./scheduler";
 import { disableServe, enableServe, killRunningCommands, tailscaleState, type ServeProblem } from "./tailscale";
 
 db.closeDanglingMessages();
+db.pruneEvents();
 reschedule();
 
 const refreshTailscale = () => tailscaleState(SERVE_TARGET_PORT);
@@ -65,6 +66,7 @@ function shutdown() {
 }
 
 const json = (data: unknown, status = 200) => Response.json(data, { status });
+const API: db.EventOrigin = { actor: "api" };
 const bad = (message: string, status = 400) => json({ error: message }, status);
 
 class HttpError extends Error {
@@ -221,7 +223,7 @@ route("POST", "/api/bots/:id/reset", (_r, p) => {
   db.resetSessionsForBot(p.id!);
   return json({ ok: true });
 });
-route("POST", "/api/bots/:id/direct", (_r, p) => json(directThread(p.id!)));
+route("POST", "/api/bots/:id/direct", (_r, p) => json(directThread(p.id!, API)));
 route("GET", "/api/bots/:id/files", (_r, p, url) => {
   const bot = db.getBot(p.id!);
   if (!bot) return bad("not found", 404);
@@ -260,7 +262,7 @@ route("POST", "/api/threads", async (req) => {
   const b = await body<{ botIds: string[]; text?: string; title?: string; fileIds?: string[] }>(req);
   const ids = (b.botIds ?? []).filter((id) => db.getBot(id));
   if (!ids.length) return bad("pick at least one bot");
-  const thread = db.createThread(ids.length > 1 ? "group" : "direct", ids, b.title ?? "");
+  const thread = db.createThread(ids.length > 1 ? "group" : "direct", ids, b.title ?? "", API);
   publish({ type: "thread", thread });
   const parts = messageParts(b.text, b.fileIds);
   if (parts.length) await postUserMessage(thread.id, parts);
@@ -278,10 +280,13 @@ route("PATCH", "/api/threads/:id", async (req, p) => {
 });
 route("DELETE", "/api/threads/:id", (_r, p) => {
   stopTurns(p.id!);
-  db.deleteThread(p.id!);
+  db.deleteThread(p.id!, API);
   publish({ type: "thread.deleted", threadId: p.id! });
   return json({ ok: true });
 });
+route("GET", "/api/threads/:id/events", (_r, p, url) =>
+  json(db.listEvents(p.id!, Number(url.searchParams.get("after")) || 0, Number(url.searchParams.get("limit")) || 200)),
+);
 route("GET", "/api/threads/:id/messages", (_r, p) => json(db.listMessages(p.id!)));
 route("POST", "/api/threads/:id/messages", async (req, p) => {
   const b = await body<{ text?: string; fileIds?: string[] }>(req);
@@ -300,7 +305,7 @@ route("POST", "/api/threads/:id/stop", (_r, p) => {
 });
 route("POST", "/api/threads/:id/members", async (req, p) => {
   const { botId } = await body(req);
-  const thread = bringInBot(p.id!, String(botId));
+  const thread = bringInBot(p.id!, String(botId), API);
   return thread ? json(thread) : bad("not found", 404);
 });
 
@@ -440,6 +445,7 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws";
   if (isApi && !authorized(req, ip, viaServe)) return json({ error: "unpaired" }, 401);
   if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
+  if (/^\/api\/threads\/[^/]+\/events$/.test(url.pathname) && !localOwner(req, ip, viaServe)) return bad("only available on this PC", 403);
 
   if (url.pathname === "/ws") {
     return server.upgrade(req, { data: { deviceId: deviceId(req) } }) ? undefined : new Response("expected websocket", { status: 400 });
@@ -507,6 +513,7 @@ onboard();
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 setInterval(() => publish(heartbeat), HEARTBEAT_MS);
+setInterval(db.pruneEvents, 60 * 60_000);
 console.log(`fabs-bot ${VERSION}`);
 void providerInfo();
 if (serveEnabled()) void applyServe();
