@@ -1,0 +1,5 @@
+# Writer 1:1, off-role coding request: a direct chat always replies
+$ control-fabs thread <T>
+#1 Writer (done): "Hey, I'm Writer. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Fix this TypeScript error in one line: Property 'id' does not exist on type '{}'."
+#3 Writer (done): "Declare the object's type where it's created, e.g. `const obj: { id?: string } = {};` (or `{ id: string }` if it's always set). If you paste the line that trigg"

@@ -327,6 +327,9 @@ export function updateMessage(id: string, parts: MessagePart[], status?: Message
   else db.query("UPDATE messages SET parts = ? WHERE id = ?").run(JSON.stringify(parts), id);
   return getMessage(id)!;
 }
+export function deleteMessage(id: string) {
+  db.query("DELETE FROM messages WHERE id = ?").run(id);
+}
 /** Messages left "streaming" by a crash or restart. Their approval prompts died with the turn. */
 export function closeDanglingMessages() {
   const rows = db.query("SELECT * FROM messages WHERE status = 'streaming'").all() as MessageRow[];
