@@ -130,6 +130,7 @@ function apply(e: ServerEvent) {
       break;
     }
     case "message.deleted": {
+      deletedIds.add(e.messageId);
       const list = get().messages[e.threadId];
       if (list) set({ messages: { ...get().messages, [e.threadId]: list.filter((m) => m.id !== e.messageId) } });
       break;
@@ -154,6 +155,7 @@ const RETRY_MAX_MS = 300_000;
 const HEARTBEAT_SLACK_MS = 5_000;
 
 let socket: WebSocket | null = null;
+const deletedIds = new Set<string>();
 let latest = 0;
 let failures = 0;
 let openedAt = 0;
@@ -264,7 +266,7 @@ export function offlineReason(s: State) {
 
 export async function loadMessages(threadId: string) {
   const msgs = await api.get<Message[]>(`/api/threads/${threadId}/messages`);
-  set({ messages: { ...get().messages, [threadId]: msgs } });
+  set({ messages: { ...get().messages, [threadId]: msgs.filter((m) => !deletedIds.has(m.id)) } });
 }
 
 function show(view: View) {
