@@ -333,7 +333,7 @@ const commands: Record<string, () => Promise<void>> = {
           p.type === "text"
             ? JSON.stringify(p.text.slice(0, 160))
             : p.type === "tool"
-              ? `[tool ${p.name} ${p.status}]`
+              ? `[tool ${p.name} ${p.status}${p.status === "error" && p.summary ? ` ${JSON.stringify(p.summary)}` : ""}]`
               : p.type === "file"
                 ? `[file ${p.name} ${p.size}B id=${p.fileId}]`
                 : p.type === "question"
