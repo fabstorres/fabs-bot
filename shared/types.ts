@@ -194,6 +194,7 @@ export type ServerEvent =
   | { type: "status"; status: BotStatus }
   | { type: "thread"; thread: Thread }
   | { type: "thread.deleted"; threadId: string }
+  | { type: "thread.open"; threadId: string; fromThreadId: string }
   | { type: "message"; message: Message }
   | { type: "link.start"; link: Link }
   | { type: "link.end"; linkId: string }

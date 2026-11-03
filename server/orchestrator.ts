@@ -15,6 +15,7 @@ export interface TurnContext {
   botId: string;
   threadId: string;
   depth: number;
+  hops: number;
   signal: AbortSignal;
   messageId: string;
   editParts(edit: (parts: MessagePart[]) => void): void;
@@ -128,7 +129,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
       `- schedule_routine / list_routines / delete_routine: recurring work on a cron schedule.`,
       `- notify_user: ping the user in your direct thread with them, e.g. from a routine or a backchannel.`,
       `- list_threads / read_thread: read any thread without posting to it, e.g. to summarize a group chat. Read a page at a time with next_cursor / next_after_seq instead of loading everything.`,
-      `- start_group: open a new group chat with the user, you and named teammates. The user approves it first.`,
+      `- start_group: open a new group chat with the user, you and named teammates. The user approves it first. Your kickoff is its first message: the context and who owns what, with each teammate's @handle to start them. The user is taken to the group, and the teamwork and its results belong there through @mention hand-offs, not in this chat or message_bot.`,
       `- invite_bot: add a teammate to this group chat. The user approves it first. Outside a group, use start_group.`,
     );
   }
@@ -221,6 +222,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
     botId,
     threadId,
     depth: opts.depth ?? 0,
+    hops: opts.hops ?? 0,
     signal: ctrl.signal,
     messageId: msg.id,
     editParts(edit) {
@@ -408,8 +410,22 @@ export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   return m;
 }
 
+export function kickoff(threadId: string, botId: string, text: string, hops: number): string[] {
+  const bots = db.listBots();
+  const linked = linkHandles(text, bots);
+  const m = db.addMessage({ threadId, author: "bot", botId, fromBotId: botId, parts: [{ type: "text", text: linked }] });
+  publish({ type: "message", message: m });
+  const thread = db.updateThread(threadId, { preview: clip(plain(readable(linked, bots)), 140), unread: (db.getThread(threadId)?.unread ?? 0) + 1 });
+  if (!thread) return [];
+  publish({ type: "thread", thread });
+  if (hops + 1 > MAX_HOPS) return [];
+  const targets = mentioned(linked, thread, botId);
+  for (const id of targets) void runTurn(threadId, id, { hops: hops + 1 });
+  return targets;
+}
+
 /** One bot messages another through their private backchannel and waits for the reply. */
-export async function messageBot(from: Bot, to: Bot, text: string, depth: number): Promise<string> {
+export async function messageBot(from: Bot, to: Bot, text: string, depth: number, hops = 0): Promise<string> {
   if (depth >= 3) return "Not sent: too many nested bot-to-bot messages. Finish with what you have.";
   let thread = db.findBackchannel(from.id, to.id);
   if (!thread) {
@@ -423,7 +439,7 @@ export async function messageBot(from: Bot, to: Bot, text: string, depth: number
 
   const link = startLink(from.id, to.id, thread.id);
   try {
-    const reply = await runTurn(thread.id, to.id, { depth: depth + 1 });
+    const reply = await runTurn(thread.id, to.id, { depth: depth + 1, hops });
     return reply ? readable(textOf(reply), db.listBots()) || "(they replied without text)" : "(no reply)";
   } finally {
     endLink(link);

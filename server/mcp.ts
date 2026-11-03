@@ -5,12 +5,12 @@
 import { copyFileSync, existsSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { Cron } from "croner";
-import { botsNamed, handleOf, linkHandles, readable } from "../shared/mentions";
+import { botsNamed, handleOf, linkHandles, mentionedBots, readable } from "../shared/mentions";
 import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { FILES_DIR, VERSION } from "./config";
 import * as db from "./db";
 import { getStatus, publish, setStatus } from "./bus";
-import { bringInBot, directThread, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
+import { bringInBot, directThread, kickoff, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
 import { reschedule } from "./scheduler";
 import { clip } from "./providers/spawn";
 
@@ -147,7 +147,7 @@ const tools: ToolDef[] = [
       if (!to) return `No teammate named "${args.bot}". Call list_bots to see who exists.`;
       if (to.id === from.id) return "That's you.";
       setStatus(from.id, { state: "waiting", text: `Waiting on ${to.name}`, threadId: ctx.threadId });
-      const reply = await messageBot(from, to, String(args.message), ctx.depth);
+      const reply = await messageBot(from, to, String(args.message), ctx.depth, ctx.hops);
       setStatus(from.id, { state: "working", text: `Got reply from ${to.name}`, threadId: ctx.threadId });
       return `${to.name} replied:\n\n${reply}`;
     },
@@ -347,14 +347,15 @@ const tools: ToolDef[] = [
   {
     name: "start_group",
     description:
-      "Start a new group chat with the user, you and the named teammates. The user must approve it first. The current chat stays as it is.",
+      "Start a new group chat with the user, you and the named teammates, opened by your kickoff message. The user must approve it first, then is taken to the group, and the teammates you @mention start there. The current chat stays as it is.",
     inputSchema: {
       type: "object",
       properties: {
         bots: { type: "array", items: { type: "string" }, description: "Teammate names, e.g. ['Design', 'Engineer']" },
         title: str("Group title, e.g. 'Launch plan'"),
+        kickoff: str("The group's first message: the context and who owns what, with each teammate's @handle, e.g. '@Design owns the mockups'"),
       },
-      required: ["bots", "title"],
+      required: ["bots", "title", "kickoff"],
     },
     async run(args, ctx) {
       const names = (Array.isArray(args.bots) ? args.bots : []).map(String);
@@ -367,6 +368,10 @@ const tools: ToolDef[] = [
         if (typeof bot === "string") return bot;
         if (!picked.some((b) => b.id === bot.id)) picked.push(bot);
       }
+      const brief = String(args.kickoff ?? "").trim();
+      if (!brief) return "Write a kickoff: the context and who owns what, with each teammate's @handle.";
+      const named = mentionedBots(linkHandles(brief, db.listBots()), picked);
+      if (!named.length) return `Your kickoff names no teammate. Hand each one their part with their @handle: ${picked.map((b) => `@${handleOf(b.name)}`).join(", ")}.`;
       const who = picked.map((b) => b.name).join(", ");
       if ((await askApproval(ctx, "start_group", `Start "${title}" with ${who}`)) === "deny") {
         return `The user declined starting "${title}". Nothing changed.`;
@@ -374,7 +379,10 @@ const tools: ToolDef[] = [
       if (!db.getBot(ctx.botId) || picked.some((b) => !db.getBot(b.id))) return "A teammate was deleted meanwhile. Nothing changed.";
       const thread = db.createThread("group", [ctx.botId, ...picked.map((b) => b.id)], title);
       publish({ type: "thread", thread });
-      return `Started group "${title}" (id ${thread.id}) with the user, you and ${who}. It's empty; the user picks it up from their sidebar.`;
+      const started = kickoff(thread.id, ctx.botId, brief, ctx.hops).map(botName);
+      publish({ type: "thread.open", threadId: thread.id, fromThreadId: ctx.threadId });
+      const next = started.length ? `${started.join(", ")} started on it there.` : "No teammate started; the group waits for the user.";
+      return `Started group "${title}" (id ${thread.id}) with the user, you and ${who}, posted your kickoff there and took the user to it. ${next} Continue the work in the group, not in this chat or through message_bot; teammates hand back to you there with your @handle. End this turn with one short line pointing to the group.`;
     },
   },
   {
