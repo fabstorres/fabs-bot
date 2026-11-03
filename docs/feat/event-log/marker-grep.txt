@@ -1,0 +1,5 @@
+events: 22 rows, markers found: none
+messages: 9 rows, markers found: SECRETMKR-BODY1 SECRETMKR-TITLE1 SECRETMKR-ARG1 SECRETMKR-BODY2 SECRETMKR-TITLE2 SECRETMKR-ARG2
+events columns: id, created_at, event_type, thread_id, thread_kind, actor_category, turn_id, call_id, approval_id, tool_name, outcome_code
+distinct tool_name: , start_group, list_bots, read_thread
+distinct outcome_code: , rejected, succeeded, error, denied, approved

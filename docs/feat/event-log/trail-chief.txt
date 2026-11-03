@@ -1,0 +1,16 @@
+2 thread.create      f514fe85 direct  system turn=- call=- appr=- tool=None out=None
+6 tool.call          f514fe85 direct  bot    turn=222fc469 call=f0c2c26b appr=- tool=start_group out=None
+7 approval.request   f514fe85 direct  bot    turn=222fc469 call=f0c2c26b appr=130ffffc tool=start_group out=None
+8 tool.call          f514fe85 direct  bot    turn=222fc469 call=0608e466 appr=- tool=None out=None
+9 tool.result        f514fe85 direct  bot    turn=222fc469 call=0608e466 appr=- tool=None out=rejected
+10 tool.call          f514fe85 direct  bot    turn=222fc469 call=92820811 appr=- tool=list_bots out=None
+11 tool.result        f514fe85 direct  bot    turn=222fc469 call=92820811 appr=- tool=list_bots out=succeeded
+12 tool.call          f514fe85 direct  bot    turn=222fc469 call=cb10678d appr=- tool=read_thread out=None
+13 tool.result        f514fe85 direct  bot    turn=222fc469 call=cb10678d appr=- tool=read_thread out=error
+14 approval.decision  f514fe85 direct  api    turn=222fc469 call=f0c2c26b appr=130ffffc tool=start_group out=denied
+15 tool.result        f514fe85 direct  bot    turn=222fc469 call=f0c2c26b appr=- tool=start_group out=succeeded
+16 tool.call          f514fe85 direct  bot    turn=4ea25a79 call=c32155e8 appr=- tool=start_group out=None
+17 approval.request   f514fe85 direct  bot    turn=4ea25a79 call=c32155e8 appr=173810b6 tool=start_group out=None
+18 approval.decision  f514fe85 direct  api    turn=4ea25a79 call=c32155e8 appr=173810b6 tool=start_group out=approved
+19 thread.create      0a38e7b7 group   bot    turn=4ea25a79 call=c32155e8 appr=- tool=None out=None
+20 tool.result        f514fe85 direct  bot    turn=4ea25a79 call=c32155e8 appr=- tool=start_group out=succeeded

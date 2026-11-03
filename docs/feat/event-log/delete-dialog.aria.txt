@@ -1,0 +1,13 @@
+# http://127.0.0.1:4950/  viewport=1440x900
+- dialog "Delete “SECRETMKR-TITLE2”?":
+  - heading "Delete “SECRETMKR-TITLE2”?" [level=2]
+  - paragraph: Delete “SECRETMKR-TITLE2”?
+  - paragraph: This deletes the thread and all its messages.
+  - paragraph: Bots in this thread
+  - list "Bots in this thread":
+    - listitem: Chief
+    - listitem: Design
+  - paragraph: Each bot's 1:1 chat with you stays, and so does their work on disk.
+  - button "Cancel"
+  - button "Delete"
+  - button "Close"

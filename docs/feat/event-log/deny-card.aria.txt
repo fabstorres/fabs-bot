@@ -1,0 +1,5 @@
+# http://127.0.0.1:4950/  viewport=1440x900
+- 'group "Approval: start_group"':
+  - text: Wants to use start_group Start "SECRETMKR-TITLE1" with Design
+  - button "Deny"
+  - button "Allow"

@@ -1,0 +1,30 @@
+seeded:
+[
+  {
+    id: 19,
+    event_type: "thread.create",
+    age_days: 0,
+  }, {
+    id: 22,
+    event_type: "thread.create",
+    age_days: 31,
+  }, {
+    id: 23,
+    event_type: "thread.create",
+    age_days: 29,
+  }
+]
+API read before any prune (expired row hidden):
+[(19, 'thread.create'), (23, 'thread.create')]
+rows after restart (startup prune):
+[
+  {
+    id: 19,
+    event_type: "thread.create",
+    age_days: 0,
+  }, {
+    id: 23,
+    event_type: "thread.create",
+    age_days: 29,
+  }
+]

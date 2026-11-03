@@ -1,0 +1,6 @@
+16 tool.call          f514fe85 direct  bot    turn=4ea25a79 call=c32155e8 appr=- tool=start_group out=None
+17 approval.request   f514fe85 direct  bot    turn=4ea25a79 call=c32155e8 appr=173810b6 tool=start_group out=None
+18 approval.decision  f514fe85 direct  api    turn=4ea25a79 call=c32155e8 appr=173810b6 tool=start_group out=approved
+19 thread.create      0a38e7b7 group   bot    turn=4ea25a79 call=c32155e8 appr=- tool=None out=None
+20 tool.result        f514fe85 direct  bot    turn=4ea25a79 call=c32155e8 appr=- tool=start_group out=succeeded
+21 thread.delete      0a38e7b7 group   api    turn=- call=- appr=- tool=None out=None
