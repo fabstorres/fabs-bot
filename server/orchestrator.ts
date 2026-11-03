@@ -129,6 +129,10 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
     `- Your workspace folder is ${bot.cwd}. Keep your work there unless asked otherwise.`,
     `- ${SHARED_DIR} is shared by every bot. Use it to hand files to teammates.`,
     team ? `\nYour teammates:\n${team}` : "\nYou have no teammates yet.",
+    `\nThis chat: ${thread.kind} chat${thread.title ? ` "${thread.title}"` : ""}, id ${thread.id}.`,
+    `- This chat owns its context. Shared files, your workspace, or memory from other chats don't make another chat's project relevant here.`,
+    `- Only bring up or read another chat when the user asks or it is clearly relevant to this one.`,
+    `- If the user starts work on a different project, suggest starting a new chat for it.`,
     thread.kind === "group" && members.length
       ? `\nThis is a group thread with ${members.map((b) => `@${handleOf(b.name)} (${b.role || "general helper"})`).join(", ")}. Write a teammate's handle to hand them the floor; only do that when you need them. If nobody @mentioned you and the message isn't for your role, reply with exactly ${PASS} and nothing else.`
       : "",

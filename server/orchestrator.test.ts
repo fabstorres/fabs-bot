@@ -10,7 +10,7 @@ process.env.FABS_DATA_DIR = join(scratch, "data");
 process.env.FABS_WORK_ROOT = join(scratch, "work");
 const db = await import("./db");
 const { MAX_HOPS } = await import("./config");
-const { isBusy, kickoff, postUserMessage, stopTurns } = await import("./orchestrator");
+const { isBusy, kickoff, postUserMessage, stopTurns, systemPrompt } = await import("./orchestrator");
 const { providers } = await import("./providers");
 const { subscribe } = await import("./bus");
 
@@ -60,6 +60,17 @@ test("a kickoff linked before approval still starts a teammate renamed while it 
   } finally {
     db.saveBot(design);
   }
+});
+
+test("the chat scope rules sit alongside the group hand-off and backchannel instructions", () => {
+  const group = systemPrompt(chief, db.createThread("group", [chief.id, design.id], "Launch"));
+  expect(group).toContain('This chat: group chat "Launch"');
+  expect(group).toContain("Write a teammate's handle to hand them the floor");
+  expect(group).toContain("start_group");
+
+  const backchannel = systemPrompt(chief, db.createThread("backchannel", [chief.id, design.id]));
+  expect(backchannel).toContain("This chat owns its context.");
+  expect(backchannel).toContain("This is a private channel between you and another bot.");
 });
 
 const replies = new Map<string, string[]>();
