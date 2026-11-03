@@ -59,9 +59,19 @@ export interface TurnOptions {
 
 export const PASS = "[pass]";
 
+function passText(parts: MessagePart[]) {
+  if (!parts.every((p) => p.type === "text" || p.type === "tool")) return null;
+  return parts.map((p) => (p.type === "text" ? p.text : "")).join("").trim().toLowerCase();
+}
+
 function mayPass(parts: MessagePart[]) {
-  const text = parts.map((p) => (p.type === "text" ? p.text : "")).join("").trim().toLowerCase();
-  return parts.every((p) => p.type === "text" || p.type === "tool") && PASS.startsWith(text);
+  const text = passText(parts);
+  return text !== null && PASS.startsWith(text);
+}
+
+function isPass(parts: MessagePart[]) {
+  const text = passText(parts);
+  return text === PASS || text === "";
 }
 
 /** Queue a turn for `botId` in `threadId`. Resolves with the bot's reply message (or null if it had nothing to answer). */
@@ -322,7 +332,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
 
   // A turn that never produced a session (e.g. auth failure) shouldn't advance what the bot has "seen".
   if (sessionId || !provider.resumable) db.setMemberSession(threadId, botId, sessionId, snapshotSeq);
-  const passed = !!opts.canPass && !error && mayPass(parts);
+  const passed = !!opts.canPass && !error && isPass(parts);
   let replyText = "";
   if (passed) {
     db.deleteMessage(msg.id);

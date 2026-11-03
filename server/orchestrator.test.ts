@@ -106,3 +106,13 @@ test("a bot handed the floor in a no-mention turn can't pass", async () => {
     [{ type: "text", text: "[pass]" }],
   ]);
 });
+
+test("a reply that stops partway through the pass token is kept", async () => {
+  const fixtures = bot("Fixtures");
+  replies.set("Fixtures", ["[p"]);
+  const group = db.createThread("group", [fixtures.id], "Parser");
+  await postUserMessage(group.id, [{ type: "text", text: "output exactly: [p" }]);
+  await until(() => db.listMessages(group.id).some((m) => m.author === "bot" && m.status === "done"));
+
+  expect(db.listMessages(group.id).map((m) => (m.author === "bot" ? m.parts : m.author))).toEqual(["user", [{ type: "text", text: "[p" }]]);
+});
