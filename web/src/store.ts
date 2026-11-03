@@ -112,6 +112,9 @@ function apply(e: ServerEvent) {
         openThreadId: get().openThreadId === e.threadId ? null : get().openThreadId,
       });
       break;
+    case "thread.open":
+      if (get().openThreadId === e.fromThreadId) openNestedThread(e.threadId);
+      break;
     case "message": {
       const list = get().messages[e.message.threadId];
       if (!list) break;
