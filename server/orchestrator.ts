@@ -410,9 +410,8 @@ export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   return m;
 }
 
-export function kickoff(threadId: string, botId: string, text: string, hops: number): string[] {
+export function kickoff(threadId: string, botId: string, linked: string, hops: number): string[] {
   const bots = db.listBots();
-  const linked = linkHandles(text, bots);
   const m = db.addMessage({ threadId, author: "bot", botId, fromBotId: botId, parts: [{ type: "text", text: linked }] });
   publish({ type: "message", message: m });
   const thread = db.updateThread(threadId, { preview: clip(plain(readable(linked, bots)), 140), unread: (db.getThread(threadId)?.unread ?? 0) + 1 });

@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { linkHandles } from "../shared/mentions";
 import type { Bot } from "../shared/types";
 
 const scratch = mkdtempSync(join(tmpdir(), "fabs-orchestrator-test-"));
@@ -30,9 +31,9 @@ const bot = (name: string): Bot =>
 const chief = bot("Chief");
 const design = bot("Design");
 
-function kickoffAt(hops: number) {
+function kickoffAt(hops: number, linked = linkHandles("@Design owns the mockups.", db.listBots())) {
   const group = db.createThread("group", [chief.id, design.id], "Launch");
-  const started = kickoff(group.id, chief.id, "@Design owns the mockups.", hops);
+  const started = kickoff(group.id, chief.id, linked, hops);
   const busy = isBusy(group.id, design.id);
   stopTurns(group.id);
   return { group, started, busy };
@@ -47,4 +48,14 @@ test("a kickoff from deep in a bot chain keeps the chain's hop budget", () => {
   expect(spent.started).toEqual([]);
   expect(spent.busy).toBe(false);
   expect(db.listMessages(spent.group.id).map((m) => m.botId)).toEqual([chief.id]);
+});
+
+test("a kickoff linked before approval still starts a teammate renamed while it waited", () => {
+  const linked = linkHandles("@Design owns the mockups.", db.listBots());
+  db.saveBot({ ...design, name: "Studio" });
+  try {
+    expect(kickoffAt(0, linked).started).toEqual([design.id]);
+  } finally {
+    db.saveBot(design);
+  }
 });

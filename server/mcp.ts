@@ -370,7 +370,8 @@ const tools: ToolDef[] = [
       }
       const brief = String(args.kickoff ?? "").trim();
       if (!brief) return "Write a kickoff: the context and who owns what, with each teammate's @handle.";
-      const named = mentionedBots(linkHandles(brief, db.listBots()), picked);
+      const linked = linkHandles(brief, db.listBots());
+      const named = mentionedBots(linked, picked);
       if (!named.length) return `Your kickoff names no teammate. Hand each one their part with their @handle: ${picked.map((b) => `@${handleOf(b.name)}`).join(", ")}.`;
       const who = picked.map((b) => b.name).join(", ");
       if ((await askApproval(ctx, "start_group", `Start "${title}" with ${who}`)) === "deny") {
@@ -379,7 +380,7 @@ const tools: ToolDef[] = [
       if (!db.getBot(ctx.botId) || picked.some((b) => !db.getBot(b.id))) return "A teammate was deleted meanwhile. Nothing changed.";
       const thread = db.createThread("group", [ctx.botId, ...picked.map((b) => b.id)], title);
       publish({ type: "thread", thread });
-      const started = kickoff(thread.id, ctx.botId, brief, ctx.hops).map(botName);
+      const started = kickoff(thread.id, ctx.botId, linked, ctx.hops).map(botName);
       publish({ type: "thread.open", threadId: thread.id, fromThreadId: ctx.threadId });
       const next = started.length ? `${started.join(", ")} started on it there.` : "No teammate started; the group waits for the user.";
       return `Started group "${title}" (id ${thread.id}) with the user, you and ${who}, posted your kickoff there and took the user to it. ${next} Continue the work in the group, not in this chat or through message_bot; teammates hand back to you there with your @handle. End this turn with one short line pointing to the group.`;
