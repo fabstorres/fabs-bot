@@ -30,6 +30,12 @@ const SHADOWED_TOOLS = ["SendMessage", "ListAgents", "CronCreate", "CronDelete",
 /** Read-only tools a bot in "ask" mode may use without asking. */
 const SAFE_TOOLS = ["Read", "Glob", "Grep", "LS", "WebSearch", "WebFetch", "TodoWrite", "mcp__fabsbot"];
 
+function resultText(content: unknown): string | undefined {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return undefined;
+  return content.find((c) => c?.type === "text" && typeof c.text === "string")?.text;
+}
+
 export const claude: Provider = {
   id: "claude",
   label: "Claude Code",
@@ -100,7 +106,10 @@ export const claude: Provider = {
             break;
           case "user":
             for (const block of ev.message?.content ?? []) {
-              if (block.type === "tool_result") emit({ type: "tool.end", id: block.tool_use_id, error: !!block.is_error });
+              if (block.type === "tool_result") {
+                const error = !!block.is_error;
+                emit({ type: "tool.end", id: block.tool_use_id, error, summary: error ? resultText(block.content) : undefined });
+              }
             }
             break;
           case "result":

@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
 const botColumns = db.query("PRAGMA table_info(bots)").all() as { name: string }[];
 if (!botColumns.some((c) => c.name === "label")) db.exec("ALTER TABLE bots ADD COLUMN label TEXT NOT NULL DEFAULT ''");
+if (!botColumns.some((c) => c.name === "is_team_lead")) db.exec("ALTER TABLE bots ADD COLUMN is_team_lead INTEGER NOT NULL DEFAULT 0");
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS bots_one_team_lead ON bots(is_team_lead) WHERE is_team_lead = 1");
 
 export const newId = () => crypto.randomUUID();
 const now = () => Date.now();
@@ -109,7 +111,7 @@ export function setSetting(key: string, value: string) {
 
 type BotRow = {
   id: string; name: string; label: string; role: string; instructions: string; shape: string; color: string;
-  provider: string; model: string; cwd: string; autonomy: string; connector_ids: string; created_at: number;
+  provider: string; model: string; cwd: string; autonomy: string; connector_ids: string; is_team_lead: number; created_at: number;
 };
 const toBot = (r: BotRow): Bot => ({
   id: r.id,
@@ -124,6 +126,7 @@ const toBot = (r: BotRow): Bot => ({
   cwd: r.cwd,
   autonomy: r.autonomy as Bot["autonomy"],
   connectorIds: JSON.parse(r.connector_ids),
+  isTeamLead: r.is_team_lead === 1,
   createdAt: r.created_at,
 });
 
@@ -138,12 +141,16 @@ export function findBotByName(name: string): Bot | null {
   const needle = name.trim().toLowerCase().replace(/^@/, "");
   return listBots().find((b) => b.name.toLowerCase() === needle || slug(b.name) === slug(needle)) ?? null;
 }
-export function saveBot(bot: Omit<Bot, "createdAt"> & { createdAt?: number }): Bot {
+export function teamLead(): Bot | null {
+  return listBots().find((b) => b.isTeamLead) ?? null;
+}
+export const saveBot = db.transaction((bot: Omit<Bot, "createdAt"> & { createdAt?: number }): Bot => {
+  if (bot.isTeamLead) db.query("UPDATE bots SET is_team_lead = 0 WHERE is_team_lead = 1 AND id != ?").run(bot.id);
   db.query(
-    `INSERT INTO bots (id, name, label, role, instructions, shape, color, provider, model, cwd, autonomy, connector_ids, created_at)
-     VALUES ($id, $name, $label, $role, $instructions, $shape, $color, $provider, $model, $cwd, $autonomy, $connectorIds, $createdAt)
+    `INSERT INTO bots (id, name, label, role, instructions, shape, color, provider, model, cwd, autonomy, connector_ids, is_team_lead, created_at)
+     VALUES ($id, $name, $label, $role, $instructions, $shape, $color, $provider, $model, $cwd, $autonomy, $connectorIds, $isTeamLead, $createdAt)
      ON CONFLICT(id) DO UPDATE SET name=$name, label=$label, role=$role, instructions=$instructions, shape=$shape, color=$color,
-       provider=$provider, model=$model, cwd=$cwd, autonomy=$autonomy, connector_ids=$connectorIds`,
+       provider=$provider, model=$model, cwd=$cwd, autonomy=$autonomy, connector_ids=$connectorIds, is_team_lead=$isTeamLead`,
   ).run({
     $id: bot.id,
     $name: bot.name,
@@ -157,10 +164,11 @@ export function saveBot(bot: Omit<Bot, "createdAt"> & { createdAt?: number }): B
     $cwd: bot.cwd,
     $autonomy: bot.autonomy,
     $connectorIds: JSON.stringify(bot.connectorIds),
+    $isTeamLead: bot.isTeamLead ? 1 : 0,
     $createdAt: bot.createdAt ?? now(),
   });
   return getBot(bot.id)!;
-}
+});
 export function deleteBot(id: string) {
   db.query("DELETE FROM bots WHERE id = ?").run(id);
 }

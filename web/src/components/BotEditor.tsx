@@ -30,6 +30,7 @@ export const blankBot: Draft = {
   cwd: "",
   autonomy: "full",
   connectorIds: [],
+  isTeamLead: false,
 };
 
 const SCHEDULES: [string, string][] = [
@@ -69,6 +70,8 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
   const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers"), []).data ?? [];
   const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []).data ?? [];
   const [draft, setDraft] = useState<Draft>(existing);
+  const [lead, setLead] = useState<boolean | null>(null);
+  const isTeamLead = lead ?? existing.isTeamLead;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
@@ -81,7 +84,7 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
     if (!draft.name.trim()) return setError("Give your bot a name.");
     setSaving(true);
     try {
-      await api.put<Bot>(`/api/bots/${existing.id}`, draft);
+      await api.put<Bot>(`/api/bots/${existing.id}`, { ...draft, isTeamLead });
       closeModal();
     } catch (e) {
       setError((e as Error).message);
@@ -207,6 +210,14 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
               ? "Runs commands and edits files on this PC without asking. Best for trusted, well-scoped bots."
               : "Reading is free; commands and edits show up as Allow / Deny cards on your phone."}
           </p>
+        </Field>
+
+        <Field label="Team lead">
+          <label className="flex items-center gap-3 text-sm">
+            <Switch aria-label="Team lead" checked={isTeamLead} onCheckedChange={setLead} />
+            Starts groups and invites teammates without asking you
+          </label>
+          <p className="text-xs text-muted-foreground">Only one bot can lead. Turning this on hands the role over from the current lead.</p>
         </Field>
 
         <Field label="Plugins">

@@ -28,6 +28,7 @@ const bot = (name: string): Bot =>
     cwd: join(scratch, "work", name),
     autonomy: "full",
     connectorIds: [],
+    isTeamLead: false,
   });
 
 const chief = bot("Chief");
