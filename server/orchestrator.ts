@@ -54,6 +54,14 @@ export interface TurnOptions {
   hops?: number;
   /** Nesting depth of message_bot calls. */
   depth?: number;
+  canPass?: boolean;
+}
+
+export const PASS = "[pass]";
+
+function mayPass(parts: MessagePart[]) {
+  const text = parts.map((p) => (p.type === "text" ? p.text : "")).join("").trim().toLowerCase();
+  return parts.every((p) => p.type === "text" || p.type === "tool") && PASS.startsWith(text);
 }
 
 /** Queue a turn for `botId` in `threadId`. Resolves with the bot's reply message (or null if it had nothing to answer). */
@@ -100,7 +108,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
     .map((b) => `- ${b.name}: ${b.role || "general helper"}`)
     .join("\n");
   const supportsTools = providers[bot.provider].supportsTools;
-  const members = thread.memberIds.filter((id) => id !== bot.id).map((id) => db.getBot(id)?.name).filter((name): name is string => !!name);
+  const members = thread.memberIds.filter((id) => id !== bot.id).map((id) => db.getBot(id)).filter((b): b is Bot => !!b);
   const user = userInfo().username;
 
   const lines = [
@@ -112,7 +120,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
     `- ${SHARED_DIR} is shared by every bot. Use it to hand files to teammates.`,
     team ? `\nYour teammates:\n${team}` : "\nYou have no teammates yet.",
     thread.kind === "group" && members.length
-      ? `\nThis is a group thread with ${members.join(", ")}. Write a teammate's handle (${members.map((name) => `@${handleOf(name)}`).join(", ")}) to hand them the floor; only do that when you need them.`
+      ? `\nThis is a group thread with ${members.map((b) => `@${handleOf(b.name)} (${b.role || "general helper"})`).join(", ")}. Write a teammate's handle to hand them the floor; only do that when you need them. If nobody @mentioned you and the message isn't for your role, reply with exactly ${PASS} and nothing else.`
       : "",
     thread.kind === "backchannel"
       ? `\nThis is a private channel between you and another bot. Answer them directly and completely; the user may read it later.`
@@ -209,7 +217,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
 
   let dirty = false;
   const flush = () => {
-    if (!dirty) return;
+    if (!dirty || (opts.canPass && mayPass(parts))) return;
     dirty = false;
     msg = db.updateMessage(msg.id, parts);
     publish({ type: "message", message: msg });
@@ -314,21 +322,28 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
 
   // A turn that never produced a session (e.g. auth failure) shouldn't advance what the bot has "seen".
   if (sessionId || !provider.resumable) db.setMemberSession(threadId, botId, sessionId, snapshotSeq);
-  for (const p of parts) if (p.type === "tool" && p.status === "running") p.status = error ? "error" : "done";
-  if (error) parts.push({ type: "text", text: error });
-  const hasContent = parts.some((p) => p.type !== "text" || p.text.trim());
-  if (!hasContent) parts.push({ type: "text", text: "_(no reply)_" });
-  const bots = db.listBots();
-  for (const p of parts) if (p.type === "text") p.text = linkHandles(p.text, bots);
-  msg = db.updateMessage(msg.id, parts, error ? "error" : "done");
-  publish({ type: "message", message: msg });
+  const passed = !!opts.canPass && !error && mayPass(parts);
+  let replyText = "";
+  if (passed) {
+    db.deleteMessage(msg.id);
+    publish({ type: "message.deleted", threadId, messageId: msg.id });
+  } else {
+    for (const p of parts) if (p.type === "tool" && p.status === "running") p.status = error ? "error" : "done";
+    if (error) parts.push({ type: "text", text: error });
+    const hasContent = parts.some((p) => p.type !== "text" || p.text.trim());
+    if (!hasContent) parts.push({ type: "text", text: "_(no reply)_" });
+    const bots = db.listBots();
+    for (const p of parts) if (p.type === "text") p.text = linkHandles(p.text, bots);
+    msg = db.updateMessage(msg.id, parts, error ? "error" : "done");
+    publish({ type: "message", message: msg });
 
-  const replyText = textOf(msg);
-  const t = db.updateThread(threadId, {
-    preview: clip(plain(readable(replyText, bots)) || lastPartSummary(parts), 140),
-    unread: (db.getThread(threadId)?.unread ?? 0) + 1,
-  });
-  if (t) publish({ type: "thread", thread: t });
+    replyText = textOf(msg);
+    const t = db.updateThread(threadId, {
+      preview: clip(plain(readable(replyText, bots)) || lastPartSummary(parts), 140),
+      unread: (db.getThread(threadId)?.unread ?? 0) + 1,
+    });
+    if (t) publish({ type: "thread", thread: t });
+  }
 
   const remaining = (activeTurns.get(botId) ?? 1) - 1;
   activeTurns.set(botId, remaining);
@@ -342,13 +357,13 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   const later = db.listMessages(threadId, snapshotSeq).filter((m) => m.author === "user");
   if (later.length && !ctrl.signal.aborted) void runTurn(threadId, botId, opts);
 
-  if (thread.kind === "group" && !error && !ctrl.signal.aborted) {
+  if (thread.kind === "group" && !passed && !error && !ctrl.signal.aborted) {
     const hops = (opts.hops ?? 0) + 1;
     if (hops <= MAX_HOPS) {
       for (const target of mentioned(replyText, db.getThread(threadId) ?? thread, botId)) void runTurn(threadId, target, { hops });
     }
   }
-  return msg;
+  return passed ? null : msg;
 }
 
 /** Plain text for one-line previews: drop Markdown punctuation. */
@@ -402,12 +417,21 @@ export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   if (thread.kind === "group" && !named.length) {
     const queuedAt = stopCount(threadId);
     void (async () => {
-      for (const id of targets) if (stopCount(threadId) === queuedAt) await runTurn(threadId, id);
+      for (const id of targets) if (stopCount(threadId) === queuedAt) await runTurn(threadId, id, { canPass: true });
+      if (stopCount(threadId) === queuedAt && !db.listMessages(threadId, m.seq).some((r) => r.author === "bot")) nobodyTookIt(threadId);
     })();
   } else {
     for (const id of targets) void runTurn(threadId, id);
   }
   return m;
+}
+
+function nobodyTookIt(threadId: string) {
+  const text = "Nobody took this one. @mention a bot to ask them directly.";
+  const m = db.addMessage({ threadId, author: "system", parts: [{ type: "text", text }] });
+  publish({ type: "message", message: m });
+  const t = db.updateThread(threadId, { preview: text, unread: (db.getThread(threadId)?.unread ?? 0) + 1 });
+  if (t) publish({ type: "thread", thread: t });
 }
 
 export function kickoff(threadId: string, botId: string, linked: string, hops: number): string[] {

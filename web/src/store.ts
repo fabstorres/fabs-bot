@@ -129,6 +129,11 @@ function apply(e: ServerEvent) {
       }
       break;
     }
+    case "message.deleted": {
+      const list = get().messages[e.threadId];
+      if (list) set({ messages: { ...get().messages, [e.threadId]: list.filter((m) => m.id !== e.messageId) } });
+      break;
+    }
     case "link.start":
       set({ links: [...get().links, e.link] });
       break;

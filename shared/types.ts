@@ -196,6 +196,7 @@ export type ServerEvent =
   | { type: "thread.deleted"; threadId: string }
   | { type: "thread.open"; threadId: string; fromThreadId: string }
   | { type: "message"; message: Message }
+  | { type: "message.deleted"; threadId: string; messageId: string }
   | { type: "link.start"; link: Link }
   | { type: "link.end"; linkId: string }
   | { type: "devices" }
