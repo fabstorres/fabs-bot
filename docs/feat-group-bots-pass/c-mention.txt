@@ -1,0 +1,24 @@
+# "@Design reply with exactly the word: teal" and an off-role "@Engineer suggest one color for the logo", both sent with a picked chip
+$ control-fabs thread <G> | tail -4
+#7 user (done): "<@3d403d37-b534-4bb1-acc8-503f28670277> reply with exactly the word: teal"
+#8 Design (done): "teal"
+#9 user (done): "<@90878d00-3ee0-41ee-9cef-b3f429fc7630> suggest one color for the logo, one word."
+#10 Engineer (done): "Teal"
+
+# client events: only the mentioned bot ran each time, nothing else streamed or was deleted
+message   user seq=7 done ["<@3d403d37-b534-4bb1-acc8-503f28670277> reply with exactly the word: teal"]
+thread    unread=0 preview="@Design reply with exactly the word: teal"
+message   Design seq=8 streaming []
+thread    unread=0 preview="@Design reply with exactly the word: teal"
+message   Design seq=8 streaming ["teal"]
+message   Design seq=8 done ["teal"]
+thread    unread=1 preview="teal"
+thread    unread=0 preview="teal"
+message   user seq=9 done ["<@90878d00-3ee0-41ee-9cef-b3f429fc7630> suggest one color for the logo, one word."]
+thread    unread=0 preview="@Engineer suggest one color for the logo, one word."
+message   Engineer seq=10 streaming []
+thread    unread=0 preview="@Engineer suggest one color for the logo, one word."
+message   Engineer seq=10 streaming ["Teal"]
+message   Engineer seq=10 done ["Teal"]
+thread    unread=1 preview="Teal"
+thread    unread=0 preview="Teal"

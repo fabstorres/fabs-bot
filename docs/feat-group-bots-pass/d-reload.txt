@@ -1,0 +1,46 @@
+# "Write a two-word headline for the pricing page." (no @mention), then left for Bot Engineer before the bots answered
+$ control-fabs thread <G> | tail -2
+#11 user (done): "Write a two-word headline for the pricing page."
+#12 Writer (done): "**Simple pricing**"
+
+$ GET /api/threads  (Signup crew row, after all three turns)
+{'unread': 1, 'preview': 'Simple pricing'}
+
+# client events while away
+message   user seq=11 done ["Write a two-word headline for the pricing page."]
+thread    unread=0 preview="Write a two-word headline for the pricing page."
+message   Engineer seq=12 streaming []
+thread    unread=0 preview="Write a two-word headline for the pricing page."
+deleted   Engineer
+message   Design seq=12 streaming []
+deleted   Design
+message   Writer seq=12 streaming []
+message   Writer seq=12 streaming ["**Simple p"]
+message   Writer seq=12 streaming ["**Simple pricing**"]
+message   Writer seq=12 done ["**Simple pricing**"]
+thread    unread=1 preview="Simple pricing"
+
+$ browser open /   (reload)
+opened http://127.0.0.1:4930/
+$ browser snapshot of the sidebar row
+"Signup crew\n7:59 PM\nSimple pricing | unread dot: false"
+clicked
+ok  visible
+# rendered conversation after reload (author | status | text)
+user | done | Write one line of copy for the signup button.
+Writer | done | Writer 7:55 PM Get started free If you tell me the product and what si
+user | done | What's the capital of Australia?
+Writer | done | Writer 7:55 PM Canberra.
+user | done | Can someone check the forecast for Saturday's hike?
+system |  | Nobody took this one. @mention a bot to ask them directly.
+user | done | Design reply with exactly the word: teal
+Design | done | Design 7:58 PM teal
+user | done | Engineer suggest one color for the logo, one word.
+Engineer | done | Engineer 7:58 PM Teal
+user | done | Write a two-word headline for the pricing page.
+Writer | done | Writer 7:59 PM Simple pricing
+
+# any "[pass]" text in the DOM or in GET messages?
+false
+0
+# note: the desktop layout opens the latest chat on load, which marks it read, so the dot is off after the reload; before the reload GET /api/threads showed unread 1 (only Writer's reply counted)

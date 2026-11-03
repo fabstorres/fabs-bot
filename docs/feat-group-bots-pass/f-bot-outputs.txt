@@ -1,0 +1,20 @@
+# What each Signup crew bot actually wrote, in order, from its Claude Code session log (claude-haiku-5-5)
+# turns: signup copy, capital of Australia, forecast, @mention, pricing headline
+== engineer
+'[pass]'
+'[pass]'
+'[pass]'
+'Teal'
+'[pass]'
+== design
+'[pass]'
+'[pass]'
+'[pass]'
+'teal'
+'[pass]'
+== writer
+'**Get started free**\n\nIf you tell me the product and what si'
+'Canberra.'
+'[pass]'
+'**Simple pricing**'
+"Declare the object's type where it's created, e.g. `const ob"

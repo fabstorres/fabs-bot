@@ -1,0 +1,26 @@
+# "What's the capital of Australia?" (no @mention): Engineer and Design passed, Writer answered anyway (#4)
+# "Can someone check the forecast for Saturday's hike?" (no @mention): all three passed (#6)
+$ control-fabs thread <G>
+#1 user (done): "Write one line of copy for the signup button."
+#2 Writer (done): "**Get started free**\n\nIf you tell me the product and what signing up gets the user, I can make it more specific."
+#3 user (done): "What's the capital of Australia?"
+#4 Writer (done): "Canberra."
+#5 user (done): "Can someone check the forecast for Saturday's hike?"
+#6 system (done): "Nobody took this one. @mention a bot to ask them directly."
+
+# client events for the forecast message
+message   user seq=5 done ["Can someone check the forecast for Saturday's hike?"]
+thread    unread=0 preview="Can someone check the forecast for Saturday's hike?"
+message   Engineer seq=6 streaming []
+thread    unread=0 preview="Can someone check the forecast for Saturday's hike?"
+deleted   Engineer
+message   Design seq=6 streaming []
+deleted   Design
+message   Writer seq=6 streaming []
+deleted   Writer
+message   system seq=6 done ["Nobody took this one. @mention a bot to ask them directly."]
+thread    unread=1 preview="Nobody took this one. @mention a bot to ask them directly."
+thread    unread=0 preview="Nobody took this one. @mention a bot to ask them directly."
+
+$ GET /api/threads  (Signup crew row)
+{'kind': 'group', 'unread': 0, 'preview': 'Nobody took this one. @mention a bot to ask them directly.'}

@@ -1,0 +1,18 @@
+$ control-fabs thread <G>   # after "Write one line of copy for the signup button." (no @mention)
+#1 user (done): "Write one line of copy for the signup button."
+#2 Writer (done): "**Get started free**\n\nIf you tell me the product and what signing up gets the user, I can make it more specific."
+
+# every client event for the group, from a second websocket opened in the page
+message   user seq=1 done ["Write one line of copy for the signup button."]
+thread    unread=0 preview="Write one line of copy for the signup button."
+message   Engineer seq=2 streaming []
+thread    unread=0 preview="Write one line of copy for the signup button."
+deleted   Engineer
+message   Design seq=2 streaming []
+deleted   Design
+message   Writer seq=2 streaming []
+message   Writer seq=2 streaming ["**"]
+message   Writer seq=2 streaming ["**Get started free**\n\nIf you tell me the product and what signing up gets the user, I 
+message   Writer seq=2 done ["**Get started free**\n\nIf you tell me the product and what signing up gets the user, I 
+thread    unread=1 preview="Get started free If you tell me the product and what signing up gets 
+thread    unread=0 preview="Get started free If you tell me the product and what signing up gets 
