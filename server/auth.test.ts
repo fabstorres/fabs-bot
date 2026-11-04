@@ -6,7 +6,7 @@ import { join } from "node:path";
 const scratch = mkdtempSync(join(tmpdir(), "fabs-auth-test-"));
 process.env.FABS_DATA_DIR = join(scratch, "data");
 process.env.FABS_WORK_ROOT = join(scratch, "work");
-const { authorized, listDevices, newPairingCode, pairDevice, redeemPairingCode, removeDevice } = await import("./auth");
+const { authorized, listDevices, newPairingCode, pairDevice, redeemPairingCode, ownerOnly, removeDevice } = await import("./auth");
 const { DATA_DIR } = await import("./config");
 
 afterEach(() => setSystemTime());
@@ -66,4 +66,16 @@ test("saving devices tightens a devices file that was left readable by others", 
   chmodSync(file, 0o644);
   pairDevice("Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0");
   expect(statSync(file).mode & 0o777).toBe(0o600);
+});
+
+test("the owner-only check refuses paired devices, the Tailscale HTTPS proxy and any Tailscale identity header, even an empty one", () => {
+  const token = pairDevice("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Version/18.0 Mobile Safari/604.1");
+  const paired = fromDevice(token, "cookie");
+  expect(authorized(paired, "192.0.2.10")).toBe(true);
+  expect(ownerOnly(paired, "192.0.2.10")).toBe(false);
+  const local = new Request("http://127.0.0.1/api/host", { headers: { host: "127.0.0.1:4800" } });
+  expect(ownerOnly(local, "127.0.0.1")).toBe(true);
+  expect(ownerOnly(local, "127.0.0.1", true)).toBe(false);
+  for (const header of ["tailscale-user-login", "tailscale-user-name", "tailscale-user-profile-pic"])
+    expect(ownerOnly(new Request("http://127.0.0.1/api/host", { headers: { host: "127.0.0.1:4800", [header]: "" } }), "127.0.0.1")).toBe(false);
 });

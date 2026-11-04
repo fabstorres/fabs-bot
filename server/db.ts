@@ -91,6 +91,20 @@ CREATE TABLE IF NOT EXISTS files (
   created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at INTEGER NOT NULL,
+  event_type TEXT NOT NULL,
+  thread_id TEXT,
+  thread_kind TEXT,
+  actor_category TEXT NOT NULL,
+  turn_id TEXT,
+  call_id TEXT,
+  approval_id TEXT,
+  tool_name TEXT,
+  outcome_code TEXT
+);
+CREATE INDEX IF NOT EXISTS events_thread ON events(thread_id, created_at);
 `);
 
 const botColumns = db.query("PRAGMA table_info(bots)").all() as { name: string }[];
@@ -221,13 +235,16 @@ export function getThread(id: string): Thread | null {
   const r = db.query("SELECT * FROM threads WHERE id = ?").get(id) as ThreadRow | null;
   return r ? toThread(r) : null;
 }
-export function createThread(kind: ThreadKind, memberIds: string[], title = ""): Thread {
+export function createThread(kind: ThreadKind, memberIds: string[], title = "", origin: EventOrigin = { actor: "system" }): Thread {
   const id = newId();
   const t = now();
-  db.query("INSERT INTO threads (id, title, kind, created_at, updated_at) VALUES (?, ?, ?, ?, ?)").run(id, title, kind, t, t);
-  memberIds.forEach((botId, i) =>
-    db.query("INSERT INTO thread_members (thread_id, bot_id, position) VALUES (?, ?, ?)").run(id, botId, i),
-  );
+  db.transaction(() => {
+    db.query("INSERT INTO threads (id, title, kind, created_at, updated_at) VALUES (?, ?, ?, ?, ?)").run(id, title, kind, t, t);
+    memberIds.forEach((botId, i) =>
+      db.query("INSERT INTO thread_members (thread_id, bot_id, position) VALUES (?, ?, ?)").run(id, botId, i),
+    );
+    logEvent({ type: "thread.create", threadId: id, threadKind: kind, ...origin });
+  })();
   return getThread(id)!;
 }
 export function updateThread(id: string, patch: Partial<Pick<Thread, "title" | "topic" | "preview" | "unread">>) {
@@ -248,8 +265,13 @@ export function addMember(threadId: string, botId: string) {
   const pos = (db.query("SELECT COUNT(*) AS n FROM thread_members WHERE thread_id = ?").get(threadId) as { n: number }).n;
   db.query("INSERT OR IGNORE INTO thread_members (thread_id, bot_id, position) VALUES (?, ?, ?)").run(threadId, botId, pos);
 }
-export function deleteThread(id: string) {
-  db.query("DELETE FROM threads WHERE id = ?").run(id);
+export function deleteThread(id: string, origin: EventOrigin = { actor: "system" }) {
+  db.transaction(() => {
+    const row = db.query("SELECT kind FROM threads WHERE id = ?").get(id) as { kind: ThreadKind } | null;
+    if (!row) return;
+    db.query("DELETE FROM threads WHERE id = ?").run(id);
+    logEvent({ type: "thread.delete", threadId: id, threadKind: row.kind, ...origin });
+  })();
 }
 /** The 1:1 thread between two bots that holds their private conversation. */
 export function findBackchannel(a: string, b: string): Thread | null {
@@ -342,6 +364,10 @@ export function deleteMessage(id: string) {
 export function closeDanglingMessages() {
   const rows = db.query("SELECT * FROM messages WHERE status = 'streaming'").all() as MessageRow[];
   for (const m of rows.map(toMessage)) {
+    const kind = getThread(m.threadId)?.kind ?? null;
+    for (const p of m.parts)
+      if (p.type === "approval" && !p.decision)
+        logEvent({ type: "approval.decision", actor: "system", threadId: m.threadId, threadKind: kind, approvalId: p.requestId, outcome: "cancelled" });
     const parts = m.parts.map((p) => (p.type === "approval" && !p.decision ? { ...p, decision: "deny" as const } : p));
     updateMessage(m.id, parts, "error");
   }
@@ -457,4 +483,49 @@ export function addFile(f: Omit<FileRow, "id" | "created_at">): FileRow {
 }
 export function getFile(id: string): FileRow | null {
   return db.query("SELECT * FROM files WHERE id = ?").get(id) as FileRow | null;
+}
+
+export const TOOL_NAMES = [
+  "list_bots", "message_bot", "ask_user", "share_file", "set_status", "set_topic", "notify_user", "list_threads",
+  "read_thread", "schedule_routine", "list_routines", "delete_routine", "start_group", "invite_bot", "approve",
+] as const;
+export const EVENT_RETENTION_MS = 30 * 24 * 60 * 60_000;
+const EVENT_PAGE_MAX = 500;
+
+export type EventActor = "api" | "bot" | "scheduler" | "system";
+export type EventOutcome = "rejected" | "denied" | "approved" | "bypassed" | "succeeded" | "error" | "cancelled";
+export type EventOrigin = { actor: EventActor; turnId?: string | null; callId?: string | null };
+export type TrailEvent = EventOrigin & {
+  type: "tool.call" | "tool.result" | "approval.request" | "approval.decision" | "thread.create" | "thread.delete";
+  threadId: string | null;
+  threadKind: ThreadKind | null;
+  approvalId?: string | null;
+  toolName?: string | null;
+  outcome?: EventOutcome | null;
+};
+
+export function logEvent(e: TrailEvent) {
+  const toolName = (TOOL_NAMES as readonly string[]).includes(e.toolName ?? "") ? (e.toolName ?? null) : null;
+  db.query(
+    `INSERT INTO events (created_at, event_type, thread_id, thread_kind, actor_category, turn_id, call_id, approval_id, tool_name, outcome_code)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(now(), e.type, e.threadId, e.threadKind, e.actor, e.turnId ?? null, e.callId ?? null, e.approvalId ?? null, toolName, e.outcome ?? null);
+}
+
+export function pruneEvents() {
+  db.query("DELETE FROM events WHERE created_at < ?").run(now() - EVENT_RETENTION_MS);
+}
+
+export function listEvents(threadId: string, afterId: number, limit: number) {
+  return db
+    .query(
+      `SELECT id, created_at AS createdAt, event_type AS type, thread_id AS threadId, thread_kind AS threadKind,
+         actor_category AS actor, turn_id AS turnId, call_id AS callId, approval_id AS approvalId, tool_name AS toolName,
+         outcome_code AS outcome
+       FROM events
+       WHERE (thread_id = ? OR call_id IN (SELECT call_id FROM events WHERE thread_id = ? AND call_id IS NOT NULL))
+         AND id > ? AND created_at >= ?
+       ORDER BY id LIMIT ?`,
+    )
+    .all(threadId, threadId, afterId, now() - EVENT_RETENTION_MS, Math.min(Math.max(limit, 1), EVENT_PAGE_MAX));
 }

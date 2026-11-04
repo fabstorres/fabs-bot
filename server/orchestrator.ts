@@ -12,6 +12,7 @@ import { clip } from "./providers/spawn";
 /** Everything the MCP endpoint needs to know about the turn that is calling it. */
 export interface TurnContext {
   token: string;
+  turnId: string;
   botId: string;
   threadId: string;
   depth: number;
@@ -242,6 +243,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
 
   const ctx: TurnContext = {
     token,
+    turnId: crypto.randomUUID(),
     botId,
     threadId,
     depth: opts.depth ?? 0,
@@ -468,7 +470,7 @@ export async function messageBot(from: Bot, to: Bot, text: string, depth: number
   if (depth >= 3) return "Not sent: too many nested bot-to-bot messages. Finish with what you have.";
   let thread = db.findBackchannel(from.id, to.id);
   if (!thread) {
-    thread = db.createThread("backchannel", [from.id, to.id], `${from.name} ↔ ${to.name}`);
+    thread = db.createThread("backchannel", [from.id, to.id], `${from.name} ↔ ${to.name}`, { actor: "bot" });
     publish({ type: "thread", thread });
   }
   const m = db.addMessage({ threadId: thread.id, author: "bot", botId: from.id, fromBotId: from.id, parts: [{ type: "text", text: linkHandles(text, db.listBots()) }] });
@@ -486,20 +488,20 @@ export async function messageBot(from: Bot, to: Bot, text: string, depth: number
 }
 
 /** Find (or open) the user's direct thread with a bot. */
-export function directThread(botId: string): Thread {
+export function directThread(botId: string, origin?: db.EventOrigin): Thread {
   const existing = db.listThreads().find((t) => t.kind === "direct" && t.memberIds.length === 1 && t.memberIds[0] === botId);
   if (existing) return existing;
-  const t = db.createThread("direct", [botId]);
+  const t = db.createThread("direct", [botId], "", origin);
   publish({ type: "thread", thread: t });
   return t;
 }
 
-export function bringInBot(threadId: string, botId: string): Thread | null {
+export function bringInBot(threadId: string, botId: string, origin?: db.EventOrigin): Thread | null {
   const thread = db.getThread(threadId);
   if (!thread || !db.getBot(botId)) return null;
   if (thread.memberIds.includes(botId)) return thread;
   if (thread.kind === "direct") {
-    const group = db.createThread("group", [...thread.memberIds, botId]);
+    const group = db.createThread("group", [...thread.memberIds, botId], "", origin);
     publish({ type: "thread", thread: group });
     return group;
   }

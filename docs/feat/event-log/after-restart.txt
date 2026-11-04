@@ -1,0 +1,1 @@
+6 events after restart: ['tool.call/None', 'approval.request/None', 'approval.decision/approved', 'thread.create/None', 'tool.result/succeeded', 'thread.delete/None']

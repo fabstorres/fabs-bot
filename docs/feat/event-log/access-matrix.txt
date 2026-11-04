@@ -1,0 +1,11 @@
+loopback, local Host, no cookie (owner)                        200
+loopback, localhost Host (owner)                               200
+tailnet listener, paired device cookie                         403
+tailnet listener, paired device bearer                         403
+tailnet listener, no credentials                               401
+serve proxy target, paired device cookie                       403
+serve proxy target, no credentials, local Host                 401
+loopback + Tailscale login header + device cookie              403
+loopback + foreign Host + device cookie                        403
+control: same device cookie on /api/threads over tailnet       200
+control: same device cookie on /api/threads via serve          200

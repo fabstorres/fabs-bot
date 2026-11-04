@@ -1,0 +1,6 @@
+7 approval.request bot appr=130ffffc start_group None
+14 approval.decision api appr=130ffffc start_group denied
+17 approval.request bot appr=173810b6 start_group None
+18 approval.decision api appr=173810b6 start_group approved
+25 approval.request bot appr=642a13e3 start_group None
+26 approval.decision system appr=642a13e3 start_group cancelled
