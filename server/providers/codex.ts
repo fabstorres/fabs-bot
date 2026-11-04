@@ -72,8 +72,7 @@ export const codex: Provider = {
             if (ev.type === "item.started") emit({ type: "tool.start", id: it.id, ...tool });
             else if (done) {
               emit({ type: "tool.start", id: it.id, ...tool });
-              const error = it.status === "failed" || (typeof it.exit_code === "number" && it.exit_code !== 0);
-              emit({ type: "tool.end", id: it.id, error });
+              emit({ type: "tool.end", id: it.id, ...toolOutcome(it) });
             }
             break;
           }
@@ -103,6 +102,13 @@ export function readableError(message: string): string {
   const body = parseJson(message);
   const text = body?.error?.message ?? body?.detail;
   return typeof text === "string" ? text : message;
+}
+
+export function toolOutcome(it: any): { error: boolean; summary?: string } {
+  const error = it.status === "failed" || (typeof it.exit_code === "number" && it.exit_code !== 0);
+  if (!error || it.type !== "mcp_tool_call") return { error };
+  const text = it.error?.message ?? it.result?.content?.find((c: any) => c?.type === "text")?.text;
+  return { error, summary: typeof text === "string" ? text : undefined };
 }
 
 function tomlTable(obj: Record<string, string>) {

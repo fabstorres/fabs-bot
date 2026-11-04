@@ -23,6 +23,19 @@ type ToolDef = {
 
 const str = (description: string) => ({ type: "string", description });
 
+export class ToolRejection extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+const reject = (code: string, message: string): never => {
+  throw new ToolRejection(code, message);
+};
+
 const pendingApprovals = new Map<string, { resolve: (d: "allow" | "deny") => void; ctx: TurnContext; index: number }>();
 
 function publishThread(threadId: string) {
@@ -49,21 +62,21 @@ const LABEL_CAP = 200;
 function pageLimit(value: unknown): number {
   if (value === undefined || value === null) return PAGE_DEFAULT;
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 1 || n > PAGE_MAX) throw new Error(`limit must be a whole number from 1 to ${PAGE_MAX}.`);
+  if (!Number.isInteger(n) || n < 1 || n > PAGE_MAX) return reject("bad_limit", `limit must be a whole number from 1 to ${PAGE_MAX}.`);
   return n;
 }
 
 function threadCursor(value: unknown) {
   if (value === undefined || value === null || value === "") return null;
   const match = /^(\d+):(.+)$/.exec(String(value));
-  if (!match) throw new Error(`Bad cursor "${value}". Pass next_cursor from your last list_threads call, or leave it out.`);
+  if (!match) return reject("bad_cursor", `Bad cursor "${value}". Pass next_cursor from your last list_threads call, or leave it out.`);
   return { updatedAt: Number(match[1]), id: match[2] };
 }
 
 function seqCursor(value: unknown): number {
   if (value === undefined || value === null) return 0;
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 0) throw new Error("after_seq must be a whole number, 0 or more.");
+  if (!Number.isInteger(n) || n < 0) return reject("bad_after_seq", "after_seq must be a whole number, 0 or more.");
   return n;
 }
 
@@ -108,11 +121,15 @@ async function askApproval(ctx: TurnContext, tool: string, summary: string): Pro
   return decision;
 }
 
-function findTeammate(name: string, ctx: TurnContext): Bot | string {
+async function leadOrApproved(ctx: TurnContext, tool: string, summary: string): Promise<boolean> {
+  return !!db.getBot(ctx.botId)?.isTeamLead || (await askApproval(ctx, tool, summary)) === "allow";
+}
+
+function findTeammate(name: string, ctx: TurnContext): Bot {
   const found = botsNamed(name, db.listBots());
-  if (!found.length) return `No teammate named "${name}". Call list_bots to see who exists.`;
-  if (found.length > 1) return `"${name}" matches ${found.map((b) => b.name).join(", ")}. Use their exact name.`;
-  if (found[0]!.id === ctx.botId) return `"${name}" is you.`;
+  if (!found.length) return reject("unknown_bot", `No teammate named "${name}". Call list_bots to see who exists.`);
+  if (found.length > 1) return reject("ambiguous_bot", `"${name}" matches ${found.map((b) => b.name).join(", ")}. Use their exact name.`);
+  if (found[0]!.id === ctx.botId) return reject("self", `"${name}" is you.`);
   return found[0]!;
 }
 
@@ -144,8 +161,8 @@ const tools: ToolDef[] = [
     async run(args, ctx) {
       const from = db.getBot(ctx.botId)!;
       const to = db.findBotByName(String(args.bot));
-      if (!to) return `No teammate named "${args.bot}". Call list_bots to see who exists.`;
-      if (to.id === from.id) return "That's you.";
+      if (!to) return reject("unknown_bot", `No teammate named "${args.bot}". Call list_bots to see who exists.`);
+      if (to.id === from.id) return reject("self", "That's you.");
       setStatus(from.id, { state: "waiting", text: `Waiting on ${to.name}`, threadId: ctx.threadId });
       const reply = await messageBot(from, to, String(args.message), ctx.depth, ctx.hops);
       setStatus(from.id, { state: "working", text: `Got reply from ${to.name}`, threadId: ctx.threadId });
@@ -166,7 +183,7 @@ const tools: ToolDef[] = [
     },
     run(args, ctx) {
       const options = (Array.isArray(args.options) ? args.options : []).map(String).slice(0, 6);
-      if (options.length < 2) return "Give at least two options.";
+      if (options.length < 2) return reject("too_few_options", "Give at least two options.");
       ctx.addPart({ type: "question", question: String(args.question), options });
       publishThread(ctx.threadId);
       setStatus(ctx.botId, { state: "blocked", text: "Waiting for your answer", threadId: ctx.threadId });
@@ -185,9 +202,9 @@ const tools: ToolDef[] = [
       const bot = db.getBot(ctx.botId)!;
       const p = String(args.path);
       const full = isAbsolute(p) ? p : resolve(bot.cwd, p);
-      if (!existsSync(full) || !statSync(full).isFile()) return `No file at ${full}`;
+      if (!existsSync(full) || !statSync(full).isFile()) return reject("no_file", `No file at ${full}`);
       const size = statSync(full).size;
-      if (size > 50 * 1024 * 1024) return "File is over 50 MB; share a smaller file or a link.";
+      if (size > 50 * 1024 * 1024) return reject("file_too_large", "File is over 50 MB; share a smaller file or a link.");
       const f = db.addFile({ thread_id: ctx.threadId, bot_id: ctx.botId, path: "", name: basename(full), size });
       const stored = join(FILES_DIR, f.id);
       copyFileSync(full, stored);
@@ -222,7 +239,7 @@ const tools: ToolDef[] = [
     inputSchema: { type: "object", properties: { message: str("Message") }, required: ["message"] },
     run(args, ctx) {
       const t = directThread(ctx.botId);
-      if (t.id === ctx.threadId) return "You're already talking to the user here; just reply.";
+      if (t.id === ctx.threadId) return reject("already_direct", "You're already talking to the user here; just reply.");
       const m = db.addMessage({ threadId: t.id, author: "bot", botId: ctx.botId, fromBotId: ctx.botId, parts: [{ type: "text", text: linkHandles(String(args.message), db.listBots()) }] });
       publish({ type: "message", message: m });
       const updated = db.updateThread(t.id, { preview: clip(String(args.message), 140), unread: t.unread + 1 });
@@ -274,7 +291,7 @@ const tools: ToolDef[] = [
     },
     run(args) {
       const thread = db.getThread(String(args.thread_id ?? ""));
-      if (!thread) throw new Error(`No thread with id "${args.thread_id}". Call list_threads to find one.`);
+      if (!thread) return reject("unknown_thread", `No thread with id "${args.thread_id}". Call list_threads to find one.`);
       const afterSeq = seqCursor(args.after_seq);
       const limit = pageLimit(args.limit);
       const bots = db.listBots();
@@ -308,7 +325,7 @@ const tools: ToolDef[] = [
       try {
         next = new Cron(String(args.cron), { paused: true }).nextRun();
       } catch (e) {
-        return `Invalid cron: ${(e as Error).message}`;
+        return reject("bad_cron", `Invalid cron: ${(e as Error).message}`);
       }
       const r = db.saveRoutine({
         id: db.newId(),
@@ -338,7 +355,7 @@ const tools: ToolDef[] = [
     inputSchema: { type: "object", properties: { id: str("Routine id") }, required: ["id"] },
     run(args, ctx) {
       const r = db.getRoutine(String(args.id));
-      if (!r || r.botId !== ctx.botId) return "No such routine.";
+      if (!r || r.botId !== ctx.botId) return reject("unknown_routine", "No such routine.");
       db.deleteRoutine(r.id);
       reschedule();
       return "Deleted.";
@@ -347,7 +364,7 @@ const tools: ToolDef[] = [
   {
     name: "start_group",
     description:
-      "Start a new group chat with the user, you and the named teammates, opened by your kickoff message. The user must approve it first, then is taken to the group, and the teammates you @mention start there. The current chat stays as it is.",
+      "Start a new group chat with the user, you and the named teammates, opened by your kickoff message. The user must approve it first unless you are the team lead. Then the user is taken to the group, and the teammates you @mention start there. The current chat stays as it is.",
     inputSchema: {
       type: "object",
       properties: {
@@ -359,25 +376,24 @@ const tools: ToolDef[] = [
     },
     async run(args, ctx) {
       const names = (Array.isArray(args.bots) ? args.bots : []).map(String);
-      if (!names.length) return "Name at least one teammate.";
+      if (!names.length) return reject("no_teammates", "Name at least one teammate.");
       const title = clip(String(args.title ?? "").trim(), 80);
-      if (!title) return "Give the group a title.";
+      if (!title) return reject("no_title", "Give the group a title.");
       const picked: Bot[] = [];
       for (const name of names) {
         const bot = findTeammate(name, ctx);
-        if (typeof bot === "string") return bot;
         if (!picked.some((b) => b.id === bot.id)) picked.push(bot);
       }
       const brief = String(args.kickoff ?? "").trim();
-      if (!brief) return "Write a kickoff: the context and who owns what, with each teammate's @handle.";
+      if (!brief) return reject("no_kickoff", "Write a kickoff: the context and who owns what, with each teammate's @handle.");
       const linked = linkHandles(brief, db.listBots());
       const named = mentionedBots(linked, picked);
-      if (!named.length) return `Your kickoff names no teammate. Hand each one their part with their @handle: ${picked.map((b) => `@${handleOf(b.name)}`).join(", ")}.`;
+      if (!named.length) return reject("kickoff_names_no_teammate", `Your kickoff names no teammate. Hand each one their part with their @handle: ${picked.map((b) => `@${handleOf(b.name)}`).join(", ")}.`);
       const who = picked.map((b) => b.name).join(", ");
-      if ((await askApproval(ctx, "start_group", `Start "${title}" with ${who}`)) === "deny") {
+      if (!(await leadOrApproved(ctx, "start_group", `Start "${title}" with ${who}`))) {
         return `The user declined starting "${title}". Nothing changed.`;
       }
-      if (!db.getBot(ctx.botId) || picked.some((b) => !db.getBot(b.id))) return "A teammate was deleted meanwhile. Nothing changed.";
+      if (!db.getBot(ctx.botId) || picked.some((b) => !db.getBot(b.id))) return reject("bot_deleted", "A teammate was deleted meanwhile. Nothing changed.");
       const thread = db.createThread("group", [ctx.botId, ...picked.map((b) => b.id)], title);
       publish({ type: "thread", thread });
       const started = kickoff(thread.id, ctx.botId, linked, ctx.hops).map(botName);
@@ -388,19 +404,18 @@ const tools: ToolDef[] = [
   },
   {
     name: "invite_bot",
-    description: "Add a teammate to this group chat. The user must approve it first. Only works in group chats; elsewhere use start_group.",
+    description: "Add a teammate to this group chat. The user must approve it first unless you are the team lead. Only works in group chats; elsewhere use start_group.",
     inputSchema: { type: "object", properties: { name: str("Teammate name, e.g. 'Engineer'") }, required: ["name"] },
     async run(args, ctx) {
       const thread = db.getThread(ctx.threadId);
-      if (thread?.kind !== "group") return "This isn't a group chat. Use start_group to open a new group with the user and your teammates.";
+      if (thread?.kind !== "group") return reject("not_a_group", "This isn't a group chat. Use start_group to open a new group with the user and your teammates.");
       const bot = findTeammate(String(args.name), ctx);
-      if (typeof bot === "string") return bot;
-      if (thread.memberIds.includes(bot.id)) return `${bot.name} is already in this chat.`;
-      if ((await askApproval(ctx, "invite_bot", `Add ${bot.name} to this chat`)) === "deny") {
+      if (thread.memberIds.includes(bot.id)) return reject("already_member", `${bot.name} is already in this chat.`);
+      if (!(await leadOrApproved(ctx, "invite_bot", `Add ${bot.name} to this chat`))) {
         return `The user declined adding ${bot.name}. Nothing changed.`;
       }
-      if (db.getThread(ctx.threadId)?.memberIds.includes(bot.id)) return `${bot.name} is already in this chat.`;
-      if (!bringInBot(ctx.threadId, bot.id)) return "This chat or teammate no longer exists. Nothing changed.";
+      if (db.getThread(ctx.threadId)?.memberIds.includes(bot.id)) return reject("already_member", `${bot.name} is already in this chat.`);
+      if (!bringInBot(ctx.threadId, bot.id)) return reject("gone", "This chat or teammate no longer exists. Nothing changed.");
       return `${bot.name} joined this chat. Write @${handleOf(bot.name)} to hand them the floor.`;
     },
   },
@@ -462,6 +477,10 @@ async function handleRpc(r: RpcRequest, ctx: TurnContext) {
         const text = await tool.run(r.params?.arguments ?? {}, ctx);
         return ok({ content: [{ type: "text", text }] });
       } catch (e) {
+        if (e instanceof ToolRejection) {
+          console.warn(`mcp ${tool.name} rejected: ${e.code}`);
+          return ok({ content: [{ type: "text", text: e.message }], isError: true });
+        }
         return ok({ content: [{ type: "text", text: `Error: ${(e as Error).message}` }], isError: true });
       }
     }

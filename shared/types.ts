@@ -30,6 +30,7 @@ export interface Bot {
   cwd: string;
   autonomy: Autonomy;
   connectorIds: string[];
+  isTeamLead: boolean;
   createdAt: number;
 }
 

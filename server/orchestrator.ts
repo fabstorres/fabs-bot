@@ -120,6 +120,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
   const supportsTools = providers[bot.provider].supportsTools;
   const members = thread.memberIds.filter((id) => id !== bot.id).map((id) => db.getBot(id)).filter((b): b is Bot => !!b);
   const user = userInfo().username;
+  const approval = bot.isTeamLead ? "You are the team lead, so it happens without asking the user." : "The user approves it first.";
 
   const lines = [
     `You are ${bot.name}, one of the bots in Fabs Bot: a team of always-on agents that live on ${user}'s PC ("${hostname()}") and use it as their workplace. ${user} talks to you from their phone or laptop, often away from the desk.`,
@@ -147,8 +148,8 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
       `- schedule_routine / list_routines / delete_routine: recurring work on a cron schedule.`,
       `- notify_user: ping the user in your direct thread with them, e.g. from a routine or a backchannel.`,
       `- list_threads / read_thread: read any thread without posting to it, e.g. to summarize a group chat. Read a page at a time with next_cursor / next_after_seq instead of loading everything.`,
-      `- start_group: open a new group chat with the user, you and named teammates. The user approves it first. Your kickoff is its first message: the context and who owns what, with each teammate's @handle to start them. The user is taken to the group, and the teamwork and its results belong there through @mention hand-offs, not in this chat or message_bot.`,
-      `- invite_bot: add a teammate to this group chat. The user approves it first. Outside a group, use start_group.`,
+      `- start_group: open a new group chat with the user, you and named teammates. ${approval} Your kickoff is its first message: the context and who owns what, with each teammate's @handle to start them. The user is taken to the group, and the teamwork and its results belong there through @mention hand-offs, not in this chat or message_bot.`,
+      `- invite_bot: add a teammate to this group chat. ${approval} Outside a group, use start_group.`,
     );
   }
   lines.push(
@@ -296,6 +297,7 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
         const p = i !== undefined ? parts[i] : undefined;
         if (p?.type === "tool") {
           p.status = e.error ? "error" : "done";
+          if (e.error && e.summary && p.name.startsWith("fabsbot · ")) p.summary = clip(e.summary, 160);
           touch();
         }
         break;

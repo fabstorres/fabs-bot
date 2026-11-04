@@ -112,13 +112,22 @@ function sanitizeBot(input: Partial<Bot>, existing?: Bot): Omit<Bot, "createdAt"
     cwd: String(input.cwd || existing?.cwd || join(WORK_ROOT, db.slug(name) || "bot")),
     autonomy: input.autonomy === "ask" || input.autonomy === "full" ? input.autonomy : (existing?.autonomy ?? "full"),
     connectorIds: Array.isArray(input.connectorIds) ? input.connectorIds.map(String) : (existing?.connectorIds ?? []),
+    isTeamLead: typeof input.isTeamLead === "boolean" ? input.isTeamLead : (existing?.isTeamLead ?? false),
   };
 }
 
-function createBot(input: Partial<Bot>): Bot {
-  const bot = db.saveBot(sanitizeBot(input));
+function saveAndPublish(next: Omit<Bot, "createdAt"> & { createdAt?: number }): Bot {
+  const formerLead = db.teamLead();
+  const bot = db.saveBot(next);
   mkdirSync(bot.cwd, { recursive: true });
   publish({ type: "bot", bot });
+  const cleared = formerLead && formerLead.id !== bot.id && bot.isTeamLead ? db.getBot(formerLead.id) : null;
+  if (cleared) publish({ type: "bot", bot: cleared });
+  return bot;
+}
+
+function createBot(input: Partial<Bot>): Bot {
+  const bot = saveAndPublish(sanitizeBot(input));
   greet(bot);
   return bot;
 }
@@ -199,9 +208,7 @@ route("PUT", "/api/bots/:id", async (req, p) => {
   if (!existing) return bad("not found", 404);
   const next = sanitizeBot(await body(req), existing);
   if (next.provider !== existing.provider || next.cwd !== existing.cwd) db.resetSessionsForBot(existing.id);
-  const bot = db.saveBot({ ...next, createdAt: existing.createdAt });
-  mkdirSync(bot.cwd, { recursive: true });
-  publish({ type: "bot", bot });
+  const bot = saveAndPublish({ ...next, createdAt: existing.createdAt });
   return json(bot);
 });
 route("DELETE", "/api/bots/:id", (_r, p) => {
