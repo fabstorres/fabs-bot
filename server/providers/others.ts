@@ -5,9 +5,8 @@
 import { clip, parseJson, spawnLines, summarizeToolInput } from "./spawn";
 import type { Provider, RunOptions } from "./types";
 
-/** Without a system-prompt flag, the persona rides along in the first prompt. */
 function withPersona(o: RunOptions) {
-  return o.sessionId ? o.prompt : `<instructions>\n${o.systemPrompt}\n</instructions>\n\n${o.prompt}`;
+  return `<instructions>\n${o.systemPrompt}\n</instructions>\n\n${o.prompt}`;
 }
 
 export const cursor: Provider = {
