@@ -1,6 +1,6 @@
 import { flushSync } from "react-dom";
 import { create } from "zustand";
-import type { Bot, BotStatus, HostInfo, Link, Message, ServerEvent, Thread } from "../../shared/types";
+import type { Bot, BotStatus, HostInfo, Link, Message, ScreenState, ServerEvent, Thread } from "../../shared/types";
 import { api, Unpaired } from "./api";
 
 export type Modal = { kind: "bot"; botId: string } | { kind: "file"; url: string; name: string } | null;
@@ -27,6 +27,9 @@ interface State {
   statuses: Record<string, BotStatus>;
   threads: Thread[];
   links: Link[];
+  screens: Record<string, ScreenState>;
+  chromium: boolean;
+  screen: { botId: string; take: boolean } | null;
   messages: Record<string, Message[]>;
   openThreadId: string | null;
   creating: boolean;
@@ -53,6 +56,9 @@ export const useStore = create<State>(() => ({
   statuses: {},
   threads: [],
   links: [],
+  screens: {},
+  chromium: true,
+  screen: null,
   messages: {},
   openThreadId: null,
   creating: false,
@@ -87,6 +93,8 @@ function apply(e: ServerEvent) {
         statuses: Object.fromEntries(e.statuses.map((s) => [s.botId, s])),
         threads: e.threads,
         links: e.links,
+        screens: Object.fromEntries(e.screens.map((s) => [s.botId, s])),
+        chromium: e.chromium,
         loaded: true,
         devicesVersion: get().devicesVersion + 1,
       });
@@ -143,6 +151,9 @@ function apply(e: ServerEvent) {
       break;
     case "devices":
       set({ devicesVersion: get().devicesVersion + 1 });
+      break;
+    case "screen":
+      set({ screens: { ...get().screens, [e.screen.botId]: e.screen } });
       break;
   }
 }
@@ -270,7 +281,7 @@ export async function loadMessages(threadId: string) {
 }
 
 function show(view: View) {
-  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: null, limitsOpen: false });
+  set({ openThreadId: view.thread ?? null, creating: !!view.creating, settings: null, limitsOpen: false, screen: null });
   if (view.thread) {
     void loadMessages(view.thread);
     void api.post(`/api/threads/${view.thread}/read`).catch(() => {});
@@ -337,6 +348,13 @@ export const openModal = (modal: Modal) => set({ modal, modalOpener: focusedOpen
 export const closeModal = () => set({ modal: null });
 export const togglePanel = () => set({ panelOpen: !get().panelOpen });
 export const closePanel = () => set({ panelOpen: false });
+export const openScreen = (botId: string, take = false) => set({ screen: { botId, take } });
+export const closeScreen = () => set({ screen: null });
+export const backToDesk = () => set({ screen: null, panelOpen: true });
+
+export const SCREEN_ACTIVE_MS = 20_000;
+export const usingScreen = (s: ScreenState | undefined, now: number) =>
+  !!s && s.status !== "closed" && s.controller === "bot" && now - s.activeAt < SCREEN_ACTIVE_MS;
 
 function savedAttachments(): Record<string, Attachment[]> {
   try {

@@ -3,9 +3,10 @@ import { ChevronLeft, ChevronRight, Clock, File, Folder, Pause, Play, X } from "
 import type { Bot, Routine, Thread } from "../../../shared/types";
 import { api, formatSize, formatTime } from "../api";
 import { useLoad } from "../hooks";
-import { closePanel, openModal, openNestedThread, openThread, threadTitle, useStore } from "../store";
+import { closePanel, openModal, openNestedThread, openScreen, openThread, threadTitle, useStore } from "../store";
 import { BotAvatar, LiveAvatar } from "./BotAvatar";
 import { scheduleLabel } from "./BotEditor";
+import { ScreenTile } from "./Screen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +62,7 @@ export function DeskPanel({ thread }: { thread: Thread }) {
       <div className="flex-1 overflow-y-auto px-4 pb-6">
         {page === "desk" ? (
           <>
+            <ScreenTile key={`screen-${bot.id}`} bot={bot} onOpen={() => openScreen(bot.id)} />
             <Desk key={bot.id} bot={bot} />
             <Routines bot={bot} />
             <OtherChats bot={bot} openId={thread.id} />
