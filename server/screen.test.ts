@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Viewer } from "./screen";
 
 const scratch = mkdtempSync(join(tmpdir(), "fabs-screen-test-"));
 process.env.FABS_DATA_DIR = join(scratch, "data");
@@ -11,7 +12,7 @@ const screen = await import("./screen");
 
 const page = join(scratch, "page.html");
 writeFileSync(page, `<title>Launch</title><button onclick="document.title='clicked'">Go</button>`);
-const viewer = (botId: string): screen.Viewer => ({ botId, ready: true, pending: null, send() {} });
+const viewer = (botId: string): Viewer => ({ botId, ready: true, pending: null, send() {} });
 const refOf = (tree: string, name: string) => tree.match(new RegExp(`"${name}" \\[ref=(e\\d+)\\]`))![1]!;
 
 test("a host with a port is an address, not a URL scheme", () => {
