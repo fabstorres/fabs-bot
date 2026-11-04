@@ -105,8 +105,13 @@ export function editMessageParts(messageId: string, edit: (parts: MessagePart[])
 }
 
 const closeQuestions = (parts: MessagePart[]) => {
-  for (const p of parts) if (p.type === "question" && p.answered === undefined) p.answered = -1;
+  for (const p of parts) {
+    if (p.type === "question" && p.answered === undefined) p.answered = -1;
+    if (p.type === "screen" && !p.outcome) p.outcome = "closed";
+  }
 };
+
+const isOpenCard = (p: MessagePart) => (p.type === "question" && p.answered === undefined) || (p.type === "screen" && !p.outcome);
 
 export function isBusy(threadId: string, botId: string) {
   return queues.has(key(threadId, botId));
@@ -155,6 +160,8 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
       `- list_threads / read_thread: read any thread without posting to it, e.g. to summarize a group chat. Read a page at a time with next_cursor / next_after_seq instead of loading everything.`,
       `- start_group: open a new group chat with the user, you and named teammates. ${approval} Your kickoff is its first message: the context and who owns what, with each teammate's @handle to start them. The user is taken to the group, and the teamwork and its results belong there through @mention hand-offs, not in this chat or message_bot.`,
       `- invite_bot: add a teammate to this group chat. ${approval} Outside a group, use start_group.`,
+      `- screen_open / screen_read / screen_click / screen_type / screen_press / screen_scroll / screen_wait / screen_close: your own Chromium browser, which the user watches as "${bot.name}'s screen". Open a page, read it to get element refs, act on a ref, then read again. It keeps your logins between chats, so stay signed in.`,
+      `- screen_hand_over: when a page needs something only the user can do (signing in, a CAPTCHA, a payment), ask them to take over your screen, then end your turn.`,
     );
   }
   lines.push(
@@ -181,6 +188,8 @@ function describeMessage(m: Message, self: Bot): string {
           return `[file: ${p.name} at ${db.getFile(p.fileId)?.path ?? "(missing)"}]`;
         case "question":
           return `[asked: ${p.question} Options: ${p.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join(" ")}]`;
+        case "screen":
+          return `[asked the user to take over the screen: ${p.reason}]`;
         default:
           return "";
       }
@@ -366,8 +375,10 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   const remaining = (activeTurns.get(botId) ?? 1) - 1;
   activeTurns.set(botId, remaining);
   const asked = parts.some((p) => p.type === "question" && p.answered === undefined);
+  const handedOver = parts.some((p) => p.type === "screen" && !p.outcome);
   if (remaining <= 0) {
     if (error) setStatus(botId, { state: "error", text: clip(error, 60), threadId: null });
+    else if (handedOver) setStatus(botId, { state: "blocked", text: "Needs you on its screen", threadId });
     else if (asked) setStatus(botId, { state: "blocked", text: "Waiting for your answer", threadId });
     else settle(botId);
   }
@@ -421,7 +432,7 @@ export function mentioned(text: string, thread: Thread, selfId: string | null): 
 export async function postUserMessage(threadId: string, parts: MessagePart[]) {
   const thread = db.getThread(threadId);
   if (!thread) throw new Error("thread not found");
-  for (const open of db.listMessages(threadId).filter((m) => m.parts.some((p) => p.type === "question" && p.answered === undefined))) {
+  for (const open of db.listMessages(threadId).filter((m) => m.parts.some(isOpenCard))) {
     editMessageParts(open.id, closeQuestions);
   }
   const m = db.addMessage({ threadId, author: "user", parts });

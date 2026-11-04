@@ -13,15 +13,24 @@ import { getStatus, publish, setStatus } from "./bus";
 import { bringInBot, directThread, kickoff, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
 import { reschedule } from "./scheduler";
 import { clip } from "./providers/spawn";
+import * as screen from "./screen";
+
+type ToolOutput = string | { text: string; image?: Uint8Array };
 
 type ToolDef = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  run(args: any, ctx: TurnContext, callId: string): Promise<string> | string;
+  run(args: any, ctx: TurnContext, callId: string): Promise<ToolOutput> | ToolOutput;
 };
 
 const str = (description: string) => ({ type: "string", description });
+const TARGET = {
+  ref: str("Element ref from screen_read, e.g. e12"),
+  selector: str("A Playwright locator instead of a ref, e.g. text=Sign in or #email"),
+};
+const target = (args: any) => ({ ref: args.ref ? String(args.ref) : undefined, selector: args.selector ? String(args.selector) : undefined });
+const onPage = (url: string) => `Done. Now on ${url}. Call screen_read to see the result.`;
 
 export class ToolRejection extends Error {
   constructor(
@@ -433,6 +442,105 @@ const tools: ToolDef[] = [
     },
   },
   {
+    name: "screen_open",
+    description:
+      "Open a web page on your screen: your own Chromium browser on the user's PC, which the user can watch as your screen. It keeps your logins between chats. Use it when a task needs a real browser (signing in, clicking, filling forms, checking a site you built); WebFetch is fine for just reading a page.",
+    inputSchema: { type: "object", properties: { url: str("Address to open, e.g. localhost:5173 or https://example.com") }, required: ["url"] },
+    async run(args, ctx) {
+      const page = await screen.openPage(ctx.botId, String(args.url ?? ""));
+      return `Opened ${page.url}${page.title ? ` ("${page.title}")` : ""}${page.status >= 400 ? `, HTTP ${page.status}` : ""}. Call screen_read to see the page and get element refs.`;
+    },
+  },
+  {
+    name: "screen_read",
+    description:
+      "Read the page on your screen: its address, title and an accessibility tree where each element has a ref like e12 that screen_click and screen_type accept. Refs change whenever the page changes, so read again after acting. Set screenshot to also get a picture.",
+    inputSchema: { type: "object", properties: { screenshot: { type: "boolean", description: "Also return a screenshot" } } },
+    async run(args, ctx) {
+      const page = await screen.readPage(ctx.botId, args.screenshot === true);
+      return { text: `${page.url}${page.title ? ` · ${page.title}` : ""}\n\n${page.tree}`, image: page.image };
+    },
+  },
+  {
+    name: "screen_click",
+    description: "Click an element on your screen by ref (from screen_read) or selector.",
+    inputSchema: { type: "object", properties: { ...TARGET, double: { type: "boolean", description: "Double-click" } } },
+    async run(args, ctx) {
+      return onPage(await screen.click(ctx.botId, target(args), args.double === true));
+    },
+  },
+  {
+    name: "screen_type",
+    description:
+      "Type text on your screen. With a ref or selector it replaces that field's text; without one it types where the cursor is. Set submit to press Enter afterwards.",
+    inputSchema: {
+      type: "object",
+      properties: { text: str("Text to type"), ...TARGET, submit: { type: "boolean", description: "Press Enter after typing" } },
+      required: ["text"],
+    },
+    async run(args, ctx) {
+      return onPage(await screen.typeText(ctx.botId, String(args.text ?? ""), target(args), args.submit === true));
+    },
+  },
+  {
+    name: "screen_press",
+    description: "Press a key on your screen, e.g. Enter, Escape, Tab, ArrowDown or Control+A.",
+    inputSchema: { type: "object", properties: { key: str("Key or chord") }, required: ["key"] },
+    async run(args, ctx) {
+      return onPage(await screen.pressKey(ctx.botId, String(args.key ?? "")));
+    },
+  },
+  {
+    name: "screen_scroll",
+    description: "Scroll the page on your screen.",
+    inputSchema: {
+      type: "object",
+      properties: { direction: { type: "string", enum: ["up", "down"] }, amount: { type: "number", description: "Pixels, default 600" } },
+      required: ["direction"],
+    },
+    async run(args, ctx) {
+      const amount = Math.min(Math.max(Number(args.amount) || 600, 50), 5_000);
+      return onPage(await screen.scroll(ctx.botId, args.direction === "up" ? "up" : "down", amount));
+    },
+  },
+  {
+    name: "screen_wait",
+    description: "Wait until text appears on your screen, or the address contains a string. Use after an action that loads slowly.",
+    inputSchema: {
+      type: "object",
+      properties: { text: str("Text to wait for"), url: str("Part of the address to wait for"), timeout_ms: { type: "number", description: "Default 10000, at most 60000" } },
+    },
+    async run(args, ctx) {
+      const timeoutMs = Math.min(Math.max(Number(args.timeout_ms) || 10_000, 500), 60_000);
+      const text = args.text ? String(args.text) : undefined;
+      const url = args.url ? String(args.url) : undefined;
+      return onPage(await screen.waitFor(ctx.botId, { text, url, timeoutMs }));
+    },
+  },
+  {
+    name: "screen_close",
+    description: "Close your screen when you're finished with it. Your logins stay for next time.",
+    inputSchema: { type: "object", properties: {} },
+    async run(_args, ctx) {
+      return (await screen.closeScreen(ctx.botId)) ? "Closed." : "Your screen was already closed.";
+    },
+  },
+  {
+    name: "screen_hand_over",
+    description:
+      "Ask the user to take over your screen for a step only they can do: signing in, a CAPTCHA, a payment, a passkey. Posts a card with your reason; then end your turn. When they hand the screen back you get a message and can carry on.",
+    inputSchema: { type: "object", properties: { reason: str("What they should do, e.g. 'Sign in to the dashboard, then hand the screen back.'") }, required: ["reason"] },
+    run(args, ctx) {
+      if (!screen.isOpen(ctx.botId)) return reject("not_open", "Your screen has nothing open. Open the page first with screen_open.");
+      const reason = clip(String(args.reason ?? "").trim(), 300);
+      if (!reason) return reject("no_reason", "Pass reason: what the user should do on your screen, e.g. 'Sign in to the dashboard, then hand the screen back.'");
+      ctx.addPart({ type: "screen", botId: ctx.botId, reason });
+      publishThread(ctx.threadId);
+      setStatus(ctx.botId, { state: "blocked", text: "Needs you on its screen", threadId: ctx.threadId });
+      return "Posted. End your turn now; you'll get a message when the user hands your screen back.";
+    },
+  },
+  {
     name: "approve",
     description: "Internal: permission prompt relay. Do not call directly.",
     inputSchema: {
@@ -492,11 +600,13 @@ async function handleRpc(r: RpcRequest, ctx: TurnContext) {
         return fail(-32602, `Unknown tool ${r.params?.name}`);
       }
       try {
-        const text = await tool.run(r.params?.arguments ?? {}, ctx, callId);
+        const out = await tool.run(r.params?.arguments ?? {}, ctx, callId);
         logTurnEvent(ctx, callId, { type: "tool.result", toolName: tool.name, outcome: "succeeded" });
-        return ok({ content: [{ type: "text", text }] });
+        const { text, image } = typeof out === "string" ? { text: out, image: undefined } : out;
+        const picture = image ? [{ type: "image", data: Buffer.from(image).toString("base64"), mimeType: "image/jpeg" }] : [];
+        return ok({ content: [{ type: "text", text }, ...picture] });
       } catch (e) {
-        if (e instanceof ToolRejection) {
+        if (e instanceof ToolRejection || e instanceof screen.ScreenError) {
           console.warn(`mcp ${tool.name} rejected: ${e.code}`);
           logTurnEvent(ctx, callId, { type: "tool.result", toolName: tool.name, outcome: "rejected" });
           return ok({ content: [{ type: "text", text: e.message }], isError: true });
