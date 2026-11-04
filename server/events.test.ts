@@ -95,7 +95,7 @@ test("pruning never lets a new event reuse an id a saved cursor has already seen
   const start = Date.now();
   setSystemTime(start);
   const t = db.createThread("direct", [bot.id]);
-  const [created] = db.listEvents(t.id, 0, 500);
+  const [created] = db.listEvents(t.id, 0, 500) as { id: number }[];
   setSystemTime(start + db.EVENT_RETENTION_MS + 1);
   db.pruneEvents();
   db.deleteThread(t.id);

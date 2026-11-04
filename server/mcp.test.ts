@@ -34,6 +34,7 @@ async function call(caller: Bot, name: string, args: Record<string, unknown>) {
   const token = crypto.randomUUID();
   turnsByToken.set(token, {
     token,
+    turnId: crypto.randomUUID(),
     botId: caller.id,
     threadId: thread.id,
     depth: 0,
