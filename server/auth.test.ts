@@ -7,6 +7,7 @@ const scratch = mkdtempSync(join(tmpdir(), "fabs-auth-test-"));
 process.env.FABS_DATA_DIR = join(scratch, "data");
 process.env.FABS_WORK_ROOT = join(scratch, "work");
 const { authorized, listDevices, newPairingCode, pairDevice, redeemPairingCode, removeDevice } = await import("./auth");
+const { DATA_DIR } = await import("./config");
 
 afterEach(() => setSystemTime());
 
@@ -60,7 +61,7 @@ test("removing one device signs out only that device, by cookie and by bearer", 
 });
 
 test("saving devices tightens a devices file that was left readable by others", () => {
-  const file = join(scratch, "data", "devices.json");
+  const file = join(DATA_DIR, "devices.json");
   pairDevice("Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0");
   chmodSync(file, 0o644);
   pairDevice("Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0");
