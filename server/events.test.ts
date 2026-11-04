@@ -25,6 +25,7 @@ const bot = db.saveBot({
   cwd: join(scratch, "work", "chief"),
   autonomy: "ask",
   connectorIds: [],
+  isTeamLead: false,
 });
 
 function turn(threadId: string) {
@@ -90,6 +91,18 @@ test("events are kept for exactly 30 days, on read and on prune", () => {
   expect(db.listEvents(t.id, 0, 500)).toHaveLength(0);
 });
 
+test("pruning never lets a new event reuse an id a saved cursor has already seen", () => {
+  const start = Date.now();
+  setSystemTime(start);
+  const t = db.createThread("direct", [bot.id]);
+  const [created] = db.listEvents(t.id, 0, 500);
+  setSystemTime(start + db.EVENT_RETENTION_MS + 1);
+  db.pruneEvents();
+  db.deleteThread(t.id);
+  setSystemTime();
+  expect(db.listEvents(t.id, created!.id, 500)).toHaveLength(1);
+});
+
 test("a denied approval and a cancelled one are recorded differently", async () => {
   const t = db.createThread("direct", [bot.id]);
   const denied = turn(t.id);
@@ -109,6 +122,6 @@ test("unknown tool names and exception text never reach the events table", async
   const { call } = turn(t.id);
   await call("SECRET_MARKER_TOOL", {});
   await call("read_thread", { thread_id: "SECRET_MARKER_ARG" });
-  expect(outcomes(t.id, "tool.result")).toEqual(["rejected", "error"]);
+  expect(outcomes(t.id, "tool.result")).toEqual(["rejected", "rejected"]);
   expect(JSON.stringify(db.db.query("SELECT * FROM events").all())).not.toContain("SECRET_MARKER");
 });

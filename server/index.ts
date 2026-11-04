@@ -6,7 +6,7 @@ import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, 
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
-import { authorized, deviceId, isLoopback, localOwner, listDevices, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
+import { authorized, deviceId, isLoopback, listDevices, ownerOnly, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { realPathWithin, within } from "./paths";
@@ -284,9 +284,12 @@ route("DELETE", "/api/threads/:id", (_r, p) => {
   publish({ type: "thread.deleted", threadId: p.id! });
   return json({ ok: true });
 });
-route("GET", "/api/threads/:id/events", (_r, p, url) =>
-  json(db.listEvents(p.id!, Number(url.searchParams.get("after")) || 0, Number(url.searchParams.get("limit")) || 200)),
-);
+route("GET", "/api/threads/:id/events", (_r, p, url) => {
+  const after = Number(url.searchParams.get("after") ?? 0);
+  const limit = Number(url.searchParams.get("limit") ?? 200);
+  if (!Number.isInteger(after) || !Number.isInteger(limit)) return bad("after and limit must be whole numbers");
+  return json(db.listEvents(p.id!, after, limit));
+});
 route("GET", "/api/threads/:id/messages", (_r, p) => json(db.listMessages(p.id!)));
 route("POST", "/api/threads/:id/messages", async (req, p) => {
   const b = await body<{ text?: string; fileIds?: string[] }>(req);
@@ -445,7 +448,7 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
   const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws";
   if (isApi && !authorized(req, ip, viaServe)) return json({ error: "unpaired" }, 401);
   if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
-  if (/^\/api\/threads\/[^/]+\/events$/.test(url.pathname) && !localOwner(req, ip, viaServe)) return bad("only available on this PC", 403);
+  if (/^\/api\/threads\/[^/]+\/events$/.test(url.pathname) && !ownerOnly(req, ip, viaServe)) return bad("only available on this PC", 403);
 
   if (url.pathname === "/ws") {
     return server.upgrade(req, { data: { deviceId: deviceId(req) } }) ? undefined : new Response("expected websocket", { status: 400 });

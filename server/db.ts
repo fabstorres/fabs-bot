@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS files (
 );
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS events (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at INTEGER NOT NULL,
   event_type TEXT NOT NULL,
   thread_id TEXT,
@@ -505,7 +505,7 @@ export type TrailEvent = EventOrigin & {
 };
 
 export function logEvent(e: TrailEvent) {
-  const toolName = (TOOL_NAMES as readonly string[]).includes(e.toolName ?? "") ? e.toolName : null;
+  const toolName = (TOOL_NAMES as readonly string[]).includes(e.toolName ?? "") ? (e.toolName ?? null) : null;
   db.query(
     `INSERT INTO events (created_at, event_type, thread_id, thread_kind, actor_category, turn_id, call_id, approval_id, tool_name, outcome_code)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

@@ -61,6 +61,12 @@ export function localOwner(req: Request, ip: string | undefined, viaServe = fals
   return isLoopback(ip) && !req.headers.get("tailscale-user-login") && !viaServe && loopbackHost(req);
 }
 
+const TAILSCALE_IDENTITY_HEADERS = ["tailscale-user-login", "tailscale-user-name", "tailscale-user-profile-pic"];
+
+export function ownerOnly(req: Request, ip: string | undefined, viaServe = false): boolean {
+  return localOwner(req, ip, viaServe) && TAILSCALE_IDENTITY_HEADERS.every((h) => !req.headers.has(h));
+}
+
 export function authorized(req: Request, ip: string | undefined, viaServe = false): boolean {
   return localOwner(req, ip, viaServe) || deviceId(req) !== null;
 }
