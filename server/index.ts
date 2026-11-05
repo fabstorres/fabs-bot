@@ -510,12 +510,12 @@ const heartbeat: ServerEvent = { type: "heartbeat", everyMs: HEARTBEAT_MS };
 
 const websocket = {
   open(ws: ServerWebSocket<WsData>) {
+    sockets.add(ws);
     if (ws.data.screenBotId) {
       ws.data.viewer = { botId: ws.data.screenBotId, send: (data) => void ws.send(data), ready: true, pending: null };
       watchScreen(ws.data.viewer);
       return;
     }
-    sockets.add(ws);
     const hello: ServerEvent = {
       type: "hello",
       bots: db.listBots(),
@@ -533,8 +533,8 @@ const websocket = {
     if (ws.data.viewer) viewerMessage(ws.data.viewer, String(raw));
   },
   close(ws: ServerWebSocket<WsData>) {
-    if (ws.data.viewer) return unwatchScreen(ws.data.viewer);
     sockets.delete(ws);
+    if (ws.data.viewer) return unwatchScreen(ws.data.viewer);
     ws.data.unsubscribe?.();
   },
 };
