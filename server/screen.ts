@@ -373,10 +373,14 @@ export async function closeAllScreens() {
   await Promise.all([...screens.keys()].map(closeScreen));
 }
 
+const tellControl = (v: Viewer, mine: boolean) => v.send(JSON.stringify({ type: "control", mine }));
+
 export function releaseScreen(botId: string) {
   const s = screens.get(botId);
-  if (!s?.controller) return;
+  const owner = s?.controller;
+  if (!s || !owner) return;
   s.controller = null;
+  tellControl(owner, false);
   update(botId, { controller: "bot" });
 }
 
@@ -445,11 +449,12 @@ export function viewerMessage(v: Viewer, raw: string) {
     return;
   }
   const s = screens.get(v.botId);
+  if (m.type === "take" && (!s || (s.controller && s.controller !== v))) return tellControl(v, false);
   if (!s) return;
   if (m.type === "take") {
-    if (s.controller && s.controller !== v) return;
     s.controller = v;
     s.usedAt = Date.now();
+    tellControl(v, true);
     update(v.botId, { controller: "user" });
     return;
   }

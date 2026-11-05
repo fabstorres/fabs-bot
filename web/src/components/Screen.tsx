@@ -39,7 +39,7 @@ type Stream = {
   hasFrame: boolean;
   lastFrameAt: RefObject<number>;
   pointer: { x: number; y: number; at: number } | null;
-  asked: boolean;
+  mine: boolean;
   send(message: object): void;
   take(): void;
   release(): void;
@@ -52,7 +52,7 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
   const lastFrameAt = useRef(0);
   const [hasFrame, setHasFrame] = useState(false);
   const [pointer, setPointer] = useState<Stream["pointer"]>(null);
-  const [asked, setAsked] = useState(takeOnOpen);
+  const [mine, setMine] = useState(false);
 
   useEffect(() => {
     let stopped = false;
@@ -65,6 +65,10 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
         if (typeof m.data === "string") {
           const e = JSON.parse(m.data);
           if (e.type === "pointer") setPointer({ x: e.x, y: e.y, at: Date.now() });
+          if (e.type === "control") {
+            wantsControl.current = e.mine;
+            setMine(e.mine);
+          }
           return;
         }
         const bitmap = await createImageBitmap(m.data as Blob).catch(() => null);
@@ -100,16 +104,15 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
     hasFrame,
     lastFrameAt,
     pointer,
-    asked,
+    mine,
     send,
     take() {
       wantsControl.current = true;
-      setAsked(true);
       send({ type: "take" });
     },
     release() {
       wantsControl.current = false;
-      setAsked(false);
+      setMine(false);
       send({ type: "release" });
     },
   };
@@ -322,8 +325,8 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
   const keys = useRef<HTMLTextAreaElement>(null);
   const controls = useControls(stream, keys);
   const now = useNow(5_000);
-  const controlling = state.controller === "user" && stream.asked;
-  const elsewhere = state.controller === "user" && !stream.asked;
+  const controlling = state.controller === "user" && stream.mine;
+  const elsewhere = state.controller === "user" && !stream.mine;
   const open = state.status !== "closed";
   const canTake = open && online && !elsewhere;
 
