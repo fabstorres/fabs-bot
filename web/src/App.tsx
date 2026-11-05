@@ -24,6 +24,7 @@ export function App() {
   const creating = useStore((s) => s.creating) || noBots;
   const panelOpen = useStore((s) => s.panelOpen);
   const thread = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
+  const screen = useStore((s) => s.screen);
   const screenBot = useStore((s) => (s.screen && thread?.memberIds.includes(s.screen.botId) ? s.bots.find((b) => b.id === s.screen!.botId) : undefined));
   const modal = useStore((s) => s.modal);
   const settings = useStore((s) => s.settings);
@@ -66,7 +67,7 @@ export function App() {
           <NewBot />
         ) : thread && screenBot ? (
           <>
-            <ScreenView key={`screen-${screenBot.id}`} bot={screenBot} thread={thread} onBack={backToDesk} />
+            <ScreenView key={`screen-${screenBot.id}-${screen?.openedAt}`} bot={screenBot} thread={thread} onBack={backToDesk} />
             <Chat key={`chat-${thread.id}`} thread={thread} side />
           </>
         ) : thread ? (

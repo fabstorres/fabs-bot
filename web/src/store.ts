@@ -29,7 +29,7 @@ interface State {
   links: Link[];
   screens: Record<string, ScreenState>;
   chromium: boolean;
-  screen: { botId: string; take: boolean } | null;
+  screen: { botId: string; take: boolean; openedAt: number } | null;
   messages: Record<string, Message[]>;
   openThreadId: string | null;
   creating: boolean;
@@ -348,7 +348,7 @@ export const openModal = (modal: Modal) => set({ modal, modalOpener: focusedOpen
 export const closeModal = () => set({ modal: null });
 export const togglePanel = () => set({ panelOpen: !get().panelOpen });
 export const closePanel = () => set({ panelOpen: false });
-export const openScreen = (botId: string, take = false) => set({ screen: { botId, take } });
+export const openScreen = (botId: string, take = false) => set({ screen: { botId, take, openedAt: Date.now() } });
 export const closeScreen = () => set({ screen: null });
 export const backToDesk = () => set({ screen: null, panelOpen: true });
 
