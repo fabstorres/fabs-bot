@@ -522,7 +522,7 @@ const tools: ToolDef[] = [
     description: "Close your screen when you're finished with it. Your logins stay for next time.",
     inputSchema: { type: "object", properties: {} },
     async run(_args, ctx) {
-      return (await screen.closeScreen(ctx.botId)) ? "Closed." : "Your screen was already closed.";
+      return (await screen.closeForBot(ctx.botId)) ? "Closed." : "Your screen was already closed.";
     },
   },
   {

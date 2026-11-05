@@ -22,7 +22,7 @@ test("a host with a port is an address, not a URL scheme", () => {
 });
 
 test.skipIf(!screen.findChromium())(
-  "the bot waits while the user has control, and leaving the viewer hands it back",
+  "the bot can neither act nor close its screen while the user has control, and leaving the viewer hands it back",
   async () => {
     const botId = crypto.randomUUID();
     const v = viewer(botId);
@@ -31,6 +31,7 @@ test.skipIf(!screen.findChromium())(
     const ref = refOf((await screen.readPage(botId, false)).tree, "Go");
     screen.viewerMessage(v, JSON.stringify({ type: "take" }));
     await expect(screen.click(botId, { ref })).rejects.toMatchObject({ code: "user_has_control" });
+    await expect(screen.closeForBot(botId)).rejects.toMatchObject({ code: "user_has_control" });
     screen.unwatchScreen(v);
     await screen.click(botId, { ref });
     expect((await screen.readPage(botId, false)).title).toBe("clicked");

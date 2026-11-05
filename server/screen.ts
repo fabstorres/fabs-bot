@@ -357,6 +357,11 @@ export async function closeScreen(botId: string) {
   return true;
 }
 
+export function closeForBot(botId: string) {
+  if (!screens.has(botId)) return Promise.resolve(false);
+  return asBot(botId, async () => closeScreen(botId));
+}
+
 export async function forgetScreen(botId: string) {
   await closeScreen(botId);
   states.delete(botId);
