@@ -69,11 +69,11 @@ $C browser wait  --role region --name "Thread with Chief"
 $C browser fill  --label "Message" --value "…"
 $C browser press --label "Message" --key Enter
 $C browser eval  "document.querySelector('[role=region][data-thread-id]').dataset.threadId"
-$C wait <threadId> --for file|question|approval|idle|blocked|text:<substring> [--timeout 180]
+$C wait <threadId> --for file|question|approval|screen|idle|blocked|text:<substring> [--timeout 180]
 $C thread <threadId>                        # compact dump: authors, tool steps, files, cards
 ```
 
-`--for idle` passes once every bot reply to the latest user or routine message (in a backchannel, the latest bot-to-bot request) has finished and the thread hasn't changed for 2.5 s. It exits 1 instead when any of those replies ended in an error (in a group, one failed bot is enough) or a question or approval is left waiting on you. An open approval counts even while its reply is still streaming, because the bot can't go on until you decide; an open question counts once its reply has finished. `--for blocked` passes when a question or approval is waiting on you, and exits 1 on an error or a plain finish. A timeout exits 2.
+`--for idle` passes once every bot reply to the latest user or routine message (in a backchannel, the latest bot-to-bot request) has finished and the thread hasn't changed for 2.5 s. It exits 1 instead when any of those replies ended in an error (in a group, one failed bot is enough) or a question, approval or screen hand-over is left waiting on you. An open approval counts even while its reply is still streaming, because the bot can't go on until you decide; an open question counts once its reply has finished. `--for blocked` passes when a question, approval or screen hand-over is waiting on you, and exits 1 on an error or a plain finish. A timeout exits 2.
 
 Targets are ARIA roles and names that the app sets on purpose. Prefer them over CSS:
 
@@ -90,6 +90,7 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | mentions | `@` in the composer opens `--role listbox --name "Mention a bot"` with `--role option --name "<Name>"` (ArrowUp/ArrowDown move, Enter or Tab picks, Escape closes); a picked bot is a chip, `[role=textbox][aria-label=Message] [data-mention]`; in sent messages each mention is `--role button --name "@<Name>" --exact`, which opens that bot's 1:1 |
 | thread header | `"Back"` (phone, or desktop inside a backchannel), `"Open desk"`, `"More"`; menu `--role menu --name "Thread menu"`; `"Delete thread"` opens `--role dialog --name "Delete “<title>”?"` with `--role list --name "Bots in this thread"`, `Cancel` / `Delete` |
 | cards | `--role group --name "Question: <q>"` (options are buttons named `"<Letter> <option>"`); `--role group --name "Approval: <Tool>"` with buttons `Allow` / `Deny`; bot↔bot `--role button --name "Exchange with <Bot>"` (opens the backchannel) |
+| bot screen | desk tile `--role region --name "<Bot>'s screen"` with `"Open <Bot>'s screen"` (disabled while nothing is open); header dot `--role img --name "<Bot> is using its screen"` inside `"Open desk"`; expanded view `--role region --name "<Bot>'s screen"` with `"Back to desk"`, `--label "Address"`, a `--role status` chip (`<Bot> is using it` / `Idle` / `You` / `Nothing open`), `"Take control"` / `"Hand back to <Bot>"`, `"Close screen"`, the page `canvas` (click with `--at x,y`) and `--label "Type on <Bot>'s screen"` for typing; card `--role group --name "Screen: <reason>"` with `Take over` / `I'm done` / `Skip` |
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
 | bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` in groups `Shape` / `Color` / `Brain` / `Autonomy`; `--role switch --name "Team lead"` |

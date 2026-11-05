@@ -213,7 +213,8 @@ function toThread(r: ThreadRow): Thread {
          WHERE m.thread_id = ?
            AND ((json_extract(p.value, '$.type') = 'question' AND json_extract(p.value, '$.answered') IS NULL
                  AND json_extract(p.value, '$.greeting') IS NULL)
-             OR (json_extract(p.value, '$.type') = 'approval' AND json_extract(p.value, '$.decision') IS NULL))
+             OR (json_extract(p.value, '$.type') = 'approval' AND json_extract(p.value, '$.decision') IS NULL)
+             OR (json_extract(p.value, '$.type') = 'screen' AND json_extract(p.value, '$.outcome') IS NULL))
          LIMIT 1`,
       )
       .get(r.id),
@@ -488,6 +489,8 @@ export function getFile(id: string): FileRow | null {
 export const TOOL_NAMES = [
   "list_bots", "message_bot", "ask_user", "share_file", "set_status", "set_topic", "notify_user", "list_threads",
   "read_thread", "schedule_routine", "list_routines", "delete_routine", "start_group", "invite_bot", "approve",
+  "screen_open", "screen_read", "screen_click", "screen_type", "screen_press", "screen_scroll", "screen_wait", "screen_close",
+  "screen_hand_over",
 ] as const;
 export const EVENT_RETENTION_MS = 30 * 24 * 60 * 60_000;
 const EVENT_PAGE_MAX = 500;

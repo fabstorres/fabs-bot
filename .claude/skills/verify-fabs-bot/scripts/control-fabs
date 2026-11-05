@@ -338,7 +338,9 @@ const commands: Record<string, () => Promise<void>> = {
                 ? `[file ${p.name} ${p.size}B id=${p.fileId}]`
                 : p.type === "question"
                   ? `[question ${JSON.stringify(p.question)} options=${p.options.length} answered=${p.answered ?? "-"}]`
-                  : `[approval ${p.tool} ${p.decision ?? "pending"} id=${p.requestId}]`,
+                  : p.type === "screen"
+                    ? `[screen ${JSON.stringify(p.reason)} ${p.outcome ?? "pending"}]`
+                    : `[approval ${p.tool} ${p.decision ?? "pending"} id=${p.requestId}]`,
         )
         .join(" ");
       console.log(redact(`#${m.seq} ${who} (${m.status}): ${parts}`));
@@ -347,7 +349,7 @@ const commands: Record<string, () => Promise<void>> = {
 
   async wait() {
     const s = loadState()!;
-    const id = positional[1] ?? die("usage: control-fabs wait <threadId> --for idle|blocked|question|approval|file|text:<substring>");
+    const id = positional[1] ?? die("usage: control-fabs wait <threadId> --for idle|blocked|question|approval|screen|file|text:<substring>");
     const want = flag("for") ?? "idle";
     const timeout = Number(flag("timeout") ?? 180) * 1000;
     const deadline = Date.now() + timeout;
@@ -360,7 +362,9 @@ const commands: Record<string, () => Promise<void>> = {
       const parts = msgs.flatMap((m) => m.parts);
       const running = msgs.some((m) => m.status === "streaming" && !m.parts.some((p: any) => p.type === "approval" && !p.decision));
       const replies = msgs.slice(msgs.findLastIndex(isRequest) + 1);
-      const needsYou = parts.some((p) => (p.type === "question" && p.answered === undefined && !p.greeting) || (p.type === "approval" && !p.decision));
+      const needsYou = parts.some(
+        (p) => (p.type === "question" && p.answered === undefined && !p.greeting) || (p.type === "approval" && !p.decision) || (p.type === "screen" && !p.outcome),
+      );
       let hit = false;
       if (want === "idle" || want === "blocked") {
         const ended = running || !replies.length ? "" : replies.some((m) => m.status === "error") ? "error" : needsYou ? "blocked" : "idle";
@@ -373,6 +377,7 @@ const commands: Record<string, () => Promise<void>> = {
         }
       } else if (want === "question") hit = parts.some((p) => p.type === "question" && p.answered === undefined && !p.greeting);
       else if (want === "approval") hit = parts.some((p) => p.type === "approval" && !p.decision);
+      else if (want === "screen") hit = parts.some((p) => p.type === "screen" && !p.outcome);
       else if (want === "file") hit = parts.some((p) => p.type === "file");
       else if (want.startsWith("text:")) hit = parts.some((p) => p.type === "text" && p.text.toLowerCase().includes(want.slice(5).toLowerCase()));
       else die(`unknown --for ${want}`);
@@ -651,14 +656,14 @@ const commands: Record<string, () => Promise<void>> = {
   seed                                                         create fixture bots (Claude haiku; Codex if installed)
   api <METHOD> <path> [json]                                   call the instance's HTTP API
   threads | thread <id>                                        list threads / dump one thread compactly
-  wait <threadId> --for idle|blocked|question|approval|file|text:<s> [--timeout 180]   idle/blocked exit 1 when the turn ends otherwise
+  wait <threadId> --for idle|blocked|question|approval|screen|file|text:<s> [--timeout 180]   idle/blocked exit 1 when the turn ends otherwise
   paths                                                        print run, data, work-root and artifacts dirs (for side-effect checks)
   logs [--n 60]                                                tail the server log (redacted)
   server stop|start                                            stop this run's server (and any bot CLI mid-turn) or start it again on the same port and data
   pair-check [--expiry] [--path pairing/pair-check.txt]        remote-device auth checks over the tailnet (needs --tailnet; --expiry waits 5 min for a link to expire)
   browser start [--viewport 1440x900|430x932]                  headless Chromium on CDP (restart to change viewport)
   browser open [/path] [--via tailnet] | browser pair
-  browser click|fill|press|wait|count|text  --role R --name N | --label L | --text T | --selector S [--nth i] [--exact]
+  browser click|fill|press|wait|count|text  --role R --name N | --label L | --text T | --selector S [--nth i] [--exact]  (click: [--at x,y], fractions ≤1 of the target's box)
           fill: --value V (@pair-link mints a one-time link; @pair-link / @tailnet-url type the tailnet link unseen)   press: --key K   wait: --state visible|hidden [--timeout s]
           click --accept-dialog [--dialog-text T]   accept the confirm()/prompt() the click opens
   browser snapshot --path rel.aria.txt [target] | screenshot --path rel.png [--full-page] [--no-mask] | eval '<js>'

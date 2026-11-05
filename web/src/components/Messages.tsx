@@ -2,12 +2,13 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import { Check, ChevronDown, ChevronRight, Download, Zap } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Download, Monitor, Zap } from "lucide-react";
 import { hideDeleted, type MdNode, splitMentions, textNodes } from "../../../shared/mentions";
 import type { Bot, Message, MessagePart } from "../../../shared/types";
 import { api, formatSize, formatTime, isImage } from "../api";
-import { isConnected, openDirect, openModal, openNestedThread, useStore } from "../store";
+import { isConnected, openDirect, openModal, openNestedThread, openScreen, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
+import { ScreenThumb, settleHandOver } from "./Screen";
 import { MentionChip } from "./MentionChip";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -146,6 +147,8 @@ function Part({ part, index, message, bot, bots, error }: { part: MessagePart; i
       return <QuestionCard part={part} index={index} message={message} />;
     case "approval":
       return <ApprovalCard part={part} />;
+    case "screen":
+      return <ScreenCard part={part} index={index} message={message} />;
     default:
       return null;
   }
@@ -334,6 +337,56 @@ function ApprovalCard({ part }: { part: Extract<MessagePart, { type: "approval" 
           <Button className="rounded-full" disabled={busy || !online} onClick={() => decide("allow")}>
             Allow
           </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const SETTLED = { done: "Handed back", skipped: "Skipped", closed: "Closed" } as const;
+
+function ScreenCard({ part, index, message }: { part: Extract<MessagePart, { type: "screen" }>; index: number; message: Message }) {
+  const bot = useStore((s) => s.bots.find((b) => b.id === part.botId));
+  const online = useStore(isConnected);
+  const [busy, setBusy] = useState(false);
+  const pending = !part.outcome;
+  const name = bot?.name ?? "A former teammate";
+  const settle = (outcome: "done" | "skipped") => {
+    setBusy(true);
+    settleHandOver(message.id, index, outcome).catch(() => setBusy(false));
+  };
+  return (
+    <div
+      className={cn("w-full max-w-md rounded-3xl border bg-background p-4", pending && "border-amber-300 bg-amber-50/40 dark:border-amber-500/40 dark:bg-amber-500/10")}
+      role="group"
+      aria-label={`Screen: ${part.reason}`}
+    >
+      <div className="flex items-center gap-2 text-sm">
+        <Monitor className="size-4 flex-none" />
+        <span className="flex-1 truncate font-medium">{name}'s screen</span>
+        {pending && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">Needs you</span>}
+      </div>
+      <p className="mt-2">{part.reason}</p>
+      {pending && bot && (
+        <div className="mt-3">
+          <ScreenThumb bot={bot} />
+        </div>
+      )}
+      {pending && bot ? (
+        <div className="mt-3 flex items-center gap-2">
+          <Button className="rounded-full" disabled={busy || !online} onClick={() => openScreen(bot.id, true)}>
+            Take over
+          </Button>
+          <Button variant="outline" className="rounded-full" disabled={busy || !online} onClick={() => settle("done")}>
+            I'm done
+          </Button>
+          <Button variant="ghost" className="ml-auto rounded-full text-muted-foreground" disabled={busy || !online} onClick={() => settle("skipped")}>
+            Skip
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-3 text-sm font-medium text-muted-foreground" role="status">
+          {SETTLED[part.outcome ?? "closed"]}
         </div>
       )}
     </div>

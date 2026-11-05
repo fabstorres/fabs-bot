@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useWindowEvent } from "./hooks";
-import { offlineReason, offlineTitle, reconnect, restoreView, showOffline, useStore } from "./store";
+import { backToDesk, offlineReason, offlineTitle, reconnect, restoreView, showOffline, useStore } from "./store";
 import { BotAvatar } from "./components/BotAvatar";
 import { BotEditor } from "./components/BotEditor";
 import { Chat } from "./components/Chat";
@@ -8,6 +8,7 @@ import { DeskPanel } from "./components/DeskPanel";
 import { NewBot } from "./components/NewBot";
 import { LimitsDialog } from "./components/Limits";
 import { FileViewer } from "./components/Panels";
+import { ScreenView } from "./components/Screen";
 import { SettingsDialog } from "./components/Settings";
 import { Sidebar } from "./components/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ export function App() {
   const creating = useStore((s) => s.creating) || noBots;
   const panelOpen = useStore((s) => s.panelOpen);
   const thread = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
+  const screen = useStore((s) => s.screen);
+  const screenBot = useStore((s) => (s.screen && thread?.memberIds.includes(s.screen.botId) ? s.bots.find((b) => b.id === s.screen!.botId) : undefined));
   const modal = useStore((s) => s.modal);
   const settings = useStore((s) => s.settings);
   const limitsOpen = useStore((s) => s.limitsOpen);
@@ -62,6 +65,11 @@ export function App() {
       <main className={cn("h-full min-w-0 flex-1 md:flex", showMain ? "flex" : "hidden")}>
         {creating ? (
           <NewBot />
+        ) : thread && screenBot ? (
+          <>
+            <ScreenView key={`screen-${screenBot.id}-${screen?.openedAt}`} bot={screenBot} thread={thread} onBack={backToDesk} />
+            <Chat key={`chat-${thread.id}`} thread={thread} side />
+          </>
         ) : thread ? (
           <>
             <Chat key={`chat-${thread.id}`} thread={thread} />

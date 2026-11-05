@@ -15,6 +15,7 @@ import { isProviderId, launchFor, providerInfo, updateProvider } from "./provide
 import { scanClaudeInventory } from "./providers/claude";
 import { isLimitsProviderId, providerLimits } from "./providers/limits";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
+import { closeAllScreens, findChromium, forgetScreen, listScreens, releaseScreen, unwatchScreen, viewerMessage, watchScreen, type Viewer } from "./screen";
 import { disableServe, enableServe, killRunningCommands, tailscaleState, type ServeProblem } from "./tailscale";
 
 db.closeDanglingMessages();
@@ -59,7 +60,7 @@ function shutdown() {
   if (stopping) return;
   stopping = true;
   const off = serveQueue.then(() => (serveEnabled() ? disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT) : null));
-  Promise.race([off, Bun.sleep(5_000)]).finally(() => {
+  Promise.race([Promise.all([off, closeAllScreens()]), Bun.sleep(5_000)]).finally(() => {
     killRunningCommands();
     process.exit(0);
   });
@@ -213,7 +214,8 @@ route("PUT", "/api/bots/:id", async (req, p) => {
   const bot = saveAndPublish({ ...next, createdAt: existing.createdAt });
   return json(bot);
 });
-route("DELETE", "/api/bots/:id", (_r, p) => {
+route("DELETE", "/api/bots/:id", async (_r, p) => {
+  await forgetScreen(p.id!);
   db.deleteBot(p.id!);
   publish({ type: "bot.deleted", botId: p.id! });
   reschedule();
@@ -325,6 +327,21 @@ route("POST", "/api/messages/:id/answer", async (req, p) => {
   await postUserMessage(m.threadId, [{ type: "text", text: `${letter}. ${part.options[option]}` }]);
   return json({ ok: true });
 });
+route("POST", "/api/messages/:id/screen", async (req, p) => {
+  const { partIndex, outcome } = await body<{ partIndex: number; outcome: string }>(req);
+  const m = db.getMessage(p.id!);
+  const part = m?.parts[partIndex];
+  if (!m || part?.type !== "screen" || part.outcome) return bad("that request is already settled", 409);
+  const done = outcome !== "skipped";
+  editMessageParts(m.id, (parts) => {
+    const live = parts[partIndex];
+    if (live?.type === "screen") live.outcome = done ? "done" : "skipped";
+  });
+  releaseScreen(part.botId);
+  const text = done ? "I'm done on your screen. It's yours again, carry on." : "Skip that step on your screen and carry on without it.";
+  await postUserMessage(m.threadId, [{ type: "text", text }]);
+  return json({ ok: true });
+});
 route("POST", "/api/approvals/:id", async (req, p) => {
   const { decision } = await body(req);
   return decideApproval(p.id!, decision === "allow" ? "allow" : "deny") ? json({ ok: true }) : bad("already decided", 409);
@@ -412,7 +429,7 @@ function messageParts(text?: string, fileIds?: string[]): MessagePart[] {
   return parts;
 }
 
-type WsData = { deviceId: string | null; unsubscribe?: () => void };
+type WsData = { deviceId: string | null; unsubscribe?: () => void; screenBotId?: string; viewer?: Viewer };
 const sockets = new Set<ServerWebSocket<WsData>>();
 
 function serveStatic(url: URL): Response {
@@ -445,13 +462,19 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
     return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": pairCookie(token) } });
   }
 
-  const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws";
+  const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws" || url.pathname === "/screen";
   if (isApi && !authorized(req, ip, viaServe)) return json({ error: "unpaired" }, 401);
   if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
   if (/^\/api\/threads\/[^/]+\/events$/.test(url.pathname) && !ownerOnly(req, ip, viaServe)) return bad("only available on this PC", 403);
 
   if (url.pathname === "/ws") {
     return server.upgrade(req, { data: { deviceId: deviceId(req) } }) ? undefined : new Response("expected websocket", { status: 400 });
+  }
+
+  if (url.pathname === "/screen") {
+    const bot = db.getBot(url.searchParams.get("bot") ?? "");
+    if (!bot) return bad("not found", 404);
+    return server.upgrade(req, { data: { deviceId: deviceId(req), screenBotId: bot.id } }) ? undefined : new Response("expected websocket", { status: 400 });
   }
 
   if (url.pathname.startsWith("/files/")) {
@@ -488,20 +511,30 @@ const heartbeat: ServerEvent = { type: "heartbeat", everyMs: HEARTBEAT_MS };
 const websocket = {
   open(ws: ServerWebSocket<WsData>) {
     sockets.add(ws);
+    if (ws.data.screenBotId) {
+      ws.data.viewer = { botId: ws.data.screenBotId, send: (data) => void ws.send(data), ready: true, pending: null };
+      watchScreen(ws.data.viewer);
+      return;
+    }
     const hello: ServerEvent = {
       type: "hello",
       bots: db.listBots(),
       statuses: getStatuses(),
       threads: db.listThreads(),
       links: getLinks(),
+      screens: listScreens(),
+      chromium: !!findChromium(),
     };
     ws.send(JSON.stringify(hello));
     ws.send(JSON.stringify(heartbeat));
     ws.data.unsubscribe = subscribe((e) => ws.send(JSON.stringify(e)));
   },
-  message() {},
+  message(ws: ServerWebSocket<WsData>, raw: string | Buffer) {
+    if (ws.data.viewer) viewerMessage(ws.data.viewer, String(raw));
+  },
   close(ws: ServerWebSocket<WsData>) {
     sockets.delete(ws);
+    if (ws.data.viewer) return unwatchScreen(ws.data.viewer);
     ws.data.unsubscribe?.();
   },
 };

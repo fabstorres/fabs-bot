@@ -4,7 +4,8 @@ import { mentionedBots } from "../../../shared/mentions";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, isImage } from "../api";
 import { toast } from "sonner";
-import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore } from "../store";
+import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore, usingScreen } from "../store";
+import { useNow } from "../hooks";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, type MentionInputHandle } from "./MentionInput";
 import { MessageList } from "./Messages";
@@ -25,10 +26,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-export function Chat({ thread }: { thread: Thread }) {
+export function Chat({ thread, side = false }: { thread: Thread; side?: boolean }) {
   const bots = useStore((s) => s.bots);
   const messages = useStore((s) => s.messages[thread.id]);
-  const panelOpen = useStore((s) => s.panelOpen);
   const members = thread.memberIds.map((id) => bots.find((b) => b.id === id)).filter((b): b is Bot => !!b);
 
   const working = !!messages?.some((m) => m.status === "streaming");
@@ -36,7 +36,12 @@ export function Chat({ thread }: { thread: Thread }) {
   const title = threadTitle(thread, bots);
 
   return (
-    <section className="flex h-full min-w-0 flex-1 flex-col bg-background" role="region" aria-label={`Thread with ${title}`} data-thread-id={thread.id}>
+    <section
+      className={cn("flex h-full min-w-0 flex-1 flex-col bg-background", side && "md:w-[360px] md:flex-none md:border-l")}
+      role="region"
+      aria-label={`Thread with ${title}`}
+      data-thread-id={thread.id}
+    >
       <header className="flex h-14 flex-none items-center gap-2 px-3 md:px-5">
         <Button variant="ghost" size="icon" className={cn("rounded-full", thread.kind !== "backchannel" && "md:hidden")} onClick={goBack} aria-label="Back">
           <ChevronLeft className="size-5" />
@@ -46,20 +51,7 @@ export function Chat({ thread }: { thread: Thread }) {
           <span className="truncate text-[17px] font-semibold">{title}</span>
           {thread.topic && <Badge variant="secondary">{thread.topic}</Badge>}
         </div>
-        {members.length > 0 && thread.kind !== "backchannel" && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("rounded-full", panelOpen && "bg-accent")}
-            title="Open the bot's desk and routines"
-            id="open-desk"
-            aria-label="Open desk"
-            aria-pressed={panelOpen}
-            onClick={togglePanel}
-          >
-            <Monitor className="size-5" />
-          </Button>
-        )}
+        {members.length > 0 && thread.kind !== "backchannel" && !side && <DeskButton members={members} />}
         <ThreadMenu thread={thread} members={members} />
       </header>
 
@@ -86,6 +78,30 @@ export function Chat({ thread }: { thread: Thread }) {
 
       <Composer thread={thread} members={members} working={working} />
     </section>
+  );
+}
+
+function DeskButton({ members }: { members: Bot[] }) {
+  const panelOpen = useStore((s) => s.panelOpen);
+  const screens = useStore((s) => s.screens);
+  const now = useNow(5_000);
+  const busy = members.find((m) => usingScreen(screens[m.id], now));
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={cn("relative rounded-full", panelOpen && "bg-accent")}
+      title={busy ? `${busy.name} is using its screen` : "Open the bot's desk and routines"}
+      id="open-desk"
+      aria-label="Open desk"
+      aria-pressed={panelOpen}
+      onClick={togglePanel}
+    >
+      <Monitor className="size-5" />
+      {busy && (
+        <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full ring-2 ring-background" style={{ background: busy.color }} role="img" aria-label={`${busy.name} is using its screen`} />
+      )}
+    </Button>
   );
 }
 

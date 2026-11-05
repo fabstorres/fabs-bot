@@ -79,7 +79,20 @@ export type MessagePart =
       tool: string;
       summary: string;
       decision?: "allow" | "deny";
-    };
+    }
+  | { type: "screen"; botId: string; reason: string; outcome?: ScreenOutcome };
+
+export type ScreenOutcome = "done" | "skipped" | "closed";
+
+export interface ScreenState {
+  botId: string;
+  status: "closed" | "loading" | "live";
+  url: string;
+  title: string;
+  controller: "bot" | "user";
+  activeAt: number;
+  updatedAt: number;
+}
 
 export interface Message {
   id: string;
@@ -189,7 +202,7 @@ export interface Link {
 }
 
 export type ServerEvent =
-  | { type: "hello"; bots: Bot[]; statuses: BotStatus[]; threads: Thread[]; links: Link[] }
+  | { type: "hello"; bots: Bot[]; statuses: BotStatus[]; threads: Thread[]; links: Link[]; screens: ScreenState[]; chromium: boolean }
   | { type: "bot"; bot: Bot }
   | { type: "bot.deleted"; botId: string }
   | { type: "status"; status: BotStatus }
@@ -201,6 +214,7 @@ export type ServerEvent =
   | { type: "link.start"; link: Link }
   | { type: "link.end"; linkId: string }
   | { type: "devices" }
+  | { type: "screen"; screen: ScreenState }
   | { type: "heartbeat"; everyMs: number };
 
 export const PC_ICONS = ["monitor", "laptop", "pc-case", "server", "house", "briefcase"] as const;

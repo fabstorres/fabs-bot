@@ -62,10 +62,16 @@ try {
       await page.goto(job.pairUrl, { waitUntil: "load" });
       console.log("paired this browser over the tailnet");
       break;
-    case "click":
-      await pick().click();
+    case "click": {
+      const at = flag("at");
+      if (at) {
+        const box = (await pick().boundingBox()) ?? die("the target has no box to click in");
+        const [x, y] = at.split(",").map(Number);
+        await pick().click({ position: { x: x <= 1 ? x * box.width : x, y: y <= 1 ? y * box.height : y } });
+      } else await pick().click();
       console.log("clicked");
       break;
+    }
     case "fill":
       const secret = { "@pair-link": job.pairUrl, "@tailnet-url": job.tailnetBase };
       const value = flag("value") in secret ? secret[flag("value")] ?? die(`${flag("value")} needs a --tailnet launch`) : flag("value");
