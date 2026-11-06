@@ -44,7 +44,9 @@ export function accentStyle(color: string): CSSProperties | undefined {
   const luminance = 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
   const nearBlack = luminance < 0.01;
   if (nearBlack) return;
-  const darkText = luminance > 0.18;
+  const whiteContrast = 1.05 / (luminance + 0.05);
+  const darkContrast = (luminance + 0.05) / (linear(17 / 255) + 0.05);
+  const darkText = darkContrast > whiteContrast;
   return { "--bubble-user": `rgb(${rgb.join(" ")})`, "--bubble-user-foreground": darkText ? "#111111" : "#ffffff" } as CSSProperties;
 }
 
