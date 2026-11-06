@@ -55,7 +55,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Desktop app](./desktop-app.md): the Electron launcher, opening This PC or a remote PC by pairing link, staying signed in across restarts, the PC menu (switch PCs, change a PC's icon, Manage PCs…), Switch PC, forgetting a PC, and keeping PC pages away from the launcher's controls.
 - [Settings](./settings.md): the gear opens Settings as a dialog over the mounted chat with a section nav, search, a breadcrumb and close on desktop, list → section → back on the phone, and the Appearance theme (System, Light, Dark).
 - [Limits](./limits.md): the gauge next to the gear opens Limits, one page with how much of the Claude Code and Codex usage windows is left, reset times, plan and credits, the not-installed, signed-out and error states, and Refresh.
-- [Plugins](./plugins.md): the Plugins section's table of plugins added in Fabs Bot and inherited from Claude, with logos, the Add menu that skips plugins already in the table, Edit and Remove, filter, search and Rescan.
+- [Plugins](./plugins.md): the Plugins section's table of plugins added in Fabs Bot and inherited from Claude and Codex, with logos, the Add menu that skips plugins already in the table, Edit and Remove, filter, search and Rescan.
 - [Providers](./providers.md): the Providers section that lists the agent CLIs, turns them on or off for the Brain picker, and sets each one's display name, binary path, launch arguments, and environment variables for every bot run.
 - [Server offline](./server-offline.md): the banner above the composer when the PC's server stops answering or the device goes offline, what it blocks, the refused-send toast, recovery, and the first-load notice.
 
