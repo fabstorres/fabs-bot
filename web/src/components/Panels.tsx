@@ -345,7 +345,7 @@ export function PluginsSettings() {
               <TableCell className="whitespace-normal">
                 <div className="flex items-center gap-3">
                   <PluginIcon logo={r.logo} />
-                  <span className="font-medium">{r.name}</span>
+                  <span className="min-w-0 font-medium wrap-anywhere">{r.name}</span>
                 </div>
               </TableCell>
               <TableCell>
