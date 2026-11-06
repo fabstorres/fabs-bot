@@ -11,6 +11,7 @@ import { FileViewer } from "./components/Panels";
 import { ScreenView } from "./components/Screen";
 import { SettingsDialog } from "./components/Settings";
 import { Sidebar } from "./components/Sidebar";
+import { WindowControls } from "./components/WindowControls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -51,9 +52,9 @@ export function App() {
     );
   if (!loaded)
     return (
-      <div className="window-drag grid h-dvh place-items-center">
+      <StartupScreen>
         <BotAvatar shape="drop" color="#FF5A00" size={64} state="thinking" />
-      </div>
+      </StartupScreen>
     );
 
   const showMain = creating || !!thread;
@@ -101,15 +102,24 @@ function Empty() {
   );
 }
 
+function StartupScreen({ children }: { children: ReactNode }) {
+  return (
+    <div className="window-drag relative grid h-dvh place-items-center px-6">
+      <WindowControls className="absolute top-4.5 left-4" />
+      {children}
+    </div>
+  );
+}
+
 function Notice({ title, children, action, ...avatar }: { title: string; children: ReactNode; action?: ReactNode } & Parameters<typeof BotAvatar>[0]) {
   return (
-    <div className="window-drag grid h-dvh place-items-center px-6">
+    <StartupScreen>
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
         <BotAvatar {...avatar} size={112} />
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="text-muted-foreground">{children}</p>
         {action}
       </div>
-    </div>
+    </StartupScreen>
   );
 }

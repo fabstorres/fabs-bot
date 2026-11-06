@@ -1,5 +1,13 @@
 # Custom title bar and sidebar verification
 
+## Startup controls review fix
+
+Loading, unpaired and startup offline screens now share a small wrapper with the existing window controls at `(16,18,104,32)`, matching the sidebar. Buttons remain `no-drag` inside the draggable screen; the main layout is unchanged.
+
+Verified with `verify-fabs-bot`, owned home `/tmp/fabs-startup-controls-1106`, run `startup-controls-run-1106`, ports 4936/4937, and Electron in private D-Bus/virtual KWin with `ELECTRON_RUN_AS_NODE` cleared. Doctor confirmed isolation, fresh builds and owned CDP. With the real isolated server stopped before the initial host response, compositor pointer input passed minimize, maximize, restore and close; main-process readback confirmed the states and Close removed the window and CDP. Loading and a real unpaired device matched the sidebar geometry. Browser widths 1440 and 430 showed no controls or drag behavior in main/loading/offline/unpaired states. Native Windows/macOS remain unverified.
+
+[Masked offline screenshot](27-startup-offline.png) · [ARIA snapshot](27-startup-offline.aria.txt). Privacy scans and visual inspection passed; private processes were cleaned up.
+
 ## Sidebar window controls follow-up
 
 Linux and Windows now use a frameless PC window with shadcn ghost icon buttons at the top left of the sidebar: Minimize, Maximize/Restore, Close. Limits and New bot remain on the right. macOS keeps its native traffic lights. The native Electron overlay and its theme synchronization are removed, along with every `window-controls-space` reservation.
