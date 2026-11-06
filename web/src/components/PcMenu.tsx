@@ -84,7 +84,7 @@ export function PcMenu() {
                 <PcGlyph icon={current.icon} /> Change icon
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <DropdownMenuRadioGroup value={current.icon ?? "monitor"} onValueChange={(icon) => switcher.setIcon(current.id, icon as PcIcon).then(saved.reload)}>
+                <DropdownMenuRadioGroup value={current.icon ?? "monitor"} onValueChange={(icon) => switcher?.setIcon(current.id, icon as PcIcon).then(saved.reload)}>
                   {PC_ICONS.map((icon) => (
                     <DropdownMenuRadioItem key={icon} value={icon}>
                       <PcGlyph icon={icon} /> {ICONS[icon].label}
@@ -93,7 +93,7 @@ export function PcMenu() {
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onSelect={() => void switcher.manage()}>Manage PCs…</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void switcher?.manage()}>Manage PCs…</DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>
