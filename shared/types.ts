@@ -141,7 +141,14 @@ export interface ProviderSettings {
   displayName: string;
   binaryPath: string;
   launchArgs: string;
+  defaultModel: string;
   env: Record<string, string>;
+}
+
+export interface ModelOption {
+  id: string;
+  name: string;
+  legacy?: boolean;
 }
 
 export interface ProviderInfo {
@@ -153,7 +160,7 @@ export interface ProviderInfo {
   version: string;
   supportsTools: boolean;
   note: string;
-  models: string[];
+  models: ModelOption[];
   settings: ProviderSettings;
   checkedAt: number;
 }

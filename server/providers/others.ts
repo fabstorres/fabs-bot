@@ -16,7 +16,11 @@ export const cursor: Provider = {
   supportsTools: false,
   resumable: true,
   note: "Needs `cursor-agent login` once. App tools (messaging bots, files) aren't wired in yet.",
-  models: ["", "auto", "sonnet-4.5", "gpt-5"],
+  models: [
+    { id: "auto", name: "Auto" },
+    { id: "sonnet-4.5", name: "Sonnet 4.5" },
+    { id: "gpt-5", name: "GPT-5" },
+  ],
 
   async run(o, emit) {
     const cmd = [o.launch.bin, ...o.launch.args, "-p", "--output-format", "stream-json", "--trust", "--workspace", o.cwd];
@@ -70,7 +74,10 @@ export const opencode: Provider = {
   supportsTools: false,
   resumable: true,
   note: "Model format is provider/model. App tools aren't wired in yet.",
-  models: ["", "anthropic/claude-sonnet-5-5", "openai/gpt-5.5"],
+  models: [
+    { id: "anthropic/claude-sonnet-5-5", name: "Claude Sonnet 5.5" },
+    { id: "openai/gpt-5.5", name: "GPT-5.5" },
+  ],
 
   async run(o, emit) {
     const cmd = [o.launch.bin, "run", ...o.launch.args, "--format", "json", "--dir", o.cwd];
@@ -119,7 +126,10 @@ export const gemini: Provider = {
   supportsTools: false,
   resumable: false,
   note: "Plain-text mode: no session resume, so each turn re-sends the thread.",
-  models: ["", "gemini-2.5-pro", "gemini-2.5-flash"],
+  models: [
+    { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
+    { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+  ],
 
   async run(o, emit) {
     const cmd = [o.launch.bin, ...o.launch.args];

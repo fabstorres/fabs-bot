@@ -7,10 +7,12 @@ import { useLoad } from "../hooks";
 import { closeModal, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { Modal } from "./Modal";
+import { ModelPicker } from "./ModelPicker";
 import { providerName } from "./Providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { onRadioGroupKeyDown, radioTabIndex } from "@/lib/radio";
@@ -78,7 +80,7 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
   const provider = providers.find((p) => p.id === draft.provider);
   const brains = providers.length
     ? providers.filter((p) => p.settings.enabled || p.id === existing.provider)
-    : [{ id: "claude", label: "Claude Code", installed: true, settings: { displayName: "" } } as ProviderInfo];
+    : [{ id: "claude", label: "Claude Code", installed: true, settings: { displayName: "", defaultModel: "" } } as ProviderInfo];
 
   async function save() {
     if (!draft.name.trim()) return setError("Give your bot a name.");
@@ -161,7 +163,7 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
                   "flex flex-col rounded-xl border px-3 py-2 text-left transition-colors enabled:hover:bg-muted disabled:opacity-45",
                   draft.provider === p.id && "border-foreground bg-muted",
                 )}
-                onClick={() => set({ provider: p.id, model: "" })}
+                onClick={() => p.id !== draft.provider && set({ provider: p.id, model: p.settings.defaultModel })}
                 disabled={!p.installed}
                 title={p.installed ? p.version : "Not installed"}
               >
@@ -174,11 +176,12 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Model" hint="blank = CLI default">
-            <Input list="models" aria-label="Model" value={draft.model} onChange={(e) => set({ model: e.target.value })} placeholder="default" />
-            <datalist id="models">
-              {provider?.models.filter(Boolean).map((m) => <option key={m} value={m} />)}
-            </datalist>
+          <Field label="Model">
+            {provider ? (
+              <ModelPicker key={provider.id} label="Model" models={provider.models} value={draft.model} onChange={(model) => set({ model })} />
+            ) : (
+              <Skeleton className="h-9 w-full" />
+            )}
           </Field>
           <Field label="Desk folder" hint="where it works">
             <Input aria-label="Desk folder" value={draft.cwd} onChange={(e) => set({ cwd: e.target.value })} placeholder="~/FabsBot/<name>" />
