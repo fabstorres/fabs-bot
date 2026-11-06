@@ -132,29 +132,29 @@ export const claude: Provider = {
 export interface InheritedServer {
   name: string;
   status: string;
+  kind?: "http" | "stdio";
 }
 
-/**
- * See which MCP servers / claude.ai connectors a Claude bot inherits from your own setup.
- * Starts claude and stops it as soon as it reports its init event, before any model call.
- */
+function mcpStatus(text: string) {
+  if (/auth/i.test(text)) return "needs-auth";
+  if (/fail/i.test(text)) return "failed";
+  if (/connected/i.test(text)) return "connected";
+  return text.replace(/^[^A-Za-z]+/, "").toLowerCase();
+}
+
 export async function scanClaudeInventory(cwd: string, launch: Launch): Promise<InheritedServer[]> {
   const ctrl = new AbortController();
-  let servers: InheritedServer[] = [];
+  const servers: InheritedServer[] = [];
   const timer = setTimeout(() => ctrl.abort(), 30_000);
   try {
     await spawnLines({
-      cmd: [launch.bin, ...launch.args, "-p", "--output-format", "stream-json", "--verbose", "--model", "haiku"],
+      cmd: [launch.bin, ...launch.args, "mcp", "list"],
       cwd,
       env: launch.env,
-      stdin: "ok",
       signal: ctrl.signal,
       onLine(line) {
-        const ev = parseJson(line);
-        if (ev?.type === "system" && ev.subtype === "init") {
-          servers = (ev.mcp_servers ?? []).map((s: any) => ({ name: String(s.name), status: String(s.status) }));
-          ctrl.abort();
-        }
+        const m = line.match(/^(.+?): (.+) - (.+)$/);
+        if (m) servers.push({ name: m[1]!, status: mcpStatus(m[3]!), kind: /^https?:\/\//.test(m[2]!) ? "http" : "stdio" });
       },
     });
   } finally {
