@@ -303,9 +303,9 @@ const commands: Record<string, () => Promise<void>> = {
     const has = (id: string) => prov.some((p) => p.id === id && p.installed);
     const existing = (await api(s, "GET", "/api/bots")).data as { id: string; name: string }[];
     const fixtures = [
-      { name: "Chief", role: "Coordinates the team", shape: "drop", color: "#FF5A00", provider: "claude", model: "haiku" },
-      { name: "Design", role: "Proposes UI and copy", shape: "blob", color: "#111111", provider: "claude", model: "haiku" },
-      { name: "Careful", role: "Asks before acting", shape: "egg", color: "#7B3FF2", provider: "claude", model: "haiku", autonomy: "ask" },
+      { name: "Chief", role: "Coordinates the team", shape: "drop", color: "#FF5A00", provider: "claude", model: "claude-haiku-5-5" },
+      { name: "Design", role: "Proposes UI and copy", shape: "blob", color: "#111111", provider: "claude", model: "claude-haiku-5-5" },
+      { name: "Careful", role: "Asks before acting", shape: "egg", color: "#7B3FF2", provider: "claude", model: "claude-haiku-5-5", autonomy: "ask" },
       { name: "Engineer", role: "Builds code", shape: "hex", color: "#1478FF", provider: "codex", model: "" },
     ].filter((f) => has(f.provider));
     const out: Record<string, string> = {};
@@ -653,7 +653,7 @@ const commands: Record<string, () => Promise<void>> = {
 
   launch [--port N] [--tailnet] [--tailscale-shim] [--no-build] [--run-id ID]   build + start; prints url, pid, artifacts dir
   doctor                                                       read-only health check (exit 1 on FAIL)
-  seed                                                         create fixture bots (Claude haiku; Codex if installed)
+  seed                                                         create fixture bots (Claude Haiku 5.5; Codex if installed)
   api <METHOD> <path> [json]                                   call the instance's HTTP API
   threads | thread <id>                                        list threads / dump one thread compactly
   wait <threadId> --for idle|blocked|question|approval|screen|file|text:<s> [--timeout 180]   idle/blocked exit 1 when the turn ends otherwise

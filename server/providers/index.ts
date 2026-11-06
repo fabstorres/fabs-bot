@@ -11,7 +11,7 @@ export const providers: Record<ProviderId, Provider> = { claude, codex, cursor, 
 
 export const isProviderId = (id: string): id is ProviderId => Object.hasOwn(providers, id);
 
-const DEFAULT_SETTINGS: ProviderSettings = { enabled: true, displayName: "", binaryPath: "", launchArgs: "", env: {} };
+const DEFAULT_SETTINGS: ProviderSettings = { enabled: true, displayName: "", binaryPath: "", launchArgs: "", defaultModel: "", env: {} };
 
 export function providerSettings(id: ProviderId): ProviderSettings {
   const saved = getSetting(`provider.${id}`);
@@ -85,7 +85,7 @@ export async function providerInfo(refresh = false): Promise<ProviderInfo[]> {
 export async function updateProvider(id: ProviderId, patch: Partial<ProviderSettings>): Promise<ProviderInfo> {
   const next = providerSettings(id);
   if (typeof patch.enabled === "boolean") next.enabled = patch.enabled;
-  for (const key of ["displayName", "binaryPath", "launchArgs"] as const) {
+  for (const key of ["displayName", "binaryPath", "launchArgs", "defaultModel"] as const) {
     const value = patch[key];
     if (typeof value === "string") next[key] = value.trim();
   }

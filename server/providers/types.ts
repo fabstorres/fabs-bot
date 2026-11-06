@@ -1,4 +1,4 @@
-import type { Bot, Connector } from "../../shared/types";
+import type { Bot, Connector, ModelOption } from "../../shared/types";
 
 /** Normalized events every CLI adapter emits. `text` appends to the current text part; `text.break` starts a new bubble. */
 export type ProviderEvent =
@@ -39,6 +39,6 @@ export interface Provider {
   /** Whether the CLI keeps its own session, so we only send new messages on later turns. */
   resumable: boolean;
   note: string;
-  models: string[];
+  models: ModelOption[];
   run(opts: RunOptions, emit: (e: ProviderEvent) => void): Promise<void>;
 }

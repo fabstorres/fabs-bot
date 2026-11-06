@@ -13,7 +13,18 @@ export const codex: Provider = {
   supportsTools: true,
   resumable: true,
   note: "\"Ask\" autonomy runs Codex sandboxed to its workspace (Codex can't relay approvals headlessly).",
-  models: ["", "gpt-5.5", "gpt-5.5-codex", "gpt-5.4-mini"],
+  models: [
+    { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
+    { id: "gpt-6-astra", name: "GPT-6 Astra" },
+    { id: "gpt-6-luna", name: "GPT-6 Luna" },
+    { id: "gpt-6-sol", name: "GPT-6 Sol", legacy: true },
+    { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", legacy: true },
+    { id: "gpt-5.6-terra", name: "GPT-5.6 Terra", legacy: true },
+    { id: "gpt-5.6-luna", name: "GPT-5.6 Luna", legacy: true },
+    { id: "gpt-5.5", name: "GPT-5.5", legacy: true },
+    { id: "gpt-5.4-mini", name: "GPT-5.4 Mini", legacy: true },
+    { id: "gpt-5.3-codex-spark", name: "GPT-5.3 Codex Spark", legacy: true },
+  ],
 
   async run(o, emit) {
     const cfg: string[] = [

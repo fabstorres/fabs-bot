@@ -11,7 +11,7 @@ import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { realPathWithin, within } from "./paths";
 import { bringInBot, directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
-import { isProviderId, launchFor, providerInfo, updateProvider } from "./providers";
+import { isProviderId, launchFor, providerInfo, providerSettings, updateProvider } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { scanCodexInventory } from "./providers/codex";
 import { isLimitsProviderId, providerLimits } from "./providers/limits";
@@ -131,7 +131,8 @@ function saveAndPublish(next: Omit<Bot, "createdAt"> & { createdAt?: number }): 
 }
 
 function createBot(input: Partial<Bot>): Bot {
-  const bot = saveAndPublish(sanitizeBot(input));
+  const draft = sanitizeBot(input);
+  const bot = saveAndPublish({ ...draft, model: draft.model || providerSettings(draft.provider).defaultModel });
   greet(bot);
   return bot;
 }

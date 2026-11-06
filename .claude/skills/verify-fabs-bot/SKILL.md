@@ -55,11 +55,11 @@ Run it first, after any surprising result, and after any failed drive. If it fai
 Setup goes through the API; behavior goes through the UI. Seed fixtures once:
 
 ```sh
-$C seed      # Chief, Design (Claude haiku), Careful (Claude haiku, "ask" autonomy), Engineer (Codex, if installed)
+$C seed      # Chief, Design (Claude Haiku 5.5), Careful (Claude Haiku 5.5, "ask" autonomy), Engineer (Codex, if installed)
              # alongside the starter bot every fresh install gets: Chief of Staff
 ```
 
-Then drive the browser. Every command connects, acts, and disconnects; the page, cookies, and viewport persist between commands.
+Then drive the browser. Every command connects, acts, and disconnects; the page, cookies, and viewport persist between commands. At 430x932 each command re-applies the viewport, which fires a window resize and closes any open select list, so capture open lists at 1440x900.
 
 ```sh
 $C browser start [--viewport 1440x900]      # 430x932 for the phone layout; restart to switch
@@ -93,8 +93,8 @@ Targets are ARIA roles and names that the app sets on purpose. Prefer them over 
 | bot screen | desk tile `--role region --name "<Bot>'s screen"` with `"Open <Bot>'s screen"` (disabled while nothing is open); header dot `--role img --name "<Bot> is using its screen"` inside `"Open desk"`; expanded view `--role region --name "<Bot>'s screen"` with `"Back to desk"`, `--label "Address"`, a `--role status` chip (`<Bot> is using it` / `Idle` / `You` / `Nothing open`), `"Take control"` / `"Hand back to <Bot>"`, `"Close screen"`, the page `canvas` (click with `--at x,y`) and `--label "Type on <Bot>'s screen"` for typing; card `--role group --name "Screen: <reason>"` with `Take over` / `I'm done` / `Skip` |
 | desk panel | `--role complementary --name "<Bot>'s desk"`; files `--role group --name "Desk files"`; routines `--role group --name "Routine <name>"`; pager `"Show desk"` / `"Show settings"`; Settings page inputs `Name`, `Label (optional)`, `Description` and `"Edit <Bot>"` (More settings); `"Close desk"`; group threads add `"Show <Bot>"` |
 | files | chip `--role button --name "File <name>"`; viewer `--role dialog --name "<name>"` |
-| bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Model`, `Desk folder`; `--role radio` in groups `Shape` / `Color` / `Brain` / `Autonomy`; `--role switch --name "Team lead"` |
-| Providers section | `--role region --name "Providers"`; list `--role group --name "Agent CLIs"` with a button per CLI (`"<Name> v<version> <status>"`) and `--role switch --name "Enable <Name>"`; details `--role region --name "<Name> settings"` with `--label "Display name"`, `"Binary path"`, `"Launch arguments"`; `--role group --name "Environment variables"` with `"Add variable"`, `--label "Variable <n> name"` / `"Variable <n> value"`, `"Remove <NAME>"`; `"Refresh"` (reads `Checking…` while the background check runs) |
+| bot editor | dialog `"Edit <Name>"`; inputs by label: `Name`, `Role`, `How it works`, `Desk folder`; model picker `--role combobox --name "Model"` (options `--role option` in groups `Recent` / `Legacy`, plus `CLI default` and `Custom model…`, which shows `--label "Model ID"`); `--role radio` in groups `Shape` / `Color` / `Brain` / `Autonomy`; `--role switch --name "Team lead"` |
+| Providers section | `--role region --name "Providers"`; list `--role group --name "Agent CLIs"` with a button per CLI (`"<Name> v<version> <status>"`) and `--role switch --name "Enable <Name>"`; details `--role region --name "<Name> settings"` with `--label "Display name"`, `"Binary path"`, `"Launch arguments"`; `--role group --name "Environment variables"` with `"Add variable"`, `--label "Variable <n> name"` / `"Variable <n> value"`, `"Remove <NAME>"`; `--role combobox --name "Default model"` (options `--role option` in groups `Recent` / `Legacy`, plus `CLI default` and `Custom model…`, which shows `--label "Default model ID"`); `"Refresh"` (reads `Checking…` while the background check runs) |
 | This PC section | `--role group --name "Pair your phone or laptop"` with `"Pair a device"`, then `"New link"` / `"Copy pairing link"`; `--role region --name "Paired devices"` with `"Remove <label>"` per device (`This device` marks your own); `--role switch --name "Tailscale HTTPS"` inside `--role group --name "Tailscale HTTPS"`; version badge `--text "v<version>"` beside the PC name |
 | desktop launcher | `--role region --name "PCs"`; rows `--role group --name "PC <name>"` with `"Open"` / `"Forget <name>"`; form `--role form --name "Add a PC"` with `--label "Pairing link or address"`, `--label "Name (optional)"`, `"Connect"`; errors `--role alert` |
 

@@ -3,6 +3,7 @@ import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { ENV_NAME, type ProviderId, type ProviderInfo, type ProviderSettings } from "../../../shared/types";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
+import { ModelPicker } from "./ModelPicker";
 import { ProviderIcon } from "./ProviderIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,16 +214,15 @@ function ProviderDetail({ provider: p, onSave }: { provider: ProviderInfo; onSav
       <Heading>Environment</Heading>
       <EnvVariables env={p.settings.env} onSave={(env) => commit({ env })} />
       <Heading>Models</Heading>
-      <div className="px-4 py-3">
-        <p className="text-xs text-muted-foreground">Suggested in the bot editor. A bot can use any model the CLI accepts.</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {p.models.filter(Boolean).map((m) => (
-            <span key={m} className="rounded-full bg-muted px-2.5 py-1 font-mono text-xs">
-              {m}
-            </span>
-          ))}
-        </div>
-      </div>
+      <Row title="Default model" htmlFor="provider-defaultModel" description={`New ${name} bots start on this model. Change it per bot in its settings.`}>
+        <ModelPicker
+          id="provider-defaultModel"
+          label="Default model"
+          models={p.models}
+          value={p.settings.defaultModel}
+          onChange={(defaultModel) => commit({ defaultModel })}
+        />
+      </Row>
     </section>
   );
 }
