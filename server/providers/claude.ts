@@ -133,6 +133,7 @@ export interface InheritedServer {
   name: string;
   status: string;
   kind?: "http" | "stdio";
+  source: "claude" | "codex";
 }
 
 function mcpStatus(text: string) {
@@ -154,7 +155,7 @@ export async function scanClaudeInventory(cwd: string, launch: Launch): Promise<
       signal: ctrl.signal,
       onLine(line) {
         const m = line.match(/^(.+?): (.+) - (.+)$/);
-        if (m) servers.push({ name: m[1]!, status: mcpStatus(m[3]!), kind: /^https?:\/\//.test(m[2]!) ? "http" : "stdio" });
+        if (m) servers.push({ name: m[1]!, status: mcpStatus(m[3]!), kind: /^https?:\/\//.test(m[2]!) ? "http" : "stdio", source: "claude" });
       },
     });
   } finally {

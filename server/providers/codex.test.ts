@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { readableError, toolOutcome } from "./codex";
+import { codexMcpServers, readableError, toolOutcome } from "./codex";
 
 test("unwraps the backend error body Codex passes through as the message", () => {
   const message = "The 'gpt-6-sol' model is not supported when using Codex with a ChatGPT account.";
@@ -18,4 +18,17 @@ test("a failed MCP call carries the tool's own rejection text, which Codex puts 
     status: "failed",
   };
   expect(toolOutcome(item)).toEqual({ error: true, summary: "Write a kickoff: the context and who owns what." });
+});
+
+test("codex mcp list reports enabled and auth separately, so a switched-off server reads as disabled even when it is also signed out", () => {
+  const list = [
+    { name: "linear", enabled: false, transport: { type: "streamable_http", url: "https://mcp.linear.app/mcp" }, auth_status: "not_logged_in" },
+    { name: "notion", enabled: true, transport: { type: "streamable_http", url: "https://mcp.notion.com/mcp" }, auth_status: "not_logged_in" },
+    { name: "repl", enabled: true, transport: { type: "stdio", command: "node_repl" }, auth_status: "unsupported" },
+  ];
+  expect(codexMcpServers(list)).toEqual([
+    { name: "linear", status: "disabled", kind: "http", source: "codex" },
+    { name: "notion", status: "needs-auth", kind: "http", source: "codex" },
+    { name: "repl", status: "enabled", kind: "stdio", source: "codex" },
+  ]);
 });

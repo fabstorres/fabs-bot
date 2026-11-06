@@ -222,7 +222,7 @@ function Editor({ existing, nameRef }: { existing: Bot; nameRef: RefObject<HTMLI
 
         <Field label="Plugins">
           {connectors.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No extra plugins yet. Claude bots already inherit your Claude Code MCP servers and claude.ai connectors.</p>
+            <p className="text-xs text-muted-foreground">No extra plugins yet. Claude and Codex bots already use the MCP servers set up in their own CLI.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {connectors.map((c) => {

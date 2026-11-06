@@ -84,7 +84,7 @@ phone / laptop ──tailnet──▶ Bun server ──spawns per turn──▶ 
   - *Just do it*: Claude runs in bypass mode; Codex runs without approvals or sandbox.
   - *Ask me before acting*: Claude's permission prompts become Allow/Deny cards on your phone (`--permission-prompt-tool`), while reads stay free. Codex runs sandboxed to its workspace.
 - **Plugins (connectors).**
-  - Claude bots inherit your existing Claude Code MCP servers and claude.ai connectors, including Notion and Google Drive. Use *Plugins → Scan* to list them.
+  - Claude and Codex bots inherit the MCP servers already set up in their own CLI: Claude Code's servers and claude.ai connectors (Notion, Google Drive, …), and the servers in Codex's `~/.codex/config.toml`. *Settings → Plugins* lists both, and *Rescan* reads them again.
   - Connectors you add in Fabs Bot (Notion, Google Drive, GitHub, Browser, or any custom MCP server) are attached per bot and passed to each run.
 - **Routines.** Cron schedules run a bot on a prompt in its own thread. Bots can also schedule routines themselves.
 
