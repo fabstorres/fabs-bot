@@ -13,6 +13,7 @@ import { realPathWithin, within } from "./paths";
 import { bringInBot, directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { isProviderId, launchFor, providerInfo, updateProvider } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
+import { scanCodexInventory } from "./providers/codex";
 import { isLimitsProviderId, providerLimits } from "./providers/limits";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
 import { closeAllScreens, findChromium, forgetScreen, listScreens, releaseScreen, unwatchScreen, viewerMessage, watchScreen, type Viewer } from "./screen";
@@ -411,11 +412,14 @@ route("DELETE", "/api/connectors/:id", (_r, p) => {
   return json({ ok: true });
 });
 route("GET", "/api/connectors/inherited", async (_r, _p, url) => {
-  const cached = db.getSetting("claude.inherited");
+  const cached = db.getSetting("plugins.inherited");
   if (cached && !url.searchParams.has("refresh")) return json(JSON.parse(cached));
-  const servers = await scanClaudeInventory(SHARED_DIR, launchFor("claude")).catch(() => []);
-  const value = { scannedAt: Date.now(), servers };
-  db.setSetting("claude.inherited", JSON.stringify(value));
+  const scans = await Promise.all([
+    scanClaudeInventory(SHARED_DIR, launchFor("claude")).catch(() => []),
+    scanCodexInventory(SHARED_DIR, launchFor("codex")).catch(() => []),
+  ]);
+  const value = { scannedAt: Date.now(), servers: scans.flat() };
+  db.setSetting("plugins.inherited", JSON.stringify(value));
   return json(value);
 });
 

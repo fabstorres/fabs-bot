@@ -1,5 +1,7 @@
 import { clip, parseJson, spawnLines, summarizeToolInput } from "./spawn";
 import type { Provider } from "./types";
+import type { Launch } from "./types";
+import type { InheritedServer } from "./claude";
 
 /** Codex `-c key=value` values are parsed as TOML; JSON strings are valid TOML basic strings. */
 const toml = (v: unknown) => JSON.stringify(v);
@@ -133,4 +135,34 @@ function describeItem(it: any): { name: string; summary: string } | null {
     default:
       return null;
   }
+}
+
+const CODEX_TRANSPORT: Record<string, InheritedServer["kind"]> = { stdio: "stdio", streamable_http: "http" };
+
+export function codexMcpServers(list: unknown): InheritedServer[] {
+  if (!Array.isArray(list)) return [];
+  return list.map((s) => ({
+    name: String(s.name),
+    status: s.enabled === false ? "disabled" : s.auth_status === "not_logged_in" ? "needs-auth" : "enabled",
+    kind: CODEX_TRANSPORT[s.transport?.type],
+    source: "codex",
+  }));
+}
+
+export async function scanCodexInventory(cwd: string, launch: Launch): Promise<InheritedServer[]> {
+  const ctrl = new AbortController();
+  const lines: string[] = [];
+  const timer = setTimeout(() => ctrl.abort(), 30_000);
+  try {
+    await spawnLines({
+      cmd: [launch.bin, ...launch.args, "mcp", "list", "--json"],
+      cwd,
+      env: launch.env,
+      signal: ctrl.signal,
+      onLine: (line) => lines.push(line),
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+  return codexMcpServers(parseJson(lines.join("\n")));
 }
