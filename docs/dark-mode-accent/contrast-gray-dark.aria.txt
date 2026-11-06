@@ -1,0 +1,38 @@
+# http://127.0.0.1:4950/  viewport=1440x900
+- complementary "Bots":
+  - heading "Fabs Bot" [level=1]
+  - button "PC <pc>": <pc>
+  - button "Settings"
+  - button "Limits"
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - 'button "Thread: Neutral group"': Neutral group 10:28 PM
+    - button "Bot Group partner":
+      - text: Group partner 10:28 PM Hey, I'm Group partner. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Contrast": Contrast 10:26 PM Hey, I'm Contrast. What's the main thing you want me on?
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 10:25 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+- main:
+  - region "Thread with Contrast":
+    - text: Contrast
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Contrast. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops"
+        - button "B A specific project"
+        - button "C Research and writing"
+        - button "D Something else"
+      - paragraph: Seeded user message for accent contrast verification. No bot response requested.
+    - textbox "Message":
+      - paragraph: Draft for checking Send color; not submitted.
+    - button "Attach"
+    - button "Dictate"
+    - button "Send"
+- region "Notifications alt+T"

@@ -37,31 +37,31 @@
 }
 
 .dark {
-  --background: #232323;
+  --background: #131313;
   --foreground: #ececec;
-  --card: #232323;
+  --card: #131313;
   --card-foreground: #ececec;
-  --popover: #2a2a2a;
+  --popover: #1c1c1c;
   --popover-foreground: #ececec;
   --primary: #f0f0f0;
-  --primary-foreground: #151514;
-  --secondary: #323232;
+  --primary-foreground: #131313;
+  --secondary: #222222;
   --secondary-foreground: #ececec;
-  --muted: #2b2b2b;
+  --muted: #262626;
   --muted-foreground: #8f8f8f;
-  --accent: #333333;
+  --accent: #262626;
   --accent-foreground: #ececec;
   --destructive: #ff5c50;
-  --border: #3e3e3e;
-  --input: #404040;
+  --border: #2a2a2a;
+  --input: #303030;
   --ring: #6b6b6b;
-  --sidebar: #151514;
+  --sidebar: #0e0e0e;
   --sidebar-foreground: #ececec;
-  --sidebar-accent: #262626;
-  --sidebar-border: #262626;
-  --bubble: #2e2e2e;
+  --sidebar-accent: #222222;
+  --sidebar-border: #1c1c1c;
+  --bubble: #202020;
   --bubble-user: #ececec;
-  --bubble-user-foreground: #151514;
+  --bubble-user-foreground: #131313;
   color-scheme: dark;
 }
 
@@ -200,6 +200,9 @@
   .bubble-user th,
   .bubble-user td {
     @apply dark:border-black/10;
+  }
+  [data-accent] .bubble-user a {
+    @apply text-current underline;
   }
 }
 

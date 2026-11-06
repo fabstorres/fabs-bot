@@ -1,6 +1,6 @@
 # Settings
 
-The gear at the top of the sidebar opens Settings in a shadcn dialog over the current chat. On desktop it opens on Providers, with a left nav (`Providers`, `Plugins`, `This PC`, `Appearance`), a search box that filters the nav, a `Settings / <Section>` breadcrumb, and a close button that returns to the chat that was open. At 430px the gear opens the section list, each section opens inside the dialog with `Back` to the list. Close, Escape, or clicking the overlay dismisses Settings without adding browser-history entries. The chat and draft stay mounted underneath. Every section acts on the PC the window is connected to, except Appearance: its theme is saved on this device only.
+The gear at the top of the sidebar opens Settings in a shadcn dialog over the current chat. On desktop it opens on Providers, with a left nav (`Providers`, `Plugins`, `This PC`, `Appearance`), a search box that filters the nav, a `Settings / <Section>` breadcrumb, and a close button that returns to the chat that was open. At 430px the gear opens the section list, each section opens inside the dialog with `Back` to the list. Close, Escape, or clicking the overlay dismisses Settings without adding browser-history entries. The chat and draft stay mounted underneath. Every section acts on the PC the window is connected to, except Appearance: its theme and accent color are saved on this device only.
 
 ## Sub-features
 
@@ -9,7 +9,8 @@ The gear at the top of the sidebar opens Settings in a shadcn dialog over the cu
 - `settings-search` filters the nav by section name or by what's inside (`tailscale` finds This PC), and says when nothing matches.
 - `settings-close` returns to the chat that was open in one step, however many sections were visited.
 - `settings-phone` shows the section list at 430px, opens a section inside the dialog with `Back`, and returns to the list. Close returns to the bot list.
-- `settings-theme` switches the whole app between `System`, `Light`, and `Dark` at once, keeps the choice across reloads without a light flash, and with `System` follows the device setting live.
+- `settings-theme` switches the whole app between `System`, `Light`, and `Dark` at once, keeps the choice across reloads without a light flash, and with `System` follows the device setting live. Dark is near-black, with the sidebar a shade darker than the chat.
+- `settings-accent` picks the accent color from two swatches, `Neutral` (the default) and `Bot color`. Bot color paints your message bubbles and the `Send`/`Stop` button in each 1:1 chat with that bot's color, in light and dark. Text on it stays readable: white on deep colors, dark on light ones, and a near-black bot keeps the neutral bubble. Group chats stay neutral. The choice survives reloads.
 - `settings-focus` moves keyboard focus with each step: the section heading when a section opens from outside it, the `Settings` heading on the phone list, the section you came from when going back to the list, and the gear once Settings closes. Tab and Shift+Tab stay inside the dialog.
 
 ## How to get to it (user POV)
@@ -30,6 +31,8 @@ Preconditions:
 
 - **Theme.** Click `Appearance`, then `--role combobox --name "Theme"` (reads `System` on a fresh browser), `$C browser wait --role option --name "Dark"`, and click it. `$C browser eval "[document.documentElement.className, localStorage.getItem('theme')]"` reads `["dark","dark"]` and the page turns dark at once. Close Settings: the chat is dark too. `$C browser open /` keeps it dark. Pick `System` to go back: `localStorage` holds no `theme` and the page follows the browser, which is light in the harness. Capture `settings/theme-dark.aria.txt` plus `.png` of the chat.
 
+- **Accent.** Send `Bot Chief` a short message first, so one of your bubbles is on screen. In `Appearance`, `--role radiogroup --name "Accent color"` holds `--role radio` `Neutral` (checked on a fresh browser) and `Bot color`. Click `--role radio --name "Bot color"`: it is checked and `$C browser eval "localStorage.getItem('accent')"` reads `bot`. `$C browser press --role radio --name "Bot color" --key ArrowLeft` moves the choice back to `Neutral`, so press ArrowRight to return. Close Settings: in Chief's chat, `$C browser eval "[...document.querySelectorAll('.bubble-user')].map(b => getComputedStyle(b).backgroundColor + ' ' + getComputedStyle(b).color)"` reads `rgb(204, 72, 0) rgb(255, 255, 255)` (Chief's orange, deepened, with white text), and `--role button --name "Send"` has the same background. Links in your bubbles are white and underlined. `Design` (`#111111`) keeps the neutral bubble, and a group thread's `Send` stays neutral. `$C browser open /` keeps the choice, and `Neutral` removes `accent` from localStorage. Repeat in Light. Capture `settings/accent-bot-color.aria.txt` plus `.png` of the chat.
+
 - **Focus.** After each step above, `$C browser eval "[document.activeElement.tagName, document.activeElement.id, document.activeElement.textContent.trim()]"` reads: on desktop, `H2 settings-section-title Providers` after opening, `BUTTON settings-nav-plugins Plugins` after clicking Plugins, and `BUTTON open-settings` after `Close settings` or Escape. Tab and Shift+Tab must stay inside Settings while it is open. At 430px: `H1 settings-title Settings` on the list, `H2 settings-section-title Providers` in the section, `BUTTON settings-nav-providers Providers` after `Back`, and `BUTTON open-settings` after `Close settings` to the bot list.
 
 ## Gotchas
@@ -39,4 +42,6 @@ Preconditions:
 - A reload closes Settings and lands in the latest chat on desktop or the bot list on the phone.
 - At 430px the Theme dropdown closes before the next command can pick an option: each command re-pins the viewport, and the resize closes the menu. Pick by typing on the closed select instead: `$C browser press --role combobox --name "Theme" --key d` picks `Dark` (`l` Light, `s` System).
 - The harness can't switch the browser's own light/dark setting, so `System` following the device live needs one CDP session that calls `page.emulateMedia({ colorScheme: "dark" })` and reads `<html>` while still connected. The override ends when that session disconnects.
+- Bot color shows only on your own bubbles, so a chat that holds just the greeting card looks the same under both accents. Send a message first.
+- To see dark text on a light bot color, set the bot's color first with `$C api PUT /api/bots/<id> '{"color":"#FF9500"}'` and reload. The bubble reads `rgb(204, 119, 0)` with `rgb(17, 17, 17)` text.
 - `This PC` also names the PC menu in the desktop app (`PC This PC`). The dialog makes the sidebar inert, so `--role button --name "This PC"` is unambiguous there.
