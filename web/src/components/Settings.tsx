@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Monitor, Palette, Plug, Search, SquareTerminal, X, type LucideIcon } from "lucide-react";
 import { closeSettings, openSettingsSection, type SettingsSection } from "../store";
-import { setTheme, useTheme, type Theme } from "../theme";
+import { setAccent, setTheme, useTheme, type Accent, type Theme } from "../theme";
+import { COLORS } from "../../../shared/templates";
 import { PluginsSettings, ThisPcSettings } from "./Panels";
 import { ProvidersSettings } from "./Providers";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
@@ -9,13 +10,14 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { onRadioGroupKeyDown, radioTabIndex } from "@/lib/radio";
 import { cn } from "@/lib/utils";
 
 const SECTIONS: { id: SettingsSection; label: string; Icon: LucideIcon; keywords: string }[] = [
   { id: "providers", label: "Providers", Icon: SquareTerminal, keywords: "agent cli claude codex cursor opencode gemini binary path launch arguments environment variables models" },
   { id: "plugins", label: "Plugins", Icon: Plug, keywords: "mcp servers connectors notion google drive github browser" },
   { id: "pc", label: "This PC", Icon: Monitor, keywords: "pair device phone laptop qr code paired devices tailscale https version desks folder" },
-  { id: "appearance", label: "Appearance", Icon: Palette, keywords: "theme dark mode light mode system colors" },
+  { id: "appearance", label: "Appearance", Icon: Palette, keywords: "theme dark mode light mode system colors accent color bubbles" },
 ];
 
 const THEMES: { value: Theme; label: string }[] = [
@@ -23,6 +25,13 @@ const THEMES: { value: Theme; label: string }[] = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
 ];
+
+const ACCENTS: { value: Accent; label: string; swatch: string }[] = [
+  { value: "neutral", label: "Neutral", swatch: "var(--bubble-user)" },
+  { value: "bot", label: "Bot color", swatch: `conic-gradient(${COLORS.slice(0, 8).join(", ")}, ${COLORS[0]})` },
+];
+
+const ACCENT_VALUES = ACCENTS.map((a) => a.value);
 
 export function SettingsDialog({ section }: { section?: SettingsSection }) {
   const [query, setQuery] = useState("");
@@ -126,24 +135,51 @@ export function SettingsDialog({ section }: { section?: SettingsSection }) {
 
 function AppearanceSettings() {
   const theme = useTheme((s) => s.theme);
+  const accent = useTheme((s) => s.accent);
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border p-4">
-      <div className="flex flex-col">
-        <span className="font-medium">Theme</span>
-        <span className="text-sm text-muted-foreground">Saved on this device. System follows your device's light or dark setting.</span>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-4 rounded-2xl border p-4">
+        <div className="flex flex-col">
+          <span className="font-medium">Theme</span>
+          <span className="text-sm text-muted-foreground">Saved on this device. System follows your device's light or dark setting.</span>
+        </div>
+        <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+          <SelectTrigger aria-label="Theme" className="w-32 flex-none">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {THEMES.map((t) => (
+              <SelectItem key={t.value} value={t.value}>
+                {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
-        <SelectTrigger aria-label="Theme" className="w-32 flex-none">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {THEMES.map((t) => (
-            <SelectItem key={t.value} value={t.value}>
-              {t.label}
-            </SelectItem>
+      <div className="flex items-center justify-between gap-4 rounded-2xl border p-4">
+        <div className="flex flex-col">
+          <span id="accent-color-label" className="font-medium">
+            Accent color
+          </span>
+          <span className="text-sm text-muted-foreground">Saved on this device. Bot color paints your messages and the send button in each 1:1 chat with that bot's color.</span>
+        </div>
+        <div className="flex flex-none gap-3" role="radiogroup" aria-labelledby="accent-color-label" onKeyDown={onRadioGroupKeyDown}>
+          {ACCENTS.map((a) => (
+            <button
+              key={a.value}
+              type="button"
+              role="radio"
+              aria-checked={accent === a.value}
+              tabIndex={radioTabIndex(a.value, accent, ACCENT_VALUES)}
+              className="flex w-16 flex-col items-center gap-1.5 rounded-xl py-1 text-xs text-muted-foreground aria-checked:text-foreground"
+              onClick={() => setAccent(a.value)}
+            >
+              <span className={cn("size-8 rounded-full ring-offset-2 ring-offset-background", accent === a.value && "ring-2 ring-foreground")} style={{ background: a.swatch }} />
+              {a.label}
+            </button>
           ))}
-        </SelectContent>
-      </Select>
+        </div>
+      </div>
     </div>
   );
 }

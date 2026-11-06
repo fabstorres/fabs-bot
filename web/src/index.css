@@ -201,6 +201,9 @@
   .bubble-user td {
     @apply dark:border-black/10;
   }
+  [data-accent] .bubble-user a {
+    @apply text-current underline;
+  }
 }
 
 .typing {

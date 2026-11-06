@@ -6,6 +6,7 @@ import { api, isImage } from "../api";
 import { toast } from "sonner";
 import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore, usingScreen } from "../store";
 import { useNow } from "../hooks";
+import { accentStyle, useTheme } from "../theme";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { MentionInput, type MentionInputHandle } from "./MentionInput";
 import { MessageList } from "./Messages";
@@ -29,18 +30,22 @@ import { cn } from "@/lib/utils";
 export function Chat({ thread, side = false }: { thread: Thread; side?: boolean }) {
   const bots = useStore((s) => s.bots);
   const messages = useStore((s) => s.messages[thread.id]);
+  const accent = useTheme((s) => s.accent);
   const members = thread.memberIds.map((id) => bots.find((b) => b.id === id)).filter((b): b is Bot => !!b);
 
   const working = !!messages?.some((m) => m.status === "streaming");
   const multi = members.length > 1 || thread.kind === "backchannel";
   const title = threadTitle(thread, bots);
+  const tint = accent === "bot" && thread.kind === "direct" && members[0] ? accentStyle(members[0].color) : undefined;
 
   return (
     <section
       className={cn("flex h-full min-w-0 flex-1 flex-col bg-background", side && "md:w-[360px] md:flex-none md:border-l")}
+      style={tint}
       role="region"
       aria-label={`Thread with ${title}`}
       data-thread-id={thread.id}
+      data-accent={tint ? "bot" : undefined}
     >
       <header className="flex h-14 flex-none items-center gap-2 px-3 md:px-5">
         <Button variant="ghost" size="icon" className={cn("rounded-full", thread.kind !== "backchannel" && "md:hidden")} onClick={goBack} aria-label="Back">
@@ -417,11 +422,11 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
             </Button>
           )}
           {working && !ready ? (
-            <Button size="icon" className="rounded-full" onClick={() => api.post(`/api/threads/${thread.id}/stop`)} aria-label="Stop" disabled={!online}>
+            <Button size="icon" className="rounded-full bg-bubble-user text-bubble-user-foreground hover:bg-bubble-user/90" onClick={() => api.post(`/api/threads/${thread.id}/stop`)} aria-label="Stop" disabled={!online}>
               <Square className="size-3.5 fill-current" />
             </Button>
           ) : (
-            <Button size="icon" className="rounded-full" onClick={() => send()} disabled={!ready || uploading || !online} aria-label={online ? "Send" : "Environment disconnected"}>
+            <Button size="icon" className="rounded-full bg-bubble-user text-bubble-user-foreground hover:bg-bubble-user/90" onClick={() => send()} disabled={!ready || uploading || !online} aria-label={online ? "Send" : "Environment disconnected"}>
               <ArrowUp className="size-5" strokeWidth={2.4} />
             </Button>
           )}
