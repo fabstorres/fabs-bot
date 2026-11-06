@@ -154,13 +154,14 @@ export async function scanCodexInventory(cwd: string, launch: Launch): Promise<I
   const lines: string[] = [];
   const timer = setTimeout(() => ctrl.abort(), 30_000);
   try {
-    await spawnLines({
+    const { code } = await spawnLines({
       cmd: [launch.bin, ...launch.args, "mcp", "list", "--json"],
       cwd,
       env: launch.env,
       signal: ctrl.signal,
       onLine: (line) => lines.push(line),
     });
+    if (code !== 0) return [];
   } finally {
     clearTimeout(timer);
   }
