@@ -1,0 +1,25 @@
+# http://127.0.0.1:4890/  viewport=window
+- main:
+  - region "Thread with Chief":
+    - group "Window controls":
+      - button "Minimize"
+      - button "Maximize"
+      - button "Close"
+    - button "Back"
+    - text: Chief
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops"
+        - button "B A specific project"
+        - button "C Research and writing"
+        - button "D Something else"
+    - textbox "Message":
+      - paragraph
+    - button "Attach"
+    - button "Dictate"
+    - button "Send" [disabled]
+- region "Notifications alt+T"

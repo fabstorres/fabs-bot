@@ -7,6 +7,7 @@ import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { PcMenu } from "./PcMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { WindowControls } from "./WindowControls";
 import { cn } from "@/lib/utils";
 
 type Row = { kind: "bot"; bot: Bot; threads: Thread[]; pending?: Thread; at: number } | { kind: "group"; thread: Thread; at: number };
@@ -49,8 +50,9 @@ export function Sidebar() {
 
   return (
     <aside aria-label="Bots" className="flex h-full w-full flex-col bg-sidebar md:w-80 md:border-r md:border-sidebar-border">
-      <header className="window-drag traffic-lights-space max-md:window-controls-space flex items-center gap-1 px-4 pt-4 pb-2">
-        <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only">Fabs Bot</h1>
+      <header className="window-drag traffic-lights-space flex items-center gap-1 px-4 pt-4 pb-2">
+        <WindowControls />
+        <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only [[data-title-bar]_&]:sr-only">Fabs Bot</h1>
         <Button id="open-limits" variant="ghost" size="icon" className="ml-auto rounded-full" onClick={openLimits} aria-label="Limits" title="Limits">
           <Gauge className="size-5" />
         </Button>

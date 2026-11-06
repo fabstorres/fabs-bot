@@ -1,25 +1,28 @@
-# http://127.0.0.1:4870/  viewport=window
+# http://127.0.0.1:4890/  viewport=window
 - complementary "Bots":
+  - group "Window controls":
+    - button "Minimize"
+    - button "Maximize"
+    - button "Close"
   - heading "Fabs Bot" [level=1]
   - button "Limits"
   - button "New bot"
   - textbox "Search bots":
     - /placeholder: Search
-  - group "Team lead":
-    - button "Bot Chief": Chief
   - navigation "Chats":
     - text: New Bot
-    - button "Bot Engineer": Engineer 9:23 AM Hey, I'm Engineer. What's the main thing you want me on?
-    - button "Bot Design":
-      - text: Design 9:23 AM Hey, I'm Design. What's the main thing you want me on?
-      - img "Unread"
+    - button "Bot Design": Design 3:35 PM Hey, I'm Design. What's the main thing you want me on?
     - button "Bot Careful":
-      - text: Careful 9:23 AM Hey, I'm Careful. What's the main thing you want me on?
+      - text: Careful 3:35 PM Hey, I'm Careful. What's the main thing you want me on?
       - img "Unread"
+    - button "Bot Engineer":
+      - text: Engineer 3:35 PM Hey, I'm Engineer. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief": Chief 3:35 PM Hey, I'm Chief. What's the main thing you want me on?
     - button "Bot Chief of Staff":
-      - text: Chief of Staff 9:23 AM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - text: Chief of Staff 3:35 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
       - img "Unread"
-  - button "PC This PC": This PC
+  - button "PC This PC"
   - button "Settings"
 - main:
   - region "New bot":

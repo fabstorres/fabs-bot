@@ -1,40 +1,50 @@
-# http://127.0.0.1:4893/  viewport=window
+# http://127.0.0.1:4892/  viewport=window
 - complementary "Bots":
   - heading "Fabs Bot" [level=1]
-  - button "PC Older build": Older build
+  - button "PC Baseline"
   - button "Settings"
   - button "Limits"
   - button "New bot"
   - textbox "Search bots":
     - /placeholder: Search
   - navigation "Chats":
-    - button "Bot Chief": Chief 9:25 AM You've hit your 5-hour limit · resets 1:40pm (America/Los_A…
-    - button "Bot Engineer": Engineer 9:23 AM Hey, I'm Engineer. What's the main thing you want me on?
-    - button "Bot Design": Design 9:23 AM Hey, I'm Design. What's the main thing you want me on?
+    - button "Bot Design": Design 3:35 PM Hey, I'm Design. What's the main thing you want me on?
     - button "Bot Careful":
-      - text: Careful 9:23 AM Hey, I'm Careful. What's the main thing you want me on?
+      - text: Careful 3:35 PM Hey, I'm Careful. What's the main thing you want me on?
       - img "Unread"
+    - button "Bot Engineer":
+      - text: Engineer 3:35 PM Hey, I'm Engineer. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief": Chief 3:35 PM Hey, I'm Chief. What's the main thing you want me on?
     - button "Bot Chief of Staff":
-      - text: Chief of Staff 9:23 AM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - text: Chief of Staff 3:35 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
       - img "Unread"
 - main:
   - region "Thread with Chief":
     - text: Chief
-    - button "Open desk"
+    - button "Open desk" [pressed]
     - button "More"
-    - log "Conversation":
-      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
-      - 'group "Question: What should I own for you?"':
-        - text: What should I own for you?
-        - button "A Day-to-day ops" [disabled]
-        - button "B A specific project" [disabled]
-        - button "C Research and writing" [disabled]
-        - button "D Something else" [disabled]
-      - paragraph: "Use the ask_user tool to ask exactly one question: Which logo color, Red or Blue? Do nothing else."
-      - paragraph: You've hit your 5-hour limit · resets 1:40pm (America/Los_Angeles)
+    - log "Conversation"
     - textbox "Message":
       - paragraph
     - button "Attach"
     - button "Dictate"
     - button "Send" [disabled]
+  - complementary "Chief's desk":
+    - button "Show desk" [disabled]
+    - heading "Desk" [level=2]
+    - button "Show settings"
+    - button "Close desk"
+    - region "Chief's screen":
+      - button "Open Chief's screen" [disabled]: Nothing open
+      - paragraph: Chief's screen
+    - button "chief"
+    - group "Desk files":
+      - paragraph: Empty desk. Files the bot makes show up here.
+    - paragraph: Chief's desk
+    - heading "Routines" [level=3]
+    - paragraph:
+      - text: None yet. Ask Chief to do something on a schedule, or add one in
+      - button "settings"
+      - text: .
 - region "Notifications alt+T"

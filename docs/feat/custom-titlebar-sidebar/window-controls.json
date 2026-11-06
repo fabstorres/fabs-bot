@@ -1,0 +1,301 @@
+{
+  "mainCommit": "8126763",
+  "main": {
+    "deskClosed": {
+      "viewport": [
+        1024,
+        744
+      ],
+      "platform": null,
+      "controls": 0,
+      "drag": "none",
+      "buttons": [
+        {
+          "name": "Open desk",
+          "box": {
+            "x": 924,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 960,
+            "bottom": 46,
+            "left": 924
+          }
+        },
+        {
+          "name": "More",
+          "box": {
+            "x": 968,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 1004,
+            "bottom": 46,
+            "left": 968
+          }
+        }
+      ]
+    },
+    "deskOpen": {
+      "viewport": [
+        1024,
+        744
+      ],
+      "buttons": [
+        {
+          "name": "Open desk",
+          "box": {
+            "x": 564,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 600,
+            "bottom": 46,
+            "left": 564
+          }
+        },
+        {
+          "name": "More",
+          "box": {
+            "x": 608,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 644,
+            "bottom": 46,
+            "left": 608
+          }
+        }
+      ]
+    }
+  },
+  "followup": {
+    "deskClosed": {
+      "viewport": [
+        1024,
+        768
+      ],
+      "buttons": [
+        {
+          "name": "Open desk",
+          "box": {
+            "x": 924,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 960,
+            "bottom": 46,
+            "left": 924
+          }
+        },
+        {
+          "name": "More",
+          "box": {
+            "x": 968,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 1004,
+            "bottom": 46,
+            "left": 968
+          }
+        }
+      ]
+    },
+    "deskOpen": {
+      "viewport": [
+        1024,
+        768
+      ],
+      "buttons": [
+        {
+          "name": "Open desk",
+          "box": {
+            "x": 564,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 600,
+            "bottom": 46,
+            "left": 564
+          }
+        },
+        {
+          "name": "More",
+          "box": {
+            "x": 608,
+            "y": 10,
+            "width": 36,
+            "height": 36,
+            "top": 10,
+            "right": 644,
+            "bottom": 46,
+            "left": 608
+          }
+        }
+      ]
+    }
+  },
+  "realPointerInput": {
+    "maximize": {
+      "maximized": true,
+      "minimized": false,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1024,
+        "height": 768
+      }
+    },
+    "restore": {
+      "maximized": false,
+      "minimized": false,
+      "bounds": {
+        "x": 16,
+        "y": 10,
+        "width": 900,
+        "height": 650
+      }
+    },
+    "minimize": {
+      "minimized": true
+    },
+    "close": {
+      "narrowWidth": 650,
+      "remainingWindowPixels": null,
+      "cdpClosed": true
+    }
+  },
+  "dragOpaqueBounds": {
+    "before": [
+      0,
+      0,
+      900,
+      650
+    ],
+    "sidebar": [
+      40,
+      40,
+      940,
+      690
+    ],
+    "chat": [
+      72,
+      72,
+      972,
+      722
+    ],
+    "afterNewBot": [
+      72,
+      72,
+      972,
+      722
+    ]
+  },
+  "narrowChat": {
+    "width": 650,
+    "controls": [
+      {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      {
+        "x": 12,
+        "y": 12,
+        "width": 104,
+        "height": 32,
+        "top": 12,
+        "right": 116,
+        "bottom": 44,
+        "left": 12
+      }
+    ],
+    "buttons": [
+      {
+        "name": "Open desk",
+        "box": {
+          "x": 558,
+          "y": 10,
+          "width": 36,
+          "height": 36,
+          "top": 10,
+          "right": 594,
+          "bottom": 46,
+          "left": 558
+        }
+      },
+      {
+        "name": "More",
+        "box": {
+          "x": 602,
+          "y": 10,
+          "width": 36,
+          "height": 36,
+          "top": 10,
+          "right": 638,
+          "bottom": 46,
+          "left": 602
+        }
+      }
+    ]
+  },
+  "newDesktopPreviousWeb": {
+    "platform": null,
+    "controls": 0,
+    "drag": "none",
+    "overlay": false
+  },
+  "mainDesktopNewWeb": {
+    "platform": null,
+    "bridge": "undefined",
+    "drag": "none",
+    "controls": 0
+  },
+  "ipcGateRejections": [
+    {
+      "channel": "pc:minimize",
+      "rejected": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "channel": "pc:toggle-maximize",
+      "rejected": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "channel": "pc:close",
+      "rejected": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "channel": "pc:is-maximized",
+      "rejected": [
+        true,
+        true,
+        true
+      ]
+    }
+  ]
+}

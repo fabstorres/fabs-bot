@@ -263,7 +263,12 @@ export interface PcSwitcher {
   setIcon(id: string, icon: PcIcon): Promise<void>;
   manage(): Promise<void>;
   titleBar?: string;
-  setDarkTitleBar?(dark: boolean): Promise<void>;
+  windowControls?: {
+    minimize(): Promise<void>;
+    toggleMaximize(): Promise<void>;
+    close(): Promise<void>;
+    onMaximizedChange(listener: (maximized: boolean) => void): () => void;
+  };
 }
 
 export type LimitsProviderId = Extract<ProviderId, "claude" | "codex">;

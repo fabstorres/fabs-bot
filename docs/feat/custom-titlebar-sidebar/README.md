@@ -1,46 +1,60 @@
 # Custom title bar and sidebar verification
 
-Verified on Linux/KDE with Electron 44.7.0 using `.claude/skills/verify-fabs-bot/SKILL.md`. The isolated runs were `sol-titlebar`, `sol-titlebar-final`, and `sol-titlebar-menu`, on loopback port 4870, with private databases, work folders, desktop profiles, and a virtual KWin compositor. The user's port 4800 and production data were not driven.
+## Sidebar window controls follow-up
 
-## Handoff attribution
+Linux and Windows now use a frameless PC window with shadcn ghost icon buttons at the top left of the sidebar: Minimize, Maximize/Restore, Close. Limits and New bot remain on the right. macOS keeps its native traffic lights. The native Electron overlay and its theme synchronization are removed, along with every `window-controls-space` reservation.
 
-Opus implemented all functional changes before the handoff: PC-window title bars and platform bridge, theme-synchronized native overlay, desktop-only drag regions and control spacing, older-web detection, the sidebar footer, the team-lead spot and shared row behavior, search and phone handling, plus documentation updates. Opus left no commit or PR. Its recorded verification covered Linux light/dark, native controls and dragging, lead states, browser/phone layouts, and both directions of desktop/web version skew. Its macOS check was simulated only.
+Below md, the same buttons appear on the left of each full-width chat, desk, new-bot and screen header, wherever macOS reserves traffic-light space. They stay available when the sidebar is hidden. The sidebar title is visually hidden in desktop windows to leave that row clear. Browser and older-desktop layouts keep their normal title and have no custom controls or drag behavior.
 
-Sol compared all 24 handed-off files against the preserved pre-Sol snapshot before working. No layout or window-behavior fixes were necessary. CI then found two `TS18048` errors in the inherited PC menu: imported `switcher` was possibly undefined inside the Change icon and Manage PCs callbacks. Sol changed those two calls to `switcher?.setIcon(...)` and `switcher?.manage()`, consistent with the existing optional bridge calls. Sol also corrected the opening sentence of `.claude/skills/verify-fabs-bot/features/limits.md` to locate Limits at the top beside New bot instead of beside Settings. The other 22 handoff files remain byte-identical. Everything added under this evidence directory, the final verification, commits, push, and PR completion are Sol's contributions. The handoff snapshot and original Opus checkout were preserved.
+The HTML capability marker now requires `content="sidebar-controls"`. Both main's web build and the previous overlay-based PR build retain the normal OS frame in the new desktop. The previous `custom` capability is insufficient because that build cannot draw the new buttons. A missing marker or failed probe also retains the normal frame.
 
-## Sol's verification
+## Current verification
+
+Used `.claude/skills/verify-fabs-bot/SKILL.md` on Linux/KDE with Electron 44.7.0. Private runs `sidebar-controls-run-1106` and `sidebar-controls-final-1106` used their own `FABS_VERIFY_HOME`, database, bot desks, desktop profiles, and private D-Bus/KWin virtual display. The harness built web and desktop, cleared `ELECTRON_RUN_AS_NODE`, and doctor confirmed private storage, fresh sources, owned port 4890 and working desktop CDP. Port 4891 was checked free for the server's adjacent listener. Baseline web proxies used private loopback ports 4892 and 4894. Production port 4800 and production data were not driven.
 
 | Check | Result and evidence |
 | --- | --- |
-| Isolated instance | `doctor` confirmed the server's private work root, fresh web build, owned port, and working desktop CDP connection. Web and desktop builds were run by the verify harness. |
-| Browser, no lead | No dedicated lead spot; footer Settings retains `#open-settings`. [Screenshot](01-no-lead.png), [ARIA](01-no-lead.aria.txt). |
-| Lead and search | Used More → Edit Chief → Team lead → Save. One selected lead spot, no duplicate in Chats; searching Chief restores its row. [Selected](02-lead.png), [search](03-search.png). |
-| Phone | At 430×932 the lead appears once, Favorites exclude it, and the footer remains visible. No desktop flag or drag behavior, and no horizontal overflow. [Screenshot](04-phone.png). |
-| Native Linux overlay | Visible overlay with 72px reserved width. Changed Light → Dark through Settings → Appearance; native control symbols changed with it. [Light](05-linux-light.png), [dark](06-linux-dark.png). |
-| Native window actions | Real KWin pointer input maximized, restored, minimized, and closed the custom PC window. Main-process reads returned `isMaximized: true`, then `false`, then `isMinimized: true`. Close removed all window pixels and exited the app process. |
-| Native drag regions | With a 900×650 window, the opaque window bounds moved from `(0,0,900,650)` to `(40,40,940,690)` after sidebar dragging and then `(72,72,972,722)` after chat-header dragging. [Before](08-drag-before.png), [sidebar](09-sidebar-drag.png), [chat](10-chat-drag.png). The compositor's drag threshold accounts for the difference from the pointer delta. |
-| Buttons inside drag regions | Computed region values were `drag` on the header and `no-drag` on New bot. A real pointer click opened New Bot, with bounds unchanged at `(72,72,972,722)`. [Screenshot](11-button-in-drag.png). |
-| Narrow desktop | At 650px, Back/Open desk/More ended at x=48/514/558, before the native control area at x=578. The reloaded narrow sidebar kept Limits and New bot clear of controls, with no horizontal overflow. |
-| PC-menu callbacks after CI fix | Changed the This PC icon to Server through the footer menu, read the saved icon back from the private desktop store, and opened Manage PCs to the launcher. [Screenshot](18-footer-pc-menu.png). |
-| Footer and dialogs | Footer Settings and top Limits both opened and closed. Settings was `no-drag` and began at y=56, below the window controls. |
-| New desktop + old web | Served the pre-feature web build through a loopback proxy into the isolated server. Switched to it through the PC menu. The platform flag was absent, overlay invisible, drag disabled, and normal compositor frame visible. [Screenshot](15-new-app-old-web.png). |
-| Old desktop + new web | Ran the baseline desktop bundle in the same private compositor with a separate private profile. Its relevant sources matched git base `8126763`. The new footer loaded, platform flag was absent, drag disabled, and normal frame visible. [Screenshot](17-old-app-new-web.png). |
-| Privacy | Every committed PNG has an ARIA twin. Sol inspected every image, and `control-fabs privacy-check docs/feat/custom-titlebar-sidebar` passed. Native captures include the compositor's controls; their transparent desktop was composited onto a neutral backdrop. No GIFs or videos are included. |
+| Light, desk closed/open | Controls at the sidebar's left; normal chat button spacing. [Closed](05-linux-light.png), [open](19-linux-light-desk.png). |
+| Dark, desk closed/open | Controls follow Tailwind theme colors with no overlay sync. [Closed](06-linux-dark.png), [open](20-linux-dark-desk.png). |
+| Maximize and restore | Real KWin pointer clicks produced `isMaximized: true`, then `false`; the accessible name switched from Maximize to Restore and back. [Maximized](21-maximized.png), [state readback](window-controls.json). |
+| Minimize | Real pointer click produced `isMinimized: true`; the inspector restored the minimized window for subsequent checks. [State readback](window-controls.json). |
+| Close | Real pointer click on Close in the 650px new-bot header removed every window pixel and closed the Electron process/CDP connection. [State readback](window-controls.json). |
+| Dragging | Opaque bounds moved from `(0,0,900,650)` to `(40,40,940,690)` after sidebar dragging, then `(72,72,972,722)` after chat-header dragging. [Before](08-drag-before.png), [sidebar](09-sidebar-drag.png), [chat](10-chat-drag.png). These are compositor captures; the drag threshold accounts for the difference from the pointer delta. |
+| Buttons inside drag regions | Buttons compute to `no-drag`; headers compute to `drag`. A real pointer click on New bot opened its pane without changing `(72,72,972,722)` bounds. [Screenshot](11-button-in-drag.png). |
+| Narrow desktop | At 650×650, controls remain reachable in the [sidebar](24-narrow-sidebar.png), [chat](22-narrow-chat.png), [desk](23-narrow-desk.png) and [new-bot pane](25-narrow-new-bot.png). The sidebar group occupies `(16,18,104,32)`; pane groups occupy `(12,12,104,32)`. No horizontal overflow. |
+| PC menu | The existing footer menu still opens. [Screenshot](18-footer-pc-menu.png). |
+| New desktop + main web | Built main at `8126763`, served it through a proxy to the private server, and opened it through the PC bridge. Normal frame, absent platform flag, zero custom controls, computed drag `none`. [Screenshot](15-new-app-old-web.png). |
+| New desktop + previous PR web | Built `1cba746` with the old `custom` marker and opened it through a second proxy. Normal frame, absent platform flag, zero custom controls, computed drag `none`. [Screenshot](26-new-app-previous-web.png). |
+| Main desktop + new web | Ran the real main desktop bundle with a separate private profile in the virtual display. No window-controls bridge, no platform flag, no controls, computed drag `none`; the OS frame remains. [Screenshot](17-old-app-new-web.png). |
+| IPC authorization | All four new invoke handlers use the existing `fromPcWindow` gate. Direct handler checks rejected missing frames, a different frame at the correct origin, and a different sender window. Only the PC window's main frame at its PC origin is authorized. [Results](window-controls.json). |
+| Privacy | Every replacement PNG has an ARIA twin and was visually inspected. Captures mask `#pc-link`, `.mono-box`, `button[aria-label="This PC"]`, and the current PC-menu trigger/name. Native captures were composited onto a neutral backdrop. Harness privacy scan and literal scans for private-address/token patterns passed before pushing. |
 
-## Inherited lead-state evidence
+### Header measurements against main
 
-Sol's fresh real Claude Haiku question attempt hit the account's five-hour usage limit. It did not produce a question, so that rerun is not a pass. The following evidence was produced by Opus's successful real Haiku turn in `desktb0a59`, inspected by Sol, and copied unchanged. All relevant source files remain byte-identical to the handoff.
+Measured `getBoundingClientRect()` on the actual Open desk and More buttons in maximized Electron windows at 1024px content width. Both windows begin at screen x=0, so these x bounds are also their on-screen x bounds. The main window has a 24px OS title bar; its content height is 744 rather than 768. Box tuples below are `(x, y, width, height)` relative to the web content. Complete raw measurements are in [window-controls.json](window-controls.json).
 
-- [Needs you and waiting status](opus-05-lead-needs-you.png).
-- [Clicking the lead opens its pending question](opus-06-lead-click-opens-question.png).
-- [Live avatar](opus-07-lead-live-status.png), with the [ARIA snapshot](opus-07-lead-live-status.aria.txt) recording `Thinking…` during the same turn. The screenshot was taken after that transient text cleared.
-- [Unread state](opus-08-lead-unread.png).
-- [Real thread/tool proof](opus-lead-thread.txt): `ask_user`, the question, the user's answer, and the completed reply.
+| Desk | Build | Open desk box | More box | Extra x shift versus main |
+| --- | --- | --- | --- | --- |
+| Closed | main | `(924,10,36,36)` | `(968,10,36,36)` | — |
+| Closed | follow-up | `(924,10,36,36)` | `(968,10,36,36)` | 0px |
+| Open | main | `(564,10,36,36)` | `(608,10,36,36)` | — |
+| Open | follow-up | `(564,10,36,36)` | `(608,10,36,36)` | 0px |
 
-## Limits and blast radius
+Opening the desk reduces the chat width by its normal 360px on both main and this branch. The buttons follow the chat's right edge by that amount; there is no additional native-overlay padding or change in reserved window-control space. Their right edges remain 64px and 20px from the chat edge respectively. At 650px, the chat buttons occupy `(558,10,36,36)` and `(602,10,36,36)`, while the controls end at x=116 on the left.
 
-The functional change affects only PC windows created by `openPc`, the optional PC preload bridge, shared sidebar presentation, pane headers, desktop dialog/toast spacing, and theme-to-overlay synchronization. There are no server/database changes. `openPc` now probes the root HTML for the capability meta tag before choosing a frame; a missing tag or failed probe retains the normal frame. Old desktops omit the new platform flag, so the new web build retains browser-like header behavior there. The launcher keeps its existing normal frame and is a possible follow-up.
+## Existing sidebar evidence
 
-Electron's native `titleBarStyle: "hidden"` plus `titleBarOverlay` worked on Linux 44.7.0, so no replacement IPC window buttons were added. Native overlay symbols had no hover highlight on Linux; Opus also observed this with a solid overlay color. The app follows the active page theme when it changes.
+The initial PR implementation came from Opus; Sol made the optional-bridge callback fixes and the original evidence package. This follow-up changes the window-controls approach and replaces the Linux evidence. Existing independent sidebar evidence remains available:
 
-Real macOS traffic-light placement and real Windows controls remain unverified. Opus only simulated macOS spacing; Sol does not claim a native macOS pass. An existing history behavior can keep Back from returning to the sidebar after shrinking a previously wide desktop session; the relevant history code is unchanged, and narrow sidebar verification used a reload. The lead's fresh real-agent question rerun remains limited by Claude usage; inherited successful evidence is distinguished above. No reviewer was spawned and no merge was performed; the parent will arrange Astra review.
+- [No lead](01-no-lead.png), [selected lead](02-lead.png), [search](03-search.png), and [phone Favorites](04-phone.png).
+- Opus's successful real Haiku turn: [needs you](opus-05-lead-needs-you.png), [opening a question](opus-06-lead-click-opens-question.png), [live state](opus-07-lead-live-status.png), [unread](opus-08-lead-unread.png), and [tool/thread proof](opus-lead-thread.txt).
+
+Sol's earlier fresh lead-question rerun hit Claude's five-hour usage limit and is not a pass. Those lead-state captures are inherited evidence, not reruns for this window-controls fix. The bots seeded for the current window checks use `claude-haiku-5-5` for Claude fixtures; no new agent question/tool check is claimed.
+
+## Blast radius and limitations
+
+Changes affect PC-window creation and capability detection in `openPc`, the optional PC preload/shared bridge, sidebar and narrow-pane controls, header spacing and the removed theme-to-overlay sync. New IPC handlers are `pc:minimize`, `pc:toggle-maximize`, `pc:close`, and `pc:is-maximized`; maximize/unmaximize events publish `pc:maximized`. All invoke handlers share the existing PC-window/main-frame/origin gate. The preload's state subscription and React's `useSyncExternalStore` keep Maximize/Restore current without `useEffect`.
+
+The sidebar footer/team-lead behavior, server, database and launcher frame are unchanged by this follow-up. The small capability change deliberately keeps older web builds framed, including the previous PR build. macOS traffic lights and Windows behavior still need native-platform verification; only Linux was driven here. Existing history behavior can keep Back from returning to the sidebar after a resize; narrow sidebar verification uses a reload, and that history code is unchanged.
+
+No reviewer was spawned and no merge was performed. The parent thread will arrange re-review after the push. Private instances and helper processes were cleaned up; evidence remains in this folder.

@@ -14,6 +14,7 @@ import { Modal } from "./Modal";
 import { OfflineBanner } from "./OfflineBanner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { WindowControls } from "./WindowControls";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +32,6 @@ export function Chat({ thread, side = false }: { thread: Thread; side?: boolean 
   const bots = useStore((s) => s.bots);
   const messages = useStore((s) => s.messages[thread.id]);
   const accent = useTheme((s) => s.accent);
-  const deskOpen = useStore((s) => s.panelOpen);
   const members = thread.memberIds.map((id) => bots.find((b) => b.id === id)).filter((b): b is Bot => !!b);
 
   const working = !!messages?.some((m) => m.status === "streaming");
@@ -48,9 +48,8 @@ export function Chat({ thread, side = false }: { thread: Thread; side?: boolean 
       data-thread-id={thread.id}
       data-accent={tint ? "bot" : undefined}
     >
-      <header
-        className={cn("window-drag max-md:traffic-lights-space flex h-14 flex-none items-center gap-2 px-3 md:px-5", (side || !deskOpen) && "window-controls-space")}
-      >
+      <header className="window-drag max-md:traffic-lights-space flex h-14 flex-none items-center gap-2 px-3 md:px-5">
+        <WindowControls className="md:hidden" />
         <Button variant="ghost" size="icon" className={cn("rounded-full", thread.kind !== "backchannel" && "md:hidden")} onClick={goBack} aria-label="Back">
           <ChevronLeft className="size-5" />
         </Button>

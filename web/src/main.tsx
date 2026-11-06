@@ -8,7 +8,7 @@ import { pcBridge } from "./pcBridge";
 import { connect } from "./store";
 import { Toaster } from "@/components/ui/sonner";
 
-const titleBar = pcBridge?.titleBar;
+const titleBar = pcBridge?.titleBar === "darwin" || pcBridge?.windowControls ? pcBridge?.titleBar : undefined;
 if (titleBar) document.documentElement.dataset.titleBar = titleBar;
 const toastOffset = titleBar ? { top: 64 } : undefined;
 

@@ -7,6 +7,7 @@ import { goBack, openDirect, useStore } from "../store";
 import { BotAvatar } from "./BotAvatar";
 import { blankBot } from "./BotEditor";
 import { Button } from "@/components/ui/button";
+import { WindowControls } from "./WindowControls";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { onRadioGroupKeyDown, radioTabIndex } from "@/lib/radio";
@@ -42,7 +43,8 @@ export function NewBot() {
 
   return (
     <section className="flex h-full min-w-0 flex-1 flex-col bg-background" role="region" aria-label="New bot">
-      <header className="window-drag max-md:traffic-lights-space window-controls-space flex h-14 flex-none items-center gap-2 px-3 md:px-5">
+      <header className="window-drag max-md:traffic-lights-space flex h-14 flex-none items-center gap-2 px-3 md:px-5">
+        <WindowControls className="md:hidden" />
         {hasBots && (
           <Button variant="ghost" size="icon" className="rounded-full md:hidden" onClick={goBack} aria-label="Back">
             <ChevronLeft className="size-5" />

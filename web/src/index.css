@@ -223,14 +223,6 @@
   }
 }
 
-@utility window-controls-space {
-  [data-title-bar]:not([data-title-bar="darwin"]) &::after {
-    content: "";
-    flex: none;
-    width: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
-  }
-}
-
 [data-title-bar] :is([role="dialog"], [role="menu"], [role="listbox"]) {
   -webkit-app-region: no-drag;
 }
