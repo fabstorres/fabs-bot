@@ -23,7 +23,7 @@ export function ModelPicker({ id, label, models, value, onChange }: { id?: strin
         <SelectTrigger id={id} aria-label={label} className="w-full">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper">
           <SelectItem value={CLI_DEFAULT}>CLI default</SelectItem>
           {recent.length > 0 && (
             <SelectGroup>
