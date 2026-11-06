@@ -3,18 +3,30 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import QRCode from "qrcode";
-import { Check, Copy as CopyIcon, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Copy as CopyIcon, Ellipsis, ExternalLink, ListFilter, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import type { Connector, Device, HostInfo, PairingLink } from "../../../shared/types";
 import type { ConnectorPreset } from "../../../shared/templates";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
 import { useStore } from "../store";
 import { Modal } from "./Modal";
+import { PluginIcon, pluginLogo } from "./PluginIcon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -215,79 +227,194 @@ export function ThisPcSettings() {
   );
 }
 
+type Inherited = { scannedAt: number; servers: { name: string; status: string; kind?: Connector["kind"] }[] };
+type PluginSource = "all" | "fabs" | "claude";
+type PluginRow = { id: string; name: string; logo?: string; type?: string; custom: boolean; claude: boolean; status: string; connector?: Connector };
+
+const PLUGIN_STATUS: Record<string, string> = { "needs-auth": "Needs sign-in", failed: "Failed", pending: "Starting" };
+const PLUGIN_TYPE: Record<Connector["kind"], string> = { http: "Web", stdio: "Local" };
+
 export function PluginsSettings() {
   const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []);
-  const list = connectors.data ?? [];
   const presets = useLoad(() => api.get<ConnectorPreset[]>("/api/connectors/presets"), []).data ?? [];
-  const [inherited, setInherited] = useState<{ scannedAt: number; servers: { name: string; status: string }[] } | null>(null);
-  const [scanning, setScanning] = useState(false);
+  const firstScan = useLoad(() => api.get<Inherited>("/api/connectors/inherited"), []);
+  const [rescanned, setRescanned] = useState<Inherited | null>(null);
+  const [rescanning, setRescanning] = useState(false);
+  const [query, setQuery] = useState("");
+  const [source, setSource] = useState<PluginSource>("all");
   const [form, setForm] = useState<(ConnectorPreset & { id?: string }) | null>(null);
-  const scan = async (refresh: boolean) => {
-    setScanning(true);
+  const inherited = rescanned ?? firstScan.data;
+  const scanning = rescanning || (!inherited && !firstScan.error);
+  const rescan = async () => {
+    setRescanning(true);
     try {
-      setInherited(await api.get(`/api/connectors/inherited${refresh ? "?refresh" : ""}`));
+      setRescanned(await api.get<Inherited>("/api/connectors/inherited?refresh"));
     } finally {
-      setScanning(false);
+      setRescanning(false);
     }
   };
 
+  const rows: PluginRow[] = [
+    ...(inherited?.servers ?? []).map((s) => ({
+      id: `claude:${s.name}`,
+      name: s.name.replace(/^claude\.ai /, ""),
+      logo: pluginLogo(s.name),
+      type: s.kind && PLUGIN_TYPE[s.kind],
+      custom: false,
+      claude: true,
+      status: s.status,
+    })),
+    ...(connectors.data ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      logo: pluginLogo(c.preset),
+      type: PLUGIN_TYPE[c.kind],
+      custom: c.preset === "custom",
+      claude: false,
+      status: "added",
+      connector: c,
+    })),
+  ];
+  const words = query.trim().toLowerCase();
+  const shown = rows.filter((r) => (source === "all" || (source === "claude") === r.claude) && r.name.toLowerCase().includes(words));
+  const taken = new Set(rows.map((r) => r.logo));
+  const builtIn = presets.filter((p) => p.preset !== "custom" && !taken.has(pluginLogo(p.preset)));
+  const custom = presets.find((p) => p.preset === "custom");
+
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-muted-foreground">Give bots hands: Notion, Google Drive, GitHub, a browser… Turn plugins on per bot in its settings.</p>
-
-      <Card>
-        <div className="flex items-start gap-3">
-          <div className="flex-1">
-            <h3 className="font-semibold">Inherited by Claude bots</h3>
-            <p className="text-xs text-muted-foreground">Your Claude Code MCP servers and claude.ai connectors come along automatically.</p>
-          </div>
-          <Button variant="secondary" size="sm" className="rounded-full" onClick={() => scan(!!inherited)} disabled={scanning}>
-            <RefreshCw /> {scanning ? "Scanning…" : inherited ? "Rescan" : "Scan"}
-          </Button>
+      <div className="flex items-center gap-2">
+        <InputGroup className="min-w-0 flex-1 sm:max-w-xs">
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+          <InputGroupInput value={query} placeholder="Search plugins" aria-label="Search plugins" onChange={(e) => setQuery(e.target.value)} />
+        </InputGroup>
+        <div className="ml-auto flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Filter plugins" title="Filter plugins">
+                <ListFilter />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuRadioGroup value={source} onValueChange={(v) => setSource(v as PluginSource)}>
+                <DropdownMenuRadioItem value="all">All plugins</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="fabs">Added in Fabs Bot</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="claude">From Claude</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus /> Add <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {builtIn.map((p) => (
+                <DropdownMenuItem key={p.preset} onSelect={() => setForm(p)}>
+                  <PluginIcon logo={pluginLogo(p.preset)} className="size-6 rounded-md" /> {p.name}
+                </DropdownMenuItem>
+              ))}
+              {builtIn.length > 0 && custom && <DropdownMenuSeparator />}
+              {custom && (
+                <DropdownMenuItem onSelect={() => setForm(custom)}>
+                  <PluginIcon className="size-6 rounded-md" /> Custom server
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {inherited && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            {inherited.servers.length === 0 && <span className="text-sm text-muted-foreground">None found.</span>}
-            {inherited.servers.map((s) => (
-              <span key={s.name} className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
-                <Led on={s.status === "connected"} /> {s.name.replace(/^claude\.ai /, "")}
-                <small className="text-muted-foreground">{s.status}</small>
-              </span>
-            ))}
-            <span className="text-xs text-muted-foreground">scanned {formatTime(inherited.scannedAt)}</span>
-          </div>
-        )}
-      </Card>
+      </div>
 
-      <Card>
-        <h3 className="font-semibold">Added in Fabs Bot</h3>
-        <p className="text-xs text-muted-foreground">Passed to the CLI on each run. Works for Claude and Codex bots.</p>
-        {list.length === 0 && <p className="mt-2 text-sm text-muted-foreground">Nothing yet.</p>}
-        {list.map((c) => (
-          <div key={c.id} className="mt-2 flex items-center gap-3 border-b py-2 last:border-0">
-            <b className="text-sm">{c.name}</b>
-            <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">{c.kind === "http" ? c.url : `${c.command} ${c.args.join(" ")}`}</span>
-            <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setForm({ ...c, blurb: "", secretKeys: [] })}>
-              Edit
-            </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => api.del(`/api/connectors/${c.id}`).then(connectors.reload)} aria-label="Remove">
-              <Trash2 />
-            </Button>
-          </div>
-        ))}
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {presets.map((p) => (
-            <button key={p.preset} className="flex flex-col gap-1 rounded-xl border p-3 text-left hover:bg-muted/60" onClick={() => setForm(p)}>
-              <b className="flex items-center gap-1.5 text-sm">
-                <Plus className="size-3.5" /> {p.name}
-              </b>
-              <small className="text-xs text-muted-foreground">{p.blurb}</small>
-            </button>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Plugin</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="w-10">
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {shown.map((r) => (
+            <TableRow key={r.id}>
+              <TableCell className="whitespace-normal">
+                <div className="flex items-center gap-3">
+                  <PluginIcon logo={r.logo} />
+                  <span className="min-w-0 font-medium wrap-anywhere">{r.name}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  {r.type}
+                  {r.custom && <Badge variant="outline">Custom</Badge>}
+                  {r.claude && <Badge variant="outline">Claude</Badge>}
+                </div>
+              </TableCell>
+              <TableCell>
+                {r.status === "connected" || r.status === "added" ? (
+                  <Check className="size-4" aria-label={r.status === "added" ? "Added" : "Connected"} />
+                ) : (
+                  <span className="text-muted-foreground">{PLUGIN_STATUS[r.status] ?? r.status}</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {r.connector && (
+                  <PluginRowMenu
+                    connector={r.connector}
+                    onEdit={(c) => setForm({ ...c, blurb: "", secretKeys: [] })}
+                    onRemove={(c) => api.del(`/api/connectors/${c.id}`).then(connectors.reload)}
+                  />
+                )}
+              </TableCell>
+            </TableRow>
           ))}
-        </div>
-      </Card>
+          {shown.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                {rows.length === 0 ? "No plugins yet." : "No plugins match."}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+
+      <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Badge variant="outline">Claude</Badge> From Claude Code and claude.ai · Claude bots only ·
+          <Button variant="link" className="h-auto p-0 text-muted-foreground" onClick={rescan} disabled={scanning}>
+            {scanning ? "Scanning…" : "Rescan"}
+          </Button>
+          {inherited && !scanning && <span>scanned {formatTime(inherited.scannedAt)}</span>}
+        </p>
+        <p>Turn plugins on in each bot's settings.</p>
+      </div>
       {form && <ConnectorForm initial={form} onDone={() => (setForm(null), connectors.reload())} />}
     </div>
+  );
+}
+
+function PluginRowMenu({ connector, onEdit, onRemove }: { connector: Connector; onEdit(c: Connector): void; onRemove(c: Connector): void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={`${connector.name} options`} title={`${connector.name} options`}>
+          <Ellipsis />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onEdit(connector)}>
+          <Pencil /> Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onSelect={() => onRemove(connector)}>
+          <Trash2 /> Remove
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
