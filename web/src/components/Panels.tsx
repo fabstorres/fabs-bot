@@ -227,12 +227,15 @@ export function ThisPcSettings() {
   );
 }
 
-type Inherited = { scannedAt: number; servers: { name: string; status: string; kind?: Connector["kind"] }[] };
-type PluginSource = "all" | "fabs" | "claude";
-type PluginRow = { id: string; name: string; logo?: string; type?: string; custom: boolean; claude: boolean; status: string; connector?: Connector };
+type CliSource = "claude" | "codex";
+type Inherited = { scannedAt: number; servers: { name: string; status: string; kind?: Connector["kind"]; source: CliSource }[] };
+type PluginSource = "all" | "fabs" | CliSource;
+type PluginRow = { id: string; name: string; logo?: string; type?: string; custom: boolean; source: "fabs" | CliSource; status: string; connector?: Connector };
 
-const PLUGIN_STATUS: Record<string, string> = { "needs-auth": "Needs sign-in", failed: "Failed", pending: "Starting" };
+const PLUGIN_READY: Record<string, string> = { connected: "Connected", enabled: "Enabled", added: "Added" };
+const PLUGIN_STATUS: Record<string, string> = { "needs-auth": "Needs sign-in", failed: "Failed", pending: "Starting", disabled: "Off" };
 const PLUGIN_TYPE: Record<Connector["kind"], string> = { http: "Web", stdio: "Local" };
+const CLI_NAME: Record<CliSource, string> = { claude: "Claude", codex: "Codex" };
 
 export function PluginsSettings() {
   const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []);
@@ -256,12 +259,12 @@ export function PluginsSettings() {
 
   const rows: PluginRow[] = [
     ...(inherited?.servers ?? []).map((s) => ({
-      id: `claude:${s.name}`,
+      id: `${s.source}:${s.name}`,
       name: s.name.replace(/^claude\.ai /, ""),
       logo: pluginLogo(s.name),
       type: s.kind && PLUGIN_TYPE[s.kind],
       custom: false,
-      claude: true,
+      source: s.source,
       status: s.status,
     })),
     ...(connectors.data ?? []).map((c) => ({
@@ -270,13 +273,13 @@ export function PluginsSettings() {
       logo: pluginLogo(c.preset),
       type: PLUGIN_TYPE[c.kind],
       custom: c.preset === "custom",
-      claude: false,
+      source: "fabs" as const,
       status: "added",
       connector: c,
     })),
   ];
   const words = query.trim().toLowerCase();
-  const shown = rows.filter((r) => (source === "all" || (source === "claude") === r.claude) && r.name.toLowerCase().includes(words));
+  const shown = rows.filter((r) => (source === "all" || source === r.source) && r.name.toLowerCase().includes(words));
   const taken = new Set(rows.map((r) => r.logo));
   const builtIn = presets.filter((p) => p.preset !== "custom" && !taken.has(pluginLogo(p.preset)));
   const custom = presets.find((p) => p.preset === "custom");
@@ -302,6 +305,7 @@ export function PluginsSettings() {
                 <DropdownMenuRadioItem value="all">All plugins</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="fabs">Added in Fabs Bot</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="claude">From Claude</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="codex">From Codex</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -352,12 +356,12 @@ export function PluginsSettings() {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   {r.type}
                   {r.custom && <Badge variant="outline">Custom</Badge>}
-                  {r.claude && <Badge variant="outline">Claude</Badge>}
+                  {r.source !== "fabs" && <Badge variant="outline">{CLI_NAME[r.source]}</Badge>}
                 </div>
               </TableCell>
               <TableCell>
-                {r.status === "connected" || r.status === "added" ? (
-                  <Check className="size-4" aria-label={r.status === "added" ? "Added" : "Connected"} />
+                {PLUGIN_READY[r.status] ? (
+                  <Check className="size-4" aria-label={PLUGIN_READY[r.status]} />
                 ) : (
                   <span className="text-muted-foreground">{PLUGIN_STATUS[r.status] ?? r.status}</span>
                 )}
@@ -385,7 +389,8 @@ export function PluginsSettings() {
 
       <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Badge variant="outline">Claude</Badge> From Claude Code and claude.ai · Claude bots only ·
+          <Badge variant="outline">Claude</Badge>
+          <Badge variant="outline">Codex</Badge> Already set up in each CLI, used automatically by bots on that CLI ·
           <Button variant="link" className="h-auto p-0 text-muted-foreground" onClick={rescan} disabled={scanning}>
             {scanning ? "Scanning…" : "Rescan"}
           </Button>
