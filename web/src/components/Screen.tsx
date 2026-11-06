@@ -346,7 +346,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
       role="region"
       aria-label={`${bot.name}'s screen`}
     >
-      <header className="flex h-14 flex-none items-center gap-2 px-3 md:px-4">
+      <header className="window-drag max-md:traffic-lights-space max-md:window-controls-space flex h-14 flex-none items-center gap-2 px-3 md:px-4">
         <Button variant="ghost" size="icon" className="rounded-full" onClick={onBack} aria-label="Back to desk">
           <ChevronLeft className="size-5" />
         </Button>

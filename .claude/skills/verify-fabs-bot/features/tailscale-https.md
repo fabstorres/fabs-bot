@@ -14,7 +14,7 @@ Settings → This PC has a Tailscale HTTPS switch. Turning it on serves the app 
 
 ## How to get to it (user POV)
 
-- On the PC, choose `Settings` (top of the sidebar) → `This PC`, then flip `Tailscale HTTPS`.
+- On the PC, choose `Settings` (bottom of the sidebar) → `This PC`, then flip `Tailscale HTTPS`.
 - From another device, open the HTTPS address shown under the switch.
 
 ## Driving it with control-fabs

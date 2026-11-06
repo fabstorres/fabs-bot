@@ -1,0 +1,5 @@
+#1 Chief (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Use the ask_user tool to ask me one question: which color should the logo be, Red or Blue. Do nothing else."
+#3 Chief (done): [tool fabsbot · ask_user done] [question "Which color should the logo be?" options=2 answered=0] "The question about the logo color is posted in the chat. Waiting for your pick between Red and Blue."
+#4 user (done): "A. Red"
+#5 Chief (done): "Got it, the logo will be **Red**."

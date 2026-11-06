@@ -17,7 +17,7 @@ Users manage the agent CLIs their bots run on this PC from one place. Settings â
 
 ## How to get to it (user POV)
 
-- Sidebar `Settings` (top, next to `+`): desktop opens on `Providers`; at 430px tap `Providers` in the section list.
+- Sidebar `Settings` (bottom, next to the PC menu): desktop opens on `Providers`; at 430px tap `Providers` in the section list.
 
 ## Driving it with control-fabs
 

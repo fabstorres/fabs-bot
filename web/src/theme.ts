@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { create } from "zustand";
+import { pcBridge } from "./pcBridge";
 
 export type Theme = "light" | "dark" | "system";
 export type Accent = "neutral" | "bot";
@@ -19,7 +20,9 @@ export const useTheme = create(() => ({ theme: savedTheme(), accent: savedAccent
 
 function applyTheme() {
   const { theme } = useTheme.getState();
-  document.documentElement.classList.toggle("dark", theme === "dark" || (theme === "system" && systemDark.matches));
+  const dark = theme === "dark" || (theme === "system" && systemDark.matches);
+  document.documentElement.classList.toggle("dark", dark);
+  if (pcBridge?.titleBar) void pcBridge.setDarkTitleBar?.(dark);
 }
 
 export function setTheme(theme: Theme) {
@@ -51,3 +54,4 @@ export function accentStyle(color: string): CSSProperties | undefined {
 }
 
 systemDark.addEventListener("change", applyTheme);
+applyTheme();

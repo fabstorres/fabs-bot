@@ -1,0 +1,17 @@
+# http://127.0.0.1:4941/  viewport=window
+- log "Conversation":
+  - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+  - 'group "Question: What should I own for you?"':
+    - text: What should I own for you?
+    - button "A Day-to-day ops" [disabled]
+    - button "B A specific project" [disabled]
+    - button "C Research and writing" [disabled]
+    - button "D Something else" [disabled]
+  - paragraph: "Use the ask_user tool to ask me one question: which color should the logo be, Red or Blue. Do nothing else."
+  - group "Work log":
+    - button "1 step"
+  - 'group "Question: Which color should the logo be?"':
+    - text: Which color should the logo be?
+    - button "A Red"
+    - button "B Blue"
+  - paragraph: The question about the logo color is posted in the chat. Waiting for your pick between Red and Blue.

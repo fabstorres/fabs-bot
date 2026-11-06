@@ -262,6 +262,8 @@ export interface PcSwitcher {
   open(id: string): Promise<string | null>;
   setIcon(id: string, icon: PcIcon): Promise<void>;
   manage(): Promise<void>;
+  titleBar?: string;
+  setDarkTitleBar?(dark: boolean): Promise<void>;
 }
 
 export type LimitsProviderId = Extract<ProviderId, "claude" | "codex">;

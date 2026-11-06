@@ -32,7 +32,7 @@ export function App() {
 
   useWindowEvent("popstate", restoreView);
 
-  if (unpaired) return <Notice shape="square" color="#7A7A7A" state="waiting" title="Not paired yet">On your PC, open Fabs Bot → tap Settings at the top of the sidebar → This PC → Pair a device, then scan the QR code with this device. Both need to be on your Tailscale network.</Notice>;
+  if (unpaired) return <Notice shape="square" color="#7A7A7A" state="waiting" title="Not paired yet">On your PC, open Fabs Bot → tap Settings at the bottom of the sidebar → This PC → Pair a device, then scan the QR code with this device. Both need to be on your Tailscale network.</Notice>;
   if (!loaded && offline)
     return (
       <Notice
@@ -51,7 +51,7 @@ export function App() {
     );
   if (!loaded)
     return (
-      <div className="grid h-dvh place-items-center">
+      <div className="window-drag grid h-dvh place-items-center">
         <BotAvatar shape="drop" color="#FF5A00" size={64} state="thinking" />
       </div>
     );
@@ -103,7 +103,7 @@ function Empty() {
 
 function Notice({ title, children, action, ...avatar }: { title: string; children: ReactNode; action?: ReactNode } & Parameters<typeof BotAvatar>[0]) {
   return (
-    <div className="grid h-dvh place-items-center px-6">
+    <div className="window-drag grid h-dvh place-items-center px-6">
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
         <BotAvatar {...avatar} size={112} />
         <h1 className="text-2xl font-semibold">{title}</h1>

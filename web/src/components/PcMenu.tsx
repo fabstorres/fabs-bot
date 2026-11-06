@@ -1,7 +1,8 @@
 import { Briefcase, ChevronDown, House, Laptop, Monitor, PcCase, Server, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
-import { PC_ICONS, type PcChoice, type PcIcon, type PcSwitcher } from "../../../shared/types";
+import { PC_ICONS, type PcChoice, type PcIcon } from "../../../shared/types";
 import { useLoad } from "../hooks";
+import { pcBridge as switcher } from "../pcBridge";
 import { isConnected, useStore } from "../store";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
-const switcher = (window as unknown as { fabsPcs?: PcSwitcher }).fabsPcs;
 
 const ICONS: Record<PcIcon, { Icon: LucideIcon; label: string }> = {
   monitor: { Icon: Monitor, label: "Monitor" },
@@ -58,13 +57,13 @@ export function PcMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-9 min-w-0 max-w-44 shrink justify-start gap-2 rounded-full px-2.5 md:mr-auto md:max-w-48" aria-label={`PC ${name}`} title={name}>
+        <Button variant="ghost" className="h-9 min-w-0 max-w-44 shrink justify-start gap-2 rounded-full px-2.5 md:max-w-48" aria-label={`PC ${name}`} title={name}>
           <PcGlyph icon={current?.icon} className="size-4" />
           <span className="pc-name truncate font-semibold">{name}</span>
           <ChevronDown className="size-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-60">
+      <DropdownMenuContent side="top" align="start" className="w-60">
         <DropdownMenuLabel className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
           <i className={cn("size-1.5 rounded-full", status.connected ? "bg-working" : "bg-muted-foreground")} />
           {status.text}

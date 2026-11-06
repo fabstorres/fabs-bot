@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type IpcMainInvokeEvent, type WebContents } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, nativeTheme, net, protocol, session, shell, type BrowserWindowConstructorOptions, type IpcMainInvokeEvent, type WebContents } from "electron";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
@@ -60,6 +60,22 @@ async function reachable(origin: string) {
   }
 }
 
+async function drawsOwnTitleBar(origin: string) {
+  try {
+    const page = await net.fetch(`${origin}/`, { signal: AbortSignal.timeout(3000) });
+    return (await page.text()).includes('name="fabs-title-bar"');
+  } catch {
+    return false;
+  }
+}
+
+const titleBarOverlay = (dark: boolean) => ({ color: "#00000000", symbolColor: dark ? "#ececec" : "#111111", height: 56 });
+
+function titleBarOptions(): BrowserWindowConstructorOptions {
+  if (process.platform === "darwin") return { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 16, y: 26 } };
+  return { titleBarStyle: "hidden", titleBarOverlay: titleBarOverlay(nativeTheme.shouldUseDarkColors) };
+}
+
 function showLauncher(error?: string) {
   if (!launcher) {
     launcher = new BrowserWindow({
@@ -89,6 +105,7 @@ async function openPc(id: string, url?: string): Promise<string | null> {
       : "Couldn't reach that PC. Check that it's on, running Fabs Bot, and on your tailnet.";
   }
   writeStore({ ...store, last: id });
+  const ownTitleBar = await drawsOwnTitleBar(origin);
 
   const previous = pcWindow;
   pcOrigin = origin;
@@ -97,7 +114,13 @@ async function openPc(id: string, url?: string): Promise<string | null> {
     height: 860,
     title: "Fabs Bot",
     backgroundColor: "#ffffff",
-    webPreferences: { preload: join(app.getAppPath(), "dist/desktop/pc-preload.cjs"), sandbox: true, contextIsolation: true },
+    ...(ownTitleBar ? titleBarOptions() : {}),
+    webPreferences: {
+      preload: join(app.getAppPath(), "dist/desktop/pc-preload.cjs"),
+      sandbox: true,
+      contextIsolation: true,
+      additionalArguments: ownTitleBar ? ["--fabs-title-bar"] : [],
+    },
   });
   const opened = pcWindow;
   opened.setMenuBarVisibility(false);
@@ -186,6 +209,13 @@ handle("pc:list", () => pcChoices(), fromPcWindow);
 handle("pc:open", (id) => openPc(String(id)), fromPcWindow);
 handle("pc:icon", (id, icon) => setPcIcon(String(id), icon), fromPcWindow);
 handle("pc:manage", () => showLauncher(), fromPcWindow);
+handle(
+  "pc:title-bar",
+  (dark) => {
+    if (process.platform !== "darwin") pcWindow?.setTitleBarOverlay(titleBarOverlay(dark === true));
+  },
+  fromPcWindow,
+);
 
 app.on("web-contents-created", (_e, contents) => {
   contents.on("will-navigate", (e, url) => {

@@ -1,0 +1,6 @@
+# http://127.0.0.1:4941/  viewport=window
+- group "Team lead":
+  - button "Bot Chief":
+    - text: Chief
+    - img "Needs you"
+    - text: Waiting for your answer
