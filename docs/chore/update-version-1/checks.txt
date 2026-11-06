@@ -1,0 +1,27 @@
+API GET /api/host: success
+{
+  "version": "0.1.0-alpha.8",
+  "port": 4870,
+  "isolatedWorkRoot": true,
+  "tailscaleHttpsEnabled": false
+}
+
+Startup log:
+fabs-bot 0.1.0-alpha.8
+
+Electron PC window bridges:
+{
+  "launcherBridge": "undefined",
+  "pcBridge": "object"
+}
+
+Doctor:
+ok    server pid 131718 running
+ok    port 4870 owned by our server
+ok    isolated work root confirmed
+ok    tailscale running, instance is loopback-only
+ok    Tailscale HTTPS is off
+ok    web build is fresh
+ok    agent CLIs installed: claude, codex, cursor, opencode, gemini
+ok    desktop app up
+run=alpha8-update-version-1 url=http://127.0.0.1:4870 rev=c6a99a8+dirty
