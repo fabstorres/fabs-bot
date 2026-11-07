@@ -1,0 +1,11 @@
+# http://127.0.0.1:4890/  viewport=window
+- region "Notifications alt+T"
+- menu "PC This PC":
+  - text: All quiet
+  - group:
+    - menuitemradio "This PC" [checked]
+    - menuitemradio "Baseline"
+    - menuitemradio "Previous build"
+  - separator
+  - menuitem "Change icon"
+  - menuitem "Manage PCs…"

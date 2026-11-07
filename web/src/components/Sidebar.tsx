@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Gauge, Plus, Search, Settings } from "lucide-react";
+import { Gauge, Plus, Search, Settings, Star } from "lucide-react";
 import type { Bot, Thread } from "../../../shared/types";
 import { formatTime } from "../api";
 import { openDirect, openLimits, openNestedThread, openSettings, openThread, startCreating, threadTitle, useStore } from "../store";
@@ -7,9 +7,12 @@ import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
 import { PcMenu } from "./PcMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { WindowControls } from "./WindowControls";
 import { cn } from "@/lib/utils";
 
 type Row = { kind: "bot"; bot: Bot; threads: Thread[]; pending?: Thread; at: number } | { kind: "group"; thread: Thread; at: number };
+type BotRowData = Extract<Row, { kind: "bot" }>;
+type Flag = "needs" | "unread" | null;
 
 const isDirectWith = (t: Thread, botId: string) => t.kind === "direct" && t.memberIds.length === 1 && t.memberIds[0] === botId;
 
@@ -43,22 +46,20 @@ export function Sidebar() {
   const creating = useStore((s) => s.creating);
   const search = useStore((s) => s.search);
   const rows = useRows();
+  const lead = search ? undefined : rows.find((r): r is BotRowData => r.kind === "bot" && r.bot.isTeamLead);
 
   return (
     <aside aria-label="Bots" className="flex h-full w-full flex-col bg-sidebar md:w-80 md:border-r md:border-sidebar-border">
-      <div className="flex items-center gap-1 px-4 pt-4 pb-2">
-        <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only">Fabs Bot</h1>
-        <PcMenu />
-        <Button id="open-settings" variant="ghost" size="icon" className="rounded-full" onClick={openSettings} aria-label="Settings" title="Settings">
-          <Settings className="size-5" />
-        </Button>
-        <Button id="open-limits" variant="ghost" size="icon" className="rounded-full" onClick={openLimits} aria-label="Limits" title="Limits">
+      <header className="window-drag traffic-lights-space flex items-center gap-1 px-4 pt-4 pb-2">
+        <WindowControls />
+        <h1 className="flex-1 text-lg font-semibold tracking-tight md:sr-only [[data-title-bar]_&]:sr-only">Fabs Bot</h1>
+        <Button id="open-limits" variant="ghost" size="icon" className="ml-auto rounded-full" onClick={openLimits} aria-label="Limits" title="Limits">
           <Gauge className="size-5" />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={startCreating} aria-label="New bot" title="New bot">
           <Plus className="size-5" />
         </Button>
-      </div>
+      </header>
       {bots.length > 0 && (
         <label className="mx-3 mb-2 flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-muted-foreground transition-[color,box-shadow] focus-within:bg-black/7 focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/40 dark:inset-ring dark:inset-ring-input dark:focus-within:bg-input/60">
           <Search className="size-4" />
@@ -71,7 +72,8 @@ export function Sidebar() {
           />
         </label>
       )}
-      {bots.length > 0 && !search && <Favorites bots={bots.slice(0, 3)} />}
+      {lead && <LeadSpot bot={lead.bot} threads={lead.threads} pending={lead.pending} />}
+      {bots.length > 0 && !search && <Favorites bots={bots.filter((b) => !b.isTeamLead).slice(0, 3)} />}
 
       <nav aria-label="Chats" className="flex-1 overflow-y-auto px-2 pb-2">
         {bots.length === 0 && (
@@ -90,10 +92,20 @@ export function Sidebar() {
           </div>
         )}
         {rows.map((r) =>
-          r.kind === "bot" ? <BotRow key={r.bot.id} bot={r.bot} threads={r.threads} pending={r.pending} /> : <GroupRow key={r.thread.id} thread={r.thread} />,
+          r === lead ? null : r.kind === "bot" ? (
+            <BotRow key={r.bot.id} bot={r.bot} threads={r.threads} pending={r.pending} />
+          ) : (
+            <GroupRow key={r.thread.id} thread={r.thread} />
+          ),
         )}
         {search && rows.length === 0 && <p className="mt-10 text-center text-sm text-muted-foreground">Nothing matches "{search}".</p>}
       </nav>
+      <footer className="flex items-center gap-1 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))]">
+        <PcMenu />
+        <Button id="open-settings" variant="ghost" size="icon" className="ml-auto rounded-full" onClick={openSettings} aria-label="Settings" title="Settings">
+          <Settings className="size-5" />
+        </Button>
+      </footer>
     </aside>
   );
 }
@@ -110,6 +122,42 @@ function Favorites({ bots }: { bots: Bot[] }) {
       ))}
     </div>
   );
+}
+
+function LeadSpot({ bot, threads, pending }: { bot: Bot; threads: Thread[]; pending?: Thread }) {
+  const { active, flag, note, open } = useBotRow(bot, threads, pending);
+  return (
+    <div role="group" aria-label="Team lead" className="px-2 pb-2">
+      <button
+        aria-label={`Bot ${bot.name}`}
+        aria-current={active ? "page" : undefined}
+        onClick={open}
+        className={cn(
+          "flex w-full flex-col items-center gap-1.5 rounded-2xl px-3 pt-3 pb-2.5 transition-colors hover:bg-sidebar-accent/60",
+          active && "bg-sidebar-accent hover:bg-sidebar-accent",
+        )}
+      >
+        <span className="relative">
+          <LiveAvatar bot={bot} size={64} />
+          <span
+            className={cn("absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full bg-amber-500 ring-2", active ? "ring-sidebar-accent" : "ring-sidebar")}
+            title="Team lead"
+          >
+            <Star className="size-3.5 fill-white text-white" />
+          </span>
+        </span>
+        <span className="flex max-w-full items-center gap-1.5">
+          <span className="truncate font-semibold">{bot.name}</span>
+          {flag && <FlagDot flag={flag} />}
+        </span>
+        {note && <span className="max-w-full truncate text-sm text-muted-foreground">{note}</span>}
+      </button>
+    </div>
+  );
+}
+
+function FlagDot({ flag }: { flag: "needs" | "unread" }) {
+  return <span className={cn("size-2.5 flex-none rounded-full", flag === "needs" ? "bg-waiting" : "bg-blue-500")} role="img" aria-label={flag === "needs" ? "Needs you" : "Unread"} />;
 }
 
 function RowShell({
@@ -132,7 +180,7 @@ function RowShell({
   tag?: string;
   time: string;
   preview: ReactNode;
-  flag: "needs" | "unread" | null;
+  flag: Flag;
   threadId?: string;
 }) {
   return (
@@ -158,48 +206,46 @@ function RowShell({
         </span>
         <span className="flex items-center gap-2">
           <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{preview}</span>
-          {flag && (
-            <span
-              className={cn("size-2.5 flex-none rounded-full", flag === "needs" ? "bg-waiting" : "bg-blue-500")}
-              role="img"
-              aria-label={flag === "needs" ? "Needs you" : "Unread"}
-            />
-          )}
+          {flag && <FlagDot flag={flag} />}
         </span>
       </span>
     </button>
   );
 }
 
-function BotRow({ bot, threads, pending }: { bot: Bot; threads: Thread[]; pending?: Thread }) {
+function useBotRow(bot: Bot, threads: Thread[], pending?: Thread) {
   const status = useStore((s) => s.statuses[bot.id]);
-  const open = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
+  const current = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
   const bots = useStore((s) => s.bots);
-  const latest = threads[0];
   const busy = status && status.state !== "idle" && status.text;
+  const note = busy ? (
+    <span className={status.state === "blocked" ? "text-amber-600" : undefined}>{status.text}</span>
+  ) : pending?.kind === "backchannel" ? (
+    <span className="text-amber-600">Waiting for you in {threadTitle(pending, bots)}</span>
+  ) : null;
+  const flag: Flag = pending ? "needs" : threads.some((t) => t.unread > 0) ? "unread" : null;
+  const open = () => {
+    if (pending?.kind === "backchannel") openNestedThread(pending.id);
+    else if (pending) openThread(pending.id);
+    else void openDirect(bot.id);
+  };
+  return { active: !!current && isDirectWith(current, bot.id), flag, note, open };
+}
+
+function BotRow({ bot, threads, pending }: { bot: Bot; threads: Thread[]; pending?: Thread }) {
+  const { active, flag, note, open } = useBotRow(bot, threads, pending);
+  const latest = threads[0];
   return (
     <RowShell
       label={`Bot ${bot.name}`}
-      active={!!open && isDirectWith(open, bot.id)}
-      onClick={() => {
-        if (pending?.kind === "backchannel") openNestedThread(pending.id);
-        else if (pending) openThread(pending.id);
-        else void openDirect(bot.id);
-      }}
+      active={active}
+      onClick={open}
       avatar={<LiveAvatar bot={bot} size={44} />}
       title={bot.name}
       tag={bot.label}
       time={latest ? formatTime(latest.updatedAt) : ""}
-      preview={
-        busy ? (
-          <span className={status.state === "blocked" ? "text-amber-600" : undefined}>{status.text}</span>
-        ) : pending?.kind === "backchannel" ? (
-          <span className="text-amber-600">Waiting for you in {threadTitle(pending, bots)}</span>
-        ) : (
-          latest?.preview || bot.role
-        )
-      }
-      flag={pending ? "needs" : threads.some((t) => t.unread > 0) ? "unread" : null}
+      preview={note ?? (latest?.preview || bot.role)}
+      flag={flag}
     />
   );
 }

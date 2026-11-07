@@ -1,0 +1,61 @@
+# http://127.0.0.1:4890/  viewport=window
+- complementary "Bots":
+  - group "Window controls":
+    - button "Minimize"
+    - button "Restore"
+    - button "Close"
+  - heading "Fabs Bot" [level=1]
+  - button "Limits"
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Design": Design 3:35 PM Hey, I'm Design. What's the main thing you want me on?
+    - button "Bot Careful":
+      - text: Careful 3:35 PM Hey, I'm Careful. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Engineer":
+      - text: Engineer 3:35 PM Hey, I'm Engineer. What's the main thing you want me on?
+      - img "Unread"
+    - button "Bot Chief": Chief 3:35 PM Hey, I'm Chief. What's the main thing you want me on?
+    - button "Bot Chief of Staff":
+      - text: Chief of Staff 3:35 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - img "Unread"
+  - button "PC This PC"
+  - button "Settings"
+- main:
+  - region "Thread with Chief":
+    - text: Chief
+    - button "Open desk" [pressed]
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops"
+        - button "B A specific project"
+        - button "C Research and writing"
+        - button "D Something else"
+    - textbox "Message":
+      - paragraph
+    - button "Attach"
+    - button "Dictate"
+    - button "Send" [disabled]
+  - complementary "Chief's desk":
+    - button "Show desk" [disabled]
+    - heading "Desk" [level=2]
+    - button "Show settings"
+    - button "Close desk"
+    - region "Chief's screen":
+      - button "Open Chief's screen" [disabled]: Nothing open
+      - paragraph: Chief's screen
+    - button "chief"
+    - group "Desk files":
+      - paragraph: Empty desk. Files the bot makes show up here.
+    - paragraph: Chief's desk
+    - heading "Routines" [level=3]
+    - paragraph:
+      - text: None yet. Ask Chief to do something on a schedule, or add one in
+      - button "settings"
+      - text: .
+- region "Notifications alt+T"

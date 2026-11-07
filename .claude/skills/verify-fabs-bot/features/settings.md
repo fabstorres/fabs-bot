@@ -1,6 +1,6 @@
 # Settings
 
-The gear at the top of the sidebar opens Settings in a shadcn dialog over the current chat. On desktop it opens on Providers, with a left nav (`Providers`, `Plugins`, `This PC`, `Appearance`), a search box that filters the nav, a `Settings / <Section>` breadcrumb, and a close button that returns to the chat that was open. At 430px the gear opens the section list, each section opens inside the dialog with `Back` to the list. Close, Escape, or clicking the overlay dismisses Settings without adding browser-history entries. The chat and draft stay mounted underneath. Every section acts on the PC the window is connected to, except Appearance: its theme and accent color are saved on this device only.
+The gear at the bottom of the sidebar opens Settings in a shadcn dialog over the current chat. On desktop it opens on Providers, with a left nav (`Providers`, `Plugins`, `This PC`, `Appearance`), a search box that filters the nav, a `Settings / <Section>` breadcrumb, and a close button that returns to the chat that was open. At 430px the gear opens the section list, each section opens inside the dialog with `Back` to the list. Close, Escape, or clicking the overlay dismisses Settings without adding browser-history entries. The chat and draft stay mounted underneath. Every section acts on the PC the window is connected to, except Appearance: its theme and accent color are saved on this device only.
 
 ## Sub-features
 

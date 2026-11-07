@@ -206,6 +206,31 @@
   }
 }
 
+@utility window-drag {
+  [data-title-bar] & {
+    -webkit-app-region: drag;
+  }
+  [data-title-bar] & :is(button, input, a) {
+    -webkit-app-region: no-drag;
+  }
+}
+
+@utility traffic-lights-space {
+  [data-title-bar="darwin"] &::before {
+    content: "";
+    flex: none;
+    width: 4rem;
+  }
+}
+
+[data-title-bar] :is([role="dialog"], [role="menu"], [role="listbox"]) {
+  -webkit-app-region: no-drag;
+}
+
+[data-title-bar] [data-slot="dialog-content"] {
+  max-height: calc(100dvh - 7rem);
+}
+
 .typing {
   display: inline-flex;
   gap: 4px;

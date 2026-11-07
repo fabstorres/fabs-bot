@@ -1,6 +1,6 @@
 # Limits
 
-The gauge next to the Settings gear opens Limits, one dialog that shows how much usage is left on this PC's Claude Code and Codex logins at a glance. It has no nav and no sections: a header (`Limits`, a `Checked …` note, `Refresh`, `Close limits`) over one scrolling page with a Claude Code section, then a Codex section. Both are checked in parallel when it opens. It is the size of Settings on desktop and full screen at 430px. Each check reads the CLI's own usage report without starting a chat or a model turn.
+The gauge at the top of the sidebar, next to New bot, opens Limits, one dialog that shows how much usage is left on this PC's Claude Code and Codex logins at a glance. It has no nav and no sections: a header (`Limits`, a `Checked …` note, `Refresh`, `Close limits`) over one scrolling page with a Claude Code section, then a Codex section. Both are checked in parallel when it opens. It is the size of Settings on desktop and full screen at 430px. Each check reads the CLI's own usage report without starting a chat or a model turn.
 
 ## Sub-features
 
@@ -15,7 +15,7 @@ The gauge next to the Settings gear opens Limits, one dialog that shows how much
 
 ## How to get to it (user POV)
 
-- Sidebar `Limits` (the gauge, top, between the gear and `+`), on desktop or phone.
+- Sidebar `Limits` (the gauge, top, next to `+`), on desktop or phone.
 
 ## Driving it with control-fabs
 

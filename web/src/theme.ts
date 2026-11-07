@@ -19,7 +19,8 @@ export const useTheme = create(() => ({ theme: savedTheme(), accent: savedAccent
 
 function applyTheme() {
   const { theme } = useTheme.getState();
-  document.documentElement.classList.toggle("dark", theme === "dark" || (theme === "system" && systemDark.matches));
+  const dark = theme === "dark" || (theme === "system" && systemDark.matches);
+  document.documentElement.classList.toggle("dark", dark);
 }
 
 export function setTheme(theme: Theme) {
@@ -51,3 +52,4 @@ export function accentStyle(color: string): CSSProperties | undefined {
 }
 
 systemDark.addEventListener("change", applyTheme);
+applyTheme();

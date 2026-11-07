@@ -1,0 +1,44 @@
+# http://127.0.0.1:4890/  viewport=window
+- main:
+  - region "New bot":
+    - group "Window controls":
+      - button "Minimize"
+      - button "Maximize"
+      - button "Close"
+    - button "Back"
+    - text: New Bot
+    - radiogroup "Color":
+      - radio "#FF5A00"
+      - radio "#FF9500"
+      - radio "#FF2238"
+      - radio "#FF2E93"
+      - radio "#7B3FF2"
+      - radio "#1478FF" [checked]
+      - radio "#00B39A"
+      - radio "#00C060"
+      - radio "#8A5530"
+      - radio "#7A7A7A"
+      - radio "#111111"
+    - radiogroup "Shape":
+      - radio "blob" [checked]
+      - radio "cloud"
+      - radio "drop"
+      - radio "hex"
+      - radio "square"
+      - radio "egg"
+      - radio "pill"
+      - radio "triangle"
+      - radio "flower"
+      - radio "bean"
+    - text: Name
+    - textbox "Name":
+      - /placeholder: New Bot
+    - button "Get started" [disabled]
+    - heading "Suggestions" [level=2]
+    - button "Suggestion Chief of Staff": Chief of Staff Reads tomorrow's calendar, preps a morning digest
+    - button "Suggestion Inbox Triage": Inbox Triage Sorts email, drafts replies, flags what needs you
+    - button "Suggestion UX Research": UX Research Digs into a question and comes back with sources
+    - button "Suggestion Design": Design Proposes UI, reviews screenshots, writes specs
+    - button "Suggestion Engineer": Engineer Builds and fixes code in your repos
+    - button "Suggestion Librarian": Librarian Keeps your Notion and Drive tidy and findable
+- region "Notifications alt+T"

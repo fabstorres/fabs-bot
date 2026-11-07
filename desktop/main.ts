@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type IpcMainInvokeEvent, type WebContents } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type BrowserWindowConstructorOptions, type IpcMainInvokeEvent, type WebContents } from "electron";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
@@ -60,6 +60,20 @@ async function reachable(origin: string) {
   }
 }
 
+async function drawsOwnTitleBar(origin: string) {
+  try {
+    const page = await net.fetch(`${origin}/`, { signal: AbortSignal.timeout(3000) });
+    return (await page.text()).includes('name="fabs-title-bar" content="sidebar-controls"');
+  } catch {
+    return false;
+  }
+}
+
+function titleBarOptions(): BrowserWindowConstructorOptions {
+  if (process.platform === "darwin") return { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 16, y: 26 } };
+  return { frame: false };
+}
+
 function showLauncher(error?: string) {
   if (!launcher) {
     launcher = new BrowserWindow({
@@ -89,6 +103,7 @@ async function openPc(id: string, url?: string): Promise<string | null> {
       : "Couldn't reach that PC. Check that it's on, running Fabs Bot, and on your tailnet.";
   }
   writeStore({ ...store, last: id });
+  const ownTitleBar = await drawsOwnTitleBar(origin);
 
   const previous = pcWindow;
   pcOrigin = origin;
@@ -97,10 +112,19 @@ async function openPc(id: string, url?: string): Promise<string | null> {
     height: 860,
     title: "Fabs Bot",
     backgroundColor: "#ffffff",
-    webPreferences: { preload: join(app.getAppPath(), "dist/desktop/pc-preload.cjs"), sandbox: true, contextIsolation: true },
+    ...(ownTitleBar ? titleBarOptions() : {}),
+    webPreferences: {
+      preload: join(app.getAppPath(), "dist/desktop/pc-preload.cjs"),
+      sandbox: true,
+      contextIsolation: true,
+      additionalArguments: ownTitleBar ? ["--fabs-title-bar"] : [],
+    },
   });
   const opened = pcWindow;
   opened.setMenuBarVisibility(false);
+  const sendMaximized = () => opened.webContents.send("pc:maximized", opened.isMaximized());
+  opened.on("maximize", sendMaximized);
+  opened.on("unmaximize", sendMaximized);
   opened.on("closed", () => {
     if (pcWindow === opened) {
       pcWindow = null;
@@ -186,6 +210,13 @@ handle("pc:list", () => pcChoices(), fromPcWindow);
 handle("pc:open", (id) => openPc(String(id)), fromPcWindow);
 handle("pc:icon", (id, icon) => setPcIcon(String(id), icon), fromPcWindow);
 handle("pc:manage", () => showLauncher(), fromPcWindow);
+handle("pc:minimize", () => pcWindow?.minimize(), fromPcWindow);
+handle("pc:toggle-maximize", () => {
+  if (pcWindow?.isMaximized()) pcWindow.unmaximize();
+  else pcWindow?.maximize();
+}, fromPcWindow);
+handle("pc:close", () => pcWindow?.close(), fromPcWindow);
+handle("pc:is-maximized", () => pcWindow?.isMaximized() ?? false, fromPcWindow);
 
 app.on("web-contents-created", (_e, contents) => {
   contents.on("will-navigate", (e, url) => {

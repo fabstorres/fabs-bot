@@ -8,6 +8,7 @@ import { BotAvatar, LiveAvatar } from "./BotAvatar";
 import { scheduleLabel } from "./BotEditor";
 import { ScreenTile } from "./Screen";
 import { Button } from "@/components/ui/button";
+import { WindowControls } from "./WindowControls";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +28,8 @@ export function DeskPanel({ thread }: { thread: Thread }) {
       aria-label={`${bot.name}'s desk`}
       className="fixed inset-0 z-40 flex flex-col bg-background animate-in slide-in-from-right-4 md:static md:z-auto md:w-[360px] md:flex-none md:border-l"
     >
-      <header className="flex h-14 flex-none items-center gap-1 px-3">
+      <header className="window-drag max-md:traffic-lights-space flex h-14 flex-none items-center gap-1 px-3">
+        <WindowControls className="md:hidden" />
         <Button variant="ghost" size="icon" className="rounded-full" disabled={page === "desk"} onClick={() => setPage("desk")} aria-label="Show desk">
           <ChevronLeft className="size-5" />
         </Button>

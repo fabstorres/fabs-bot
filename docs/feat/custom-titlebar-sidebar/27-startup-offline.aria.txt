@@ -1,0 +1,9 @@
+# http://127.0.0.1:4936/  viewport=window
+- group "Window controls":
+  - button "Minimize"
+  - button "Maximize"
+  - button "Close"
+- heading "Fabs Bot is reconnecting" [level=1]
+- paragraph: Fabs Bot did not answer
+- button "Reconnect"
+- region "Notifications alt+T"

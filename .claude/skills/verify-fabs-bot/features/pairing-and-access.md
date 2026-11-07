@@ -15,7 +15,7 @@ Fabs Bot is reachable only from the PC itself and from the user's Tailscale netw
 ## How to get to it (user POV)
 
 - On the PC, open `http://127.0.0.1:4800` (port 4870+ for a verification run).
-- On the PC, choose `Settings` (top of the sidebar) → `This PC`, then `Pair a device` to see a QR code and a one-time pairing link.
+- On the PC, choose `Settings` (bottom of the sidebar) → `This PC`, then `Pair a device` to see a QR code and a one-time pairing link.
 - On a phone or laptop on the tailnet, scan the QR code or open the pairing link within 5 minutes.
 - On the PC or any paired device, choose `Settings` → `This PC` and use `Remove` next to a device under `Paired devices`.
 
