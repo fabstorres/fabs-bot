@@ -485,7 +485,7 @@ const tools: ToolDef[] = [
       if (!result.ok) {
         return reject("not_delivered", `Not delivered: ${result.detail}. Tell the group it failed. To retry, call send_webhook again with request_id ${requestId} so the receiver can drop duplicates.`);
       }
-      return `Received by the endpoint (${result.detail}, request ${requestId}). That only means it arrived: the work isn't done, and no reply comes back here. Tell the group in one line that it was received, not that it's done.`;
+      return `Received by the endpoint (${result.detail}, request ${requestId}). That only means it arrived. You won't learn whether the work starts or finishes, and no reply comes back here. Tell the group in one line that it was received; don't say it's running or done.`;
     },
   },
   {

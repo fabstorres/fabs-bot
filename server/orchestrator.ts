@@ -165,7 +165,7 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
     );
     if (thread.kind === "group") {
       lines.push(
-        `- send_webhook: when the user asks, send a task to this group's webhook (${db.getWebhook(thread.id) ? "set up" : "not set up yet"}). You never see its address or secret. Success means received, not done, and no reply comes back.`,
+        `- send_webhook: when the user asks, send a task to this group's webhook (${db.getWebhook(thread.id) ? "set up" : "not set up yet"}). You never see its address or secret. Success means received only: you won't learn whether the work starts or finishes, and no reply comes back.`,
         `- setup_webhook: post a card the user taps to set up or change this group's webhook. Never ask for the address or secret in chat.`,
       );
     }
@@ -197,7 +197,7 @@ function describeMessage(m: Message, self: Bot): string {
         case "screen":
           return `[asked the user to take over the screen: ${p.reason}]`;
         case "webhook":
-          return `[sent to this group's webhook, request ${p.requestId}: ${p.state === "received" ? "received" : p.state === "failed" ? "not delivered" : "sending"}${p.detail ? `, ${p.detail}` : ""}]`;
+          return `[sent to this group's webhook, request ${p.requestId}: ${p.state === "received" ? "received only, nothing known about the work" : p.state === "failed" ? "not delivered" : "sending"}${p.detail ? `, ${p.detail}` : ""}]`;
         case "webhook-setup":
           return "[posted a card to set up this group's webhook]";
         default:
