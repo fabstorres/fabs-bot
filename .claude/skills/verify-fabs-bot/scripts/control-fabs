@@ -340,7 +340,11 @@ const commands: Record<string, () => Promise<void>> = {
                   ? `[question ${JSON.stringify(p.question)} options=${p.options.length} answered=${p.answered ?? "-"}]`
                   : p.type === "screen"
                     ? `[screen ${JSON.stringify(p.reason)} ${p.outcome ?? "pending"}]`
-                    : `[approval ${p.tool} ${p.decision ?? "pending"} id=${p.requestId}]`,
+                    : p.type === "webhook"
+                      ? `[webhook ${p.state} ${JSON.stringify(p.detail)} request=${p.requestId}]`
+                      : p.type === "webhook-setup"
+                        ? "[webhook-setup]"
+                        : `[approval ${p.tool} ${p.decision ?? "pending"} id=${p.requestId}]`,
         )
         .join(" ");
       console.log(redact(`#${m.seq} ${who} (${m.status}): ${parts}`));
