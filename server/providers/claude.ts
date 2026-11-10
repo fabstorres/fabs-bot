@@ -1,6 +1,5 @@
-import type { Connector } from "../../shared/types";
 import { parseJson, spawnLines, summarizeToolInput } from "./spawn";
-import type { Launch, Provider } from "./types";
+import { serverKey, type Launch, type Provider, type RunConnector } from "./types";
 
 export function prettyToolName(name: string): string {
   const m = name.match(/^mcp__(.+?)__(.+)$/);
@@ -9,16 +8,18 @@ export function prettyToolName(name: string): string {
   return `${server} · ${m[2]}`;
 }
 
-function mcpServers(mcpUrl: string, connectors: Connector[]) {
-  const servers: Record<string, unknown> = { fabsbot: { type: "http", url: mcpUrl, timeout: 3_600_000 } };
+function connectorServers(connectors: RunConnector[]) {
+  const servers: Record<string, unknown> = {};
   for (const c of connectors) {
-    const key = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-    servers[key] =
-      c.kind === "http"
-        ? { type: "http", url: c.url, headers: c.headers }
-        : { type: "stdio", command: c.command, args: c.args, env: c.env };
+    const headers = c.tokenEnv ? { ...c.headers, Authorization: `Bearer \${${c.tokenEnv}}` } : c.headers;
+    servers[serverKey(c)] =
+      c.kind === "http" ? { type: "http", url: c.url, headers } : { type: "stdio", command: c.command, args: c.args, env: c.env };
   }
-  return { mcpServers: servers };
+  return servers;
+}
+
+function mcpServers(mcpUrl: string, connectors: RunConnector[]) {
+  return { mcpServers: { fabsbot: { type: "http", url: mcpUrl, timeout: 3_600_000 }, ...connectorServers(connectors) } };
 }
 
 /**

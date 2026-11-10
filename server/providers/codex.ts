@@ -1,6 +1,5 @@
 import { clip, parseJson, spawnLines, summarizeToolInput } from "./spawn";
-import type { Provider } from "./types";
-import type { Launch } from "./types";
+import { serverKey, type Launch, type Provider, type RunConnector } from "./types";
 import type { InheritedServer } from "./claude";
 
 /** Codex `-c key=value` values are parsed as TOML; JSON strings are valid TOML basic strings. */
@@ -32,16 +31,7 @@ export const codex: Provider = {
       "mcp_servers.fabsbot.tool_timeout_sec=3600",
       `developer_instructions=${toml(o.systemPrompt)}`,
     ];
-    for (const c of o.connectors) {
-      const key = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-      if (c.kind === "http") {
-        cfg.push(`mcp_servers.${key}.url=${toml(c.url)}`);
-        if (Object.keys(c.headers).length) cfg.push(`mcp_servers.${key}.http_headers=${tomlTable(c.headers)}`);
-      } else {
-        cfg.push(`mcp_servers.${key}.command=${toml(c.command)}`, `mcp_servers.${key}.args=${toml(c.args)}`);
-        if (Object.keys(c.env).length) cfg.push(`mcp_servers.${key}.env=${tomlTable(c.env)}`);
-      }
-    }
+    cfg.push(...connectorConfig(o.connectors));
     if (o.bot.autonomy === "ask") cfg.push(`sandbox_mode="workspace-write"`, `approval_policy="never"`);
     if (o.addDirs.length) cfg.push(`sandbox_workspace_write.writable_roots=${toml(o.addDirs)}`);
 
@@ -122,6 +112,22 @@ export function toolOutcome(it: any): { error: boolean; summary?: string } {
   if (!error || it.type !== "mcp_tool_call") return { error };
   const text = it.error?.message ?? it.result?.content?.find((c: any) => c?.type === "text")?.text;
   return { error, summary: typeof text === "string" ? text : undefined };
+}
+
+function connectorConfig(connectors: RunConnector[]) {
+  const cfg: string[] = [];
+  for (const c of connectors) {
+    const key = serverKey(c);
+    if (c.kind === "http") {
+      cfg.push(`mcp_servers.${key}.url=${toml(c.url)}`);
+      if (Object.keys(c.headers).length) cfg.push(`mcp_servers.${key}.http_headers=${tomlTable(c.headers)}`);
+      if (c.tokenEnv) cfg.push(`mcp_servers.${key}.bearer_token_env_var=${toml(c.tokenEnv)}`);
+    } else {
+      cfg.push(`mcp_servers.${key}.command=${toml(c.command)}`, `mcp_servers.${key}.args=${toml(c.args)}`);
+      if (Object.keys(c.env).length) cfg.push(`mcp_servers.${key}.env=${tomlTable(c.env)}`);
+    }
+  }
+  return cfg;
 }
 
 function tomlTable(obj: Record<string, string>) {
