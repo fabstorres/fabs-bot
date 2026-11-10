@@ -38,7 +38,12 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Package
+        env:
+          CSC_FOR_PULL_REQUEST: "true"
         run: bun run package:mac
+
+      - name: Check signature
+        run: codesign --verify --deep --strict --verbose=2 "dist/release/mac-arm64/Fabs Bot.app"
 
       - name: Check app icon
         run: |
