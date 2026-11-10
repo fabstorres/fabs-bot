@@ -28,8 +28,7 @@ const bot = (name: string, isTeamLead = false): Bot =>
     isTeamLead,
   });
 
-async function call(caller: Bot, name: string, args: Record<string, unknown>) {
-  const thread = db.createThread("direct", [caller.id]);
+async function call(caller: Bot, name: string, args: Record<string, unknown>, thread = db.createThread("direct", [caller.id])) {
   const parts: MessagePart[] = [];
   const token = crypto.randomUUID();
   turnsByToken.set(token, {
@@ -73,4 +72,15 @@ test("making a bot team lead hands the role over, and the database refuses a sec
   expect(db.listBots().filter((b) => b.isTeamLead).map((b) => b.id)).toEqual([second.id]);
   expect(db.getBot(first.id)!.isTeamLead).toBe(false);
   expect(() => db.db.query("UPDATE bots SET is_team_lead = 1 WHERE id = ?").run(first.id)).toThrow();
+});
+
+test("a send_webhook retry with a request id from another group is rejected before anything is sent", async () => {
+  const sender = bot("Sender");
+  const [first, second] = [0, 1].map(() => db.createThread("group", [sender.id, mockups.id]));
+  for (const t of [first!, second!]) db.saveWebhook({ threadId: t.id, url: "http://127.0.0.1:9/unused", secret: "", header: "", encoding: "hex", prefix: "" });
+  db.addMessage({ threadId: first!.id, author: "bot", botId: sender.id, parts: [{ type: "webhook", requestId: "fabs-from-first", state: "received", detail: "HTTP 202" }] });
+  const { result, parts } = await call(sender, "send_webhook", { task: "Investigate", request_id: "fabs-from-first" }, second!);
+  expect(result.isError).toBe(true);
+  expect(result.content[0]!.text).toContain("isn't a request id this group sent");
+  expect(parts).toEqual([]);
 });
