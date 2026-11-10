@@ -1,0 +1,18 @@
+appId: codes.fabs.bot
+productName: Fabs Bot
+directories:
+  output: dist/release
+files:
+  - dist/desktop/**
+  - dist/web/**
+  - "!node_modules/**"
+npmRebuild: false
+mac:
+  target:
+    - target: dmg
+      arch: arm64
+  icon: assets/icon.icns
+  identity: "-"
+  hardenedRuntime: false
+dmg:
+  writeUpdateInfo: false
