@@ -7,29 +7,35 @@
   - log "Conversation":
     - paragraph:
       - button "@Chief": Chief
-      - text: "send_webhook the task: Investigate the login failure"
+      - text: "send_webhook the task: Investigate the failed login. Don't retry on your own."
     - text: Chief
-    - time: 1:55 PM
+    - time: 11:49 AM
     - group "Work log":
-      - button "2 steps · 1 failed"
-    - group "Webhook setup":
-      - text: This group's webhook
-      - paragraph: Set where this group sends tasks. The address and secret stay on this PC, and bots never see them.
-      - button "Set up webhook"
-    - paragraph: This group has no webhook yet, so I couldn't send "Investigate the login failure." I posted a setup card; tap it to add the address and signing secret, then ask me again and I'll send the task.
+      - button "1 step · 1 failed"
+    - group "Webhook delivery":
+      - status: Not delivered to the webhook
+      - paragraph: HTTP 500
+      - paragraph: Request fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+    - paragraph:
+      - text: "The login investigation task was not delivered: the group webhook returned HTTP 500. I haven't retried, as you asked. If you want me to resend it, say so and I'll use request id"
+      - code: fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+      - text: so the receiver can drop duplicates. The webhook endpoint may need checking on your side first.
     - paragraph:
       - button "@Chief": Chief
-      - text: "send_webhook the task: Investigate the login failure"
+      - text: retry that failed send now, reusing its request_id.
     - text: Chief
-    - time: 1:55 PM
+    - time: 11:49 AM
     - group "Work log":
       - button "1 step"
     - group "Webhook delivery":
       - status: Received by the webhook
-      - paragraph: HTTP 202, delivery d-1
-      - paragraph: Request fabs-38d4dfd4-06a9-4038-a5ee-e23ac0dff7a7
+      - paragraph: HTTP 202
+      - paragraph: Request fabs-65e3799f-4fe6-4cca-86b6-376629306c52
       - paragraph: Received only. The work isn't done yet, and no reply comes back here.
-    - paragraph: "Received by the webhook endpoint: \"Investigate the login failure\" (delivery d-1). I won't get a reply back, so I can't confirm the work has started."
+    - paragraph:
+      - text: The retry with request id
+      - code: fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+      - text: was received by the endpoint (HTTP 202). I can't see whether the investigation starts or finishes, and no reply comes back here.
   - textbox "Message":
     - paragraph
   - button "Attach"

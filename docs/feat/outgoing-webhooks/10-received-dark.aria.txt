@@ -8,27 +8,27 @@
       - button "@Chief": Chief
       - text: "send_webhook the task: Investigate the login failure"
     - text: Chief
-    - time: 1:55 PM
+    - time: 12:00 AM
     - group "Work log":
       - button "2 steps · 1 failed"
     - group "Webhook setup":
       - text: This group's webhook
       - paragraph: Set where this group sends tasks. The address and secret stay on this PC, and bots never see them.
       - button "Set up webhook"
-    - paragraph: This group has no webhook yet, so I couldn't send "Investigate the login failure." I posted a setup card; tap it to add the address and signing secret, then ask me again and I'll send the task.
+    - paragraph: This group has no webhook yet, so I couldn't send "Investigate the login failure." I posted a setup card. Tap it to add the address and secret, then ask me again and I'll send the task.
     - paragraph:
       - button "@Chief": Chief
       - text: "send_webhook the task: Investigate the login failure"
     - text: Chief
-    - time: 1:55 PM
+    - time: 12:00 AM
     - group "Work log":
       - button "1 step"
     - group "Webhook delivery":
       - status: Received by the webhook
-      - paragraph: HTTP 202, delivery d-1
-      - paragraph: Request fabs-38d4dfd4-06a9-4038-a5ee-e23ac0dff7a7
+      - paragraph: HTTP 202
+      - paragraph: Request fabs-b8105e3c-a758-4345-b843-0c5e53760d4e
       - paragraph: Received only. The work isn't done yet, and no reply comes back here.
-    - paragraph: "Received by the webhook endpoint: \"Investigate the login failure\" (delivery d-1). I won't get a reply back, so I can't confirm the work has started."
+    - paragraph: The task "Investigate the login failure" reached the webhook endpoint (HTTP 202). I won't get a reply back, so I can't confirm it started or finished.
   - textbox "Message":
     - paragraph
   - button "Attach"
