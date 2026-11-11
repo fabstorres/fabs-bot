@@ -28,7 +28,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.connectOverCDP(`http://127.0.0.1:${job.cdpPort}`, { timeout: 10_000 });
 try {
   const ctx = browser.contexts()[0];
-  const page = job.desktop ? ctx.pages().at(-1) ?? die("the desktop app has no window") : ctx.pages()[0] ?? (await ctx.newPage());
+  const tab = flag("tab") ? ctx.pages().find((p) => p.url().includes(flag("tab"))) ?? die(`no tab's address contains "${flag("tab")}"`) : ctx.pages()[0];
+  const page = job.desktop ? ctx.pages().at(-1) ?? die("the desktop app has no window") : tab ?? (await ctx.newPage());
   page.setDefaultTimeout(Number(flag("timeout") ?? 15) * 1000);
   if (!job.desktop) {
     // Headless window size != viewport, so pin the viewport on every connection.
@@ -49,6 +50,12 @@ try {
   const pick = () => (flag("nth") ? target().nth(Number(flag("nth"))) : target().first());
 
   switch (action) {
+    case "close": {
+      if (job.desktop || !flag("tab")) die("close only closes an extra tab: pass --tab <part of its address>");
+      await page.close();
+      console.log("closed the tab");
+      break;
+    }
     case "open": {
       if (job.desktop) die("the desktop app navigates on its own; drive its launcher instead");
       const path = positional[0] ?? "/";

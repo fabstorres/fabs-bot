@@ -161,6 +161,7 @@ export interface ConnectorCheck {
 export interface ConnectorStatus {
   access: ConnectorAccess[];
   checks: ConnectorCheck[];
+  callbackUrl: string;
 }
 
 export const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;

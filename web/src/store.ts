@@ -41,6 +41,7 @@ interface State {
   modalOpener: HTMLElement | null;
   search: string;
   devicesVersion: number;
+  connectorsVersion: number;
   attachments: Record<string, Attachment[]>;
   uploads: Record<string, number>;
 }
@@ -69,6 +70,7 @@ export const useStore = create<State>(() => ({
   modalOpener: null,
   search: "",
   devicesVersion: 0,
+  connectorsVersion: 0,
   attachments: savedAttachments(),
   uploads: {},
 }));
@@ -97,6 +99,7 @@ function apply(e: ServerEvent) {
         chromium: e.chromium,
         loaded: true,
         devicesVersion: get().devicesVersion + 1,
+        connectorsVersion: get().connectorsVersion + 1,
       });
       if (get().openThreadId) void loadMessages(get().openThreadId!);
       else if (firstLoad) land(e.threads);
@@ -151,6 +154,9 @@ function apply(e: ServerEvent) {
       break;
     case "devices":
       set({ devicesVersion: get().devicesVersion + 1 });
+      break;
+    case "connectors":
+      set({ connectorsVersion: get().connectorsVersion + 1 });
       break;
     case "screen":
       set({ screens: { ...get().screens, [e.screen.botId]: e.screen } });

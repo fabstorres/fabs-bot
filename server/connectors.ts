@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import type { Bot, Connector, ConnectorAccess, ConnectorCheck, ConnectorStatus } from "../shared/types";
 import { publish } from "./bus";
+import { LOCAL_BASE } from "./config";
 import * as db from "./db";
 import { access, bearer, detect, finishSignIn, hasStaticAuth, needsDetect, onAuthChange, renew } from "./oauth";
 import { launchFor, providers } from "./providers";
@@ -53,7 +54,7 @@ export function connectorStatus(): ConnectorStatus {
       .filter((c) => c.kind === "http" && bot.connectorIds.includes(c.id))
       .map((c) => checkFor(bot, accesses.find((a) => a.connectorId === c.id)!, saved.get(pair(bot.id, c.id)))),
   );
-  return { access: accesses, checks };
+  return { access: accesses, checks, callbackUrl: `${LOCAL_BASE}/oauth/callback` };
 }
 
 const withoutAuthorization = (headers: Record<string, string>) =>
