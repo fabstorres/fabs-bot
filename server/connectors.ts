@@ -29,10 +29,12 @@ onAuthChange((connectorId) => {
 function detectLater(c: Connector) {
   if (detecting.has(c.id)) return;
   detecting.add(c.id);
-  void detect(c).finally(() => {
-    detecting.delete(c.id);
-    publish({ type: "connectors" });
-  });
+  void detect(c)
+    .catch(() => {})
+    .finally(() => {
+      detecting.delete(c.id);
+      publish({ type: "connectors" });
+    });
 }
 
 function checkFor(bot: Bot, a: ConnectorAccess, saved: ConnectorCheck | undefined): ConnectorCheck {
@@ -114,6 +116,8 @@ async function checkBot(bot: Bot, list: Connector[], retry = true): Promise<void
       } catch {}
       if (retry && c.tokenEnv && r.state === "auth") refused.push(c);
     }
+  } catch (e) {
+    console.error("plugin check failed:", (e as Error).message);
   } finally {
     for (const c of list) checking.delete(pair(bot.id, c.id));
     publish({ type: "connectors" });

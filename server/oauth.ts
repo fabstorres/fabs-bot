@@ -128,7 +128,16 @@ function serverMetadataUrls(issuer: string) {
   ];
 }
 
-const sameResource = (resource: string, url: string) => url.replace(/\/+$/, "").startsWith(resource.replace(/\/+$/, ""));
+const webUrl = (value: unknown): value is string => typeof value === "string" && URL.canParse(value) && /^https?:$/.test(new URL(value).protocol);
+
+function sameResource(resource: string, url: string) {
+  if (!webUrl(resource) || !webUrl(url)) return false;
+  const r = new URL(resource);
+  const u = new URL(url);
+  const base = r.pathname.replace(/\/+$/, "");
+  const path = u.pathname.replace(/\/+$/, "");
+  return r.origin === u.origin && (path === base || path.startsWith(`${base}/`));
+}
 
 async function probe(c: Connector) {
   const res = await fetch(c.url, {
@@ -149,6 +158,16 @@ async function probe(c: Connector) {
 export async function detect(c: Connector): Promise<void> {
   if (c.kind !== "http") return;
   const e = entryFor(c);
+  try {
+    await inspect(c, e);
+  } catch {
+    e.required = false;
+    e.problem = `Couldn't read the sign-in settings for ${host(c.url)}. Check the URL.`;
+    save();
+  }
+}
+
+async function inspect(c: Connector, e: Entry): Promise<void> {
   const where = host(c.url);
   let res: Response;
   try {
@@ -171,7 +190,7 @@ export async function detect(c: Connector): Promise<void> {
   const listed = /resource_metadata="([^"]+)"/i.exec(challenge)?.[1];
   const resourceInfo = await firstJson(listed ? [listed] : wellKnown(c.url, "oauth-protected-resource"));
   const issuer = Array.isArray(resourceInfo?.authorization_servers) ? resourceInfo.authorization_servers[0] : null;
-  if (typeof issuer !== "string") {
+  if (!webUrl(issuer)) {
     e.required = false;
     e.problem = `${where} asks for credentials but doesn't offer sign-in. Add its token as an Authorization header in Edit.`;
     return save();
@@ -183,7 +202,7 @@ export async function detect(c: Connector): Promise<void> {
     return save();
   }
   const server = await firstJson(serverMetadataUrls(issuer));
-  if (typeof server?.authorization_endpoint !== "string" || typeof server?.token_endpoint !== "string") {
+  if (!webUrl(server?.authorization_endpoint) || !webUrl(server?.token_endpoint)) {
     e.required = false;
     e.problem = `Couldn't read the sign-in settings from ${host(issuer)}. Try again later.`;
     return save();
@@ -200,8 +219,8 @@ export async function detect(c: Connector): Promise<void> {
     issuer,
     authorizationEndpoint: server.authorization_endpoint,
     tokenEndpoint: server.token_endpoint,
-    registrationEndpoint: typeof server.registration_endpoint === "string" ? server.registration_endpoint : "",
-    revocationEndpoint: typeof server.revocation_endpoint === "string" ? server.revocation_endpoint : "",
+    registrationEndpoint: webUrl(server.registration_endpoint) ? server.registration_endpoint : "",
+    revocationEndpoint: webUrl(server.revocation_endpoint) ? server.revocation_endpoint : "",
     scope,
     authMethods: Array.isArray(server.token_endpoint_auth_methods_supported) ? server.token_endpoint_auth_methods_supported : [],
   };
