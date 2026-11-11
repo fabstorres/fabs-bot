@@ -1,4 +1,4 @@
-import { type RefObject, useId, useRef, useState } from "react";
+import { type RefObject, type UIEvent, useId, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, X } from "lucide-react";
 import { mentionedBots } from "../../../shared/mentions";
 import type { Bot, Thread } from "../../../shared/types";
@@ -62,7 +62,7 @@ export function Chat({ thread, side = false }: { thread: Thread; side?: boolean 
         <ThreadMenu thread={thread} members={members} />
       </header>
 
-      <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 pt-4 pb-5" role="log" aria-label="Conversation">
+      <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 pt-4 pb-5" role="log" aria-label="Conversation" onScroll={snapToBottom}>
         <div className="mx-auto flex w-full max-w-3xl flex-[1_0_auto] flex-col gap-2">
           {thread.kind === "backchannel" && (
             <p className="py-2 text-center text-[13px] text-muted-foreground">
@@ -86,6 +86,10 @@ export function Chat({ thread, side = false }: { thread: Thread; side?: boolean 
       <Composer thread={thread} members={members} working={working} />
     </section>
   );
+}
+
+function snapToBottom(e: UIEvent<HTMLElement>) {
+  if (e.currentTarget.scrollTop > 0) e.currentTarget.scrollTop = 0;
 }
 
 function DeskButton({ members }: { members: Bot[] }) {
