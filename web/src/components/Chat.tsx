@@ -402,7 +402,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
             )}
           </div>
         )}
-        <div className="flex items-end gap-1">
+        <div className="flex items-end gap-1" onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}>
           <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading || !online}>
             <Paperclip className="size-5" />
           </Button>
