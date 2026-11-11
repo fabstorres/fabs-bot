@@ -18,7 +18,7 @@ const receiver = Bun.serve({
     hits.push({ path, body: await req.text(), signature: req.headers.get("x-sig") });
     if (path.startsWith("/moved")) return new Response(null, { status: 302, headers: { Location: "/landed" } });
     if (path.startsWith("/missing")) return new Response(`Cannot POST ${path}`, { status: 404 });
-    return Response.json({ deliveryId: "d-1" }, { status: 202 });
+    return Response.json({ deliveryId: path }, { status: 202 });
   },
 });
 afterAll(() => receiver.stop(true));
@@ -27,7 +27,7 @@ const base = `http://127.0.0.1:${receiver.port}`;
 const hook = (path: string, signing = {}) => ({ threadId: "t", url: `${base}${path}`, secret: "", header: "", encoding: "hex" as const, prefix: "", ...signing });
 const live = new AbortController().signal;
 
-test("a redirect fails without being followed, and no failure repeats the address", async () => {
+test("a redirect fails without being followed, and no result repeats the address or the reply", async () => {
   const moved = await deliver(hook("/moved/tok-secret"), "{}", live);
   expect(moved).toEqual({ ok: false, detail: "Redirected with HTTP 302, which isn't followed" });
   expect(hits.some((h) => h.path === "/landed")).toBe(false);
@@ -40,12 +40,15 @@ test("a redirect fails without being followed, and no failure repeats the addres
   closed.stop(true);
   const unreachable = await deliver({ ...hook(""), url: `http://127.0.0.1:${port}/hooks/tok-secret` }, "{}", live);
   expect(unreachable).toEqual({ ok: false, detail: "Couldn't reach the endpoint" });
+
+  const echoed = await deliver(hook("/ok/tok-secret"), "{}", live);
+  expect(echoed).toEqual({ ok: true, detail: "HTTP 202" });
 });
 
 test("the signature is the prefix plus the HMAC of the exact raw body in the chosen encoding", async () => {
   const body = JSON.stringify({ requestId: "fabs-1", task: "Investigate the login failure" });
   const result = await deliver(hook("/ok", { secret: "s3cret", header: "X-Sig", encoding: "base64", prefix: "sha256=" }), body, live);
-  expect(result).toEqual({ ok: true, detail: "HTTP 202, delivery d-1" });
+  expect(result).toEqual({ ok: true, detail: "HTTP 202" });
   const hit = hits.find((h) => h.path === "/ok")!;
   expect(hit.body).toBe(body);
   expect(hit.signature).toBe(`sha256=${createHmac("sha256", "s3cret").update(body).digest("base64")}`);

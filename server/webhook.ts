@@ -9,7 +9,6 @@ export const WEBHOOK_BODY_MAX = 1024 * 1024;
 const HEADER_NAME = /^[A-Za-z0-9!#$%&'*+.^_`|~-]{1,64}$/;
 const HEADER_PREFIX = /^[\x21-\x7e]{0,32}$/;
 const RESERVED_HEADERS = ["content-type", "content-length", "host", "user-agent"];
-const DELIVERY_ID = /^[A-Za-z0-9_.:-]{1,100}$/;
 
 export function isWebhookUrl(url: string): boolean {
   if (url.length > 2048 || !URL.canParse(url)) return false;
@@ -26,15 +25,6 @@ export function sign(secret: string, body: string, encoding: WebhookEncoding): s
 
 export type Delivery = { ok: boolean; detail: string };
 
-async function deliveryId(res: Response): Promise<string | null> {
-  try {
-    const id = (JSON.parse(await res.text()) as { deliveryId?: unknown })?.deliveryId;
-    return typeof id === "string" && DELIVERY_ID.test(id) ? id : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function deliver(hook: ThreadWebhook, body: string, stop: AbortSignal): Promise<Delivery> {
   const headers: Record<string, string> = { "content-type": "application/json", "user-agent": `FabsBot/${VERSION}` };
   if (hook.secret) headers[hook.header] = hook.prefix + sign(hook.secret, body, hook.encoding);
@@ -49,12 +39,11 @@ export async function deliver(hook: ThreadWebhook, body: string, stop: AbortSign
     if (stop.aborted) return { ok: false, detail: "Stopped before the endpoint answered. It may still have arrived" };
     return { ok: false, detail: "Couldn't reach the endpoint" };
   }
+  void res.body?.cancel().catch(() => {});
   if (!res.ok) {
-    void res.body?.cancel().catch(() => {});
     console.warn(`webhook delivery failed: HTTP ${res.status}`);
     if (res.status >= 300 && res.status < 400) return { ok: false, detail: `Redirected with HTTP ${res.status}, which isn't followed` };
     return { ok: false, detail: `HTTP ${res.status}` };
   }
-  const id = await deliveryId(res);
-  return { ok: true, detail: id ? `HTTP ${res.status}, delivery ${id}` : `HTTP ${res.status}` };
+  return { ok: true, detail: `HTTP ${res.status}` };
 }
