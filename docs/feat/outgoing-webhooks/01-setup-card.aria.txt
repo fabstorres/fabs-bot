@@ -1,0 +1,23 @@
+# http://127.0.0.1:5910/  viewport=1440x900
+- region "Thread with Login bug":
+  - text: Login bug
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the login failure"
+    - text: Chief
+    - time: 1:48 PM
+    - group "Work log":
+      - button "2 steps · 1 failed"
+    - group "Webhook setup":
+      - text: This group's webhook
+      - paragraph: Set where this group sends tasks. The address and secret stay on this PC, and bots never see them.
+      - button "Set up webhook"
+    - paragraph: I couldn't send the login investigation task because this group has no webhook yet. I've posted a setup card above; once you add the webhook there, I'll resend "Investigate the login failure".
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

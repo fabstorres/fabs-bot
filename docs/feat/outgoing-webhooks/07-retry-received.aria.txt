@@ -1,0 +1,116 @@
+# http://127.0.0.1:5910/  viewport=1440x900
+- region "Thread with Login bug":
+  - text: Login bug
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the login failure"
+    - text: Chief
+    - time: 1:48 PM
+    - group "Work log":
+      - button "2 steps · 1 failed"
+    - group "Webhook setup":
+      - text: This group's webhook
+      - paragraph: Set where this group sends tasks. The address and secret stay on this PC, and bots never see them.
+      - button "Set up webhook"
+    - paragraph: I couldn't send the login investigation task because this group has no webhook yet. I've posted a setup card above; once you add the webhook there, I'll resend "Investigate the login failure".
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the login failure"
+    - text: Chief
+    - time: 1:48 PM
+    - group "Work log":
+      - button "1 step · 1 failed"
+    - group "Webhook delivery":
+      - status: Not delivered to the webhook
+      - paragraph: Couldn't reach the endpoint
+      - paragraph: Request fabs-dca90f88-167c-4a9f-ba8e-e318cb1346fc
+    - group "Work log":
+      - button "1 step · 1 failed"
+    - group "Webhook delivery":
+      - status: Not delivered to the webhook
+      - paragraph: Couldn't reach the endpoint
+      - paragraph: Request fabs-dca90f88-167c-4a9f-ba8e-e318cb1346fc
+    - paragraph: The login investigation didn't go out. The webhook is set up for this group, but the endpoint couldn't be reached on two tries.
+    - paragraph:
+      - text: I haven't started the investigation myself. Once the endpoint is reachable, I'll resend "Investigate the login failure". If you want, I can also have
+      - button "@Careful": Careful
+      - text: look at it in this thread instead. The webhook setup card is still above if the address needs changing.
+    - text: Careful
+    - time: 1:49 PM
+    - paragraph: I can take the login investigation, but I haven't started, and I'm not sure which app or code it's about.
+    - paragraph: "Before I look at anything, tell me:"
+    - list:
+      - listitem:
+        - strong: Which app or repo
+        - text: has the login failure? I don't have a git repo in my workspace.
+      - listitem:
+        - strong: What the failure looks like
+        - text: ": an error message, who is affected, and since when."
+      - listitem:
+        - strong: Whether I can read logs or the code
+        - text: and run the app in my own browser, or whether you'd rather I only read and report.
+    - paragraph:
+      - text: I'll make no changes until you confirm the scope. The webhook still needs its endpoint fixed before
+      - button "@Chief": Chief
+      - text: can send the task.
+    - text: Chief
+    - time: 1:49 PM
+    - paragraph: "I don't know the answers yet, so Careful shouldn't start. What I know:"
+    - list:
+      - listitem:
+        - strong: "App or repo:"
+        - text: Unknown. My workspace isn't a git repo, and nothing in this thread names the app. @fabs needs to say which project, and where its code lives on <pc>.
+      - listitem:
+        - strong: "Failure:"
+        - text: No error message, affected users, or start date has been shared. Those need to come from fabs.
+      - listitem:
+        - strong: "Access:"
+        - text: Not decided. fabs should say whether Careful may read logs and code, and whether it may run the app in its own browser. Until then, read-only is the safe default.
+    - paragraph: The webhook is set up, but the endpoint can't be reached (two failed sends). Fixing the endpoint is separate from scoping the bug, so Careful can start once the scope is set, either by reading the code or through a direct thread. I haven't sent anything else.
+    - paragraph:
+      - button "@Chief": Chief
+      - text: Retry send_webhook with request_id fabs-dca90f88-167c-4a9f-ba8e-e318cb1346fc, do not retry on your own.
+    - text: Chief
+    - time: 1:49 PM
+    - group "Work log":
+      - button "1 step"
+    - group "Webhook delivery":
+      - status: Received by the webhook
+      - paragraph: HTTP 202, delivery d-1
+      - paragraph: Request fabs-dca90f88-167c-4a9f-ba8e-e318cb1346fc
+      - paragraph: Received only. The work isn't done yet, and no reply comes back here.
+    - paragraph: The login investigation task was received by the webhook endpoint (HTTP 202). That means it arrived, not that the work is done, and no reply comes back here. Since the endpoint accepted it, the delivery is recorded as d-1. Careful will need the app and scope details to start.
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the failed login. Do not retry on your own."
+    - text: Chief
+    - time: 1:49 PM
+    - group "Work log":
+      - button "1 step · 1 failed"
+    - group "Webhook delivery":
+      - status: Not delivered to the webhook
+      - paragraph: HTTP 500
+      - paragraph: Request fabs-76c8d68d-aee5-42e7-ab21-d37abd877b80
+    - paragraph: "The \"Investigate the failed login\" task didn't go through: the endpoint returned HTTP 500. You said not to retry on my own, so I've stopped here. To resend it, reply \"retry\" and I'll send it with the same request id (fabs-76c8d68d-aee5-42e7-ab21-d37abd877b80), so the receiver can drop duplicates."
+    - paragraph: The earlier "Investigate the login failure" task was received (HTTP 202, delivery d-1), so that one is still in progress.
+    - paragraph:
+      - button "@Chief": Chief
+      - text: Retry send_webhook with request_id fabs-76c8d68d-aee5-42e7-ab21-d37abd877b80.
+    - text: Chief
+    - time: 1:50 PM
+    - group "Work log":
+      - button "1 step"
+    - group "Webhook delivery":
+      - status: Received by the webhook
+      - paragraph: HTTP 202, delivery d-3
+      - paragraph: Request fabs-76c8d68d-aee5-42e7-ab21-d37abd877b80
+      - paragraph: Received only. The work isn't done yet, and no reply comes back here.
+    - paragraph: The "Investigate the failed login" task was received by the endpoint (HTTP 202, delivery d-3). That means it arrived, not that the work is done. No reply comes back here, and the earlier "Investigate the login failure" task (d-1) is still in progress too.
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

@@ -1,0 +1,26 @@
+# http://127.0.0.1:5910/  viewport=1440x900
+- dialog "Outgoing webhook":
+  - heading "Outgoing webhook" [level=2]
+  - paragraph: Outgoing webhook
+  - status: Set up. Bots in this group send tasks to it when you ask.
+  - text: Endpoint URL
+  - textbox "Endpoint URL":
+    - /placeholder: Saved. Paste a new address to replace it.
+  - text: Sign requests Adds an HMAC-SHA256 signature of the body in a header.
+  - switch "Sign requests" [checked]
+  - text: Signing secret
+  - textbox "Signing secret":
+    - /placeholder: Saved. Paste a new secret to replace it.
+  - text: Signature header
+  - textbox "Signature header": X-Signature
+  - text: Encoding
+  - combobox "Encoding": Hex
+  - text: Prefix (optional)
+  - textbox "Prefix (optional)":
+    - /placeholder: sha256=
+    - text: sha256=
+  - paragraph: The address and secret stay on this PC. Bots never see them, and they aren't shown again after you save.
+  - button "Remove"
+  - button "Cancel"
+  - button "Save"
+  - button "Close"
