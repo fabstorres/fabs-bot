@@ -337,7 +337,7 @@ route("PUT", "/api/threads/:id/webhook", async (req, p) => {
   if (!url) return bad("Paste the webhook address.");
   if (!isWebhookUrl(url)) return bad("That isn't a web address. It should start with https:// or http://.");
   const signing = b.signing === true;
-  const secret = signing ? String(b.secret ?? "").trim() || saved?.secret || "" : "";
+  const secret = signing ? String(b.secret ?? "") || saved?.secret || "" : "";
   const header = signing ? String(b.header ?? "").trim() : "";
   const prefix = signing ? String(b.prefix ?? "").trim() : "";
   if (signing && !secret) return bad("Paste the signing secret, or turn signing off.");
