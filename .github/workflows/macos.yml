@@ -1,0 +1,105 @@
+name: macOS package
+
+on:
+  pull_request:
+    paths:
+      - assets/**
+      - desktop/**
+      - electron-builder.yml
+      - package.json
+      - bun.lock
+      - .github/workflows/macos.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Package
+        env:
+          CSC_FOR_PULL_REQUEST: "true"
+        run: bun run package:mac
+
+      - name: Check signature
+        run: codesign --verify --deep --strict --verbose=2 "dist/release/mac-arm64/Fabs Bot.app"
+
+      - name: Check app icon
+        run: |
+          app="dist/release/mac-arm64/Fabs Bot.app"
+          icon=$(plutil -extract CFBundleIconFile raw "$app/Contents/Info.plist")
+          echo "CFBundleIconFile: $icon"
+          test "$icon" = icon.icns
+          cmp assets/icon.icns "$app/Contents/Resources/icon.icns"
+          echo "Contents/Resources/icon.icns matches assets/icon.icns"
+
+      - name: Check DMG icon
+        run: |
+          volume=$(hdiutil attach dist/release/*.dmg | grep -o '/Volumes/.*')
+          echo "volume=$volume" >> "$GITHUB_ENV"
+          echo "Mounted: $volume"
+          cmp assets/icon.icns "$volume/.VolumeIcon.icns"
+          echo ".VolumeIcon.icns matches assets/icon.icns"
+          test "$(GetFileInfo -aC "$volume")" = 1
+          echo "Volume has the custom icon flag"
+          cmp assets/icon.icns "$volume/Fabs Bot.app/Contents/Resources/icon.icns"
+          echo "App in the DMG carries assets/icon.icns"
+
+      - name: Launch installed app
+        run: |
+          ditto "$volume/Fabs Bot.app" "/Applications/Fabs Bot.app"
+          open "/Applications/Fabs Bot.app" --args --remote-debugging-port=9222
+          for _ in $(seq 30); do
+            if curl -sf http://127.0.0.1:9222/json/list > pages.json && jq -e '.[] | select(.title == "Fabs Bot" and (.url | startswith("fabs-app://launcher/desktop.html")))' pages.json; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat pages.json
+          exit 1
+
+      - name: Capture Dock and DMG
+        if: ${{ !cancelled() && env.volume != '' }}
+        run: |
+          mkdir -p captures
+          sleep 2
+          screencapture -x captures/dock.png
+          open "$volume"
+          sleep 3
+          screencapture -x captures/dmg.png
+
+      - name: Upload captures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-captures
+          path: captures
+          retention-days: 7
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-dmg
+          path: dist/release/*.dmg
+          retention-days: 3
