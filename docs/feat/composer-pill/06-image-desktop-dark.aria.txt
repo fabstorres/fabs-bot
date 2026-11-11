@@ -1,0 +1,24 @@
+# http://127.0.0.1:5510/  viewport=1440x900
+- region "Thread with Chief":
+  - text: Chief
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph: Hey, I'm Chief. What's the main thing you want me on?
+    - 'group "Question: What should I own for you?"':
+      - text: What should I own for you?
+      - button "A Day-to-day ops"
+      - button "B A specific project"
+      - button "C Research and writing"
+      - button "D Something else"
+  - button "Preview sample.png":
+    - img "sample.png"
+  - button "Remove sample.png"
+  - button "Preview sample.png":
+    - img "sample.png"
+  - button "Remove sample.png"
+  - button "Attach"
+  - textbox "Message":
+    - paragraph: A sample image.
+  - button "Dictate"
+  - button "Send"
