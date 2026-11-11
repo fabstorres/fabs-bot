@@ -5,6 +5,7 @@ import { WEBHOOK_STOPPED } from "./webhook";
 import type {
   Bot,
   Connector,
+  ConnectorCheck,
   Message,
   MessagePart,
   Routine,
@@ -82,6 +83,15 @@ CREATE TABLE IF NOT EXISTS connectors (
   url TEXT NOT NULL DEFAULT '',
   headers TEXT NOT NULL DEFAULT '{}',
   created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS connector_checks (
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  connector_id TEXT NOT NULL REFERENCES connectors(id) ON DELETE CASCADE,
+  state TEXT NOT NULL,
+  tools TEXT NOT NULL DEFAULT '[]',
+  detail TEXT NOT NULL DEFAULT '',
+  checked_at INTEGER NOT NULL,
+  PRIMARY KEY (bot_id, connector_id)
 );
 CREATE TABLE IF NOT EXISTS files (
   id TEXT PRIMARY KEY,
@@ -480,6 +490,28 @@ export function saveConnector(c: Omit<Connector, "createdAt">): Connector {
 }
 export function deleteConnector(id: string) {
   db.query("DELETE FROM connectors WHERE id = ?").run(id);
+}
+
+type CheckRow = { bot_id: string; connector_id: string; state: string; tools: string; detail: string; checked_at: number };
+export function listChecks(): ConnectorCheck[] {
+  return (db.query("SELECT * FROM connector_checks").all() as CheckRow[]).map((r) => ({
+    botId: r.bot_id,
+    connectorId: r.connector_id,
+    state: r.state as ConnectorCheck["state"],
+    tools: JSON.parse(r.tools),
+    detail: r.detail,
+    checkedAt: r.checked_at,
+  }));
+}
+export function saveCheck(c: Omit<ConnectorCheck, "checkedAt">) {
+  db.query(
+    `INSERT INTO connector_checks (bot_id, connector_id, state, tools, detail, checked_at) VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(bot_id, connector_id) DO UPDATE SET state = excluded.state, tools = excluded.tools, detail = excluded.detail, checked_at = excluded.checked_at`,
+  ).run(c.botId, c.connectorId, c.state, JSON.stringify(c.tools), c.detail, now());
+}
+export function clearChecks(where: { botId?: string; connectorId?: string }) {
+  if (where.botId) db.query("DELETE FROM connector_checks WHERE bot_id = ?").run(where.botId);
+  if (where.connectorId) db.query("DELETE FROM connector_checks WHERE connector_id = ?").run(where.connectorId);
 }
 
 export type ThreadWebhook = { threadId: string; url: string; secret: string; header: string; encoding: WebhookEncoding; prefix: string };

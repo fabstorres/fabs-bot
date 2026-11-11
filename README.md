@@ -29,7 +29,10 @@ Under the hood it runs `tailscale serve --bg --https=8443 http://127.0.0.1:4801`
 
 ```sh
 bun run desktop      # builds, then opens the Electron app
+bun run package:mac  # on a Mac: builds the Apple silicon DMG into dist/release
 ```
+
+The macOS app icon is `assets/icon.icns`. It is made from `assets/icon.svg` with `bun scripts/mac-icon.ts`; run that again after changing the SVG.
 
 The desktop app is a window onto a Fabs Bot server: this PC's, or another PC's on your tailnet. Run it on your laptop to work with the bots on your PC:
 

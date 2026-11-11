@@ -1,4 +1,4 @@
-import { type RefObject, useId, useRef, useState } from "react";
+import { type RefObject, type UIEvent, useId, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, Webhook, X } from "lucide-react";
 import { mentionedBots } from "../../../shared/mentions";
 import type { Bot, Thread } from "../../../shared/types";
@@ -63,7 +63,7 @@ export function Chat({ thread, side = false }: { thread: Thread; side?: boolean 
         <ThreadMenu thread={thread} members={members} />
       </header>
 
-      <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 pt-4 pb-5" role="log" aria-label="Conversation">
+      <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 pt-4 pb-5" role="log" aria-label="Conversation" onScroll={snapToBottom}>
         <div className="mx-auto flex w-full max-w-3xl flex-[1_0_auto] flex-col gap-2">
           {thread.kind === "backchannel" && (
             <p className="py-2 text-center text-[13px] text-muted-foreground">
@@ -87,6 +87,10 @@ export function Chat({ thread, side = false }: { thread: Thread; side?: boolean 
       <Composer thread={thread} members={members} working={working} />
     </section>
   );
+}
+
+function snapToBottom(e: UIEvent<HTMLElement>) {
+  if (e.currentTarget.scrollTop > 0) e.currentTarget.scrollTop = 0;
 }
 
 function DeskButton({ members }: { members: Bot[] }) {
@@ -376,7 +380,7 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
       onDrop={(e) => (e.preventDefault(), attach(e.dataTransfer.files))}
     >
       <OfflineBanner />
-      <div className="mx-auto max-w-3xl rounded-2xl border bg-muted/50 p-2 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[.ProseMirror-focused]:border-ring has-[.ProseMirror-focused]:ring-[3px] has-[.ProseMirror-focused]:ring-ring/50">
+      <div className="mx-auto max-w-3xl rounded-3xl border bg-muted/50 p-1.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.12)] transition-[color,box-shadow] has-[.ProseMirror-focused]:border-ring has-[.ProseMirror-focused]:ring-[3px] has-[.ProseMirror-focused]:ring-ring/50">
         {(files.length > 0 || uploading) && (
           <div className="flex flex-wrap items-center gap-2 px-2 pt-2 pb-2">
             {files.map((f) =>
@@ -410,22 +414,22 @@ function Composer({ thread, members, working }: { thread: Thread; members: Bot[]
             )}
           </div>
         )}
-        <MentionInput
-          ref={input}
-          value={text}
-          onChange={draft}
-          autoFocus={window.matchMedia("(pointer: fine)").matches}
-          onSubmit={send}
-          bots={bots}
-          ariaLabel="Message"
-          placeholder={`Message ${name}`}
-          onPasteFiles={attach}
-        />
-        <div className="mt-1 flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="mr-auto rounded-full text-muted-foreground" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading || !online}>
+        <div className="relative flex items-end gap-1" onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}>
+          <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground" onClick={() => fileInput.current?.click()} aria-label="Attach" disabled={uploading || !online}>
             <Paperclip className="size-5" />
           </Button>
           <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && attach(e.target.files)} />
+          <MentionInput
+            ref={input}
+            value={text}
+            onChange={draft}
+            autoFocus={window.matchMedia("(pointer: fine)").matches}
+            onSubmit={send}
+            bots={bots}
+            ariaLabel="Message"
+            placeholder={`Message ${name}`}
+            onPasteFiles={attach}
+          />
           {SpeechRecognition && (
             <Button variant="ghost" size="icon" className={cn("rounded-full", listening && "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400")} onClick={dictate} aria-label="Dictate">
               <Mic className="size-5" />

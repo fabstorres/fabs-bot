@@ -4,11 +4,13 @@ import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
 import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, type ProviderSettings, type ServerEvent, type WebhookSettings } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
-import { FILES_DIR, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
+import { FILES_DIR, LOCAL_BASE, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
-import { authorized, deviceId, isLoopback, listDevices, ownerOnly, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
+import { authorized, deviceId, isLoopback, listDevices, localOwner, ownerOnly, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
+import { botSaved, checkConnector, connectorSaved, connectorStatus, findConnector, finishConnectorSignIn } from "./connectors";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
+import { SignInError, configureClient, forget, signOut, startSignIn, usesConfiguredClient } from "./oauth";
 import { realPathWithin, within } from "./paths";
 import { bringInBot, directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
 import { isProviderId, launchFor, providerInfo, providerSettings, updateProvider } from "./providers";
@@ -165,7 +167,8 @@ async function pairingLink(): Promise<PairingLink | null> {
   return { url: `${base}/pair?code=${code}`, expiresAt };
 }
 
-type Handler = (req: Request, params: Record<string, string>, url: URL) => Response | Promise<Response>;
+type From = { ip: string | undefined; viaServe: boolean };
+type Handler = (req: Request, params: Record<string, string>, url: URL, from: From) => Response | Promise<Response>;
 const routes: [string, RegExp, string[], Handler][] = [];
 function route(method: string, path: string, h: Handler) {
   const keys: string[] = [];
@@ -215,6 +218,7 @@ route("PUT", "/api/bots/:id", async (req, p) => {
   const next = sanitizeBot(await body(req), existing);
   if (next.provider !== existing.provider || next.cwd !== existing.cwd) db.resetSessionsForBot(existing.id);
   const bot = saveAndPublish({ ...next, createdAt: existing.createdAt });
+  botSaved(existing, bot);
   return json(bot);
 });
 route("DELETE", "/api/bots/:id", async (_r, p) => {
@@ -429,8 +433,11 @@ route("POST", "/api/routines/:id/run", (_r, p) => {
 
 route("GET", "/api/connectors", () => json(db.listConnectors()));
 route("GET", "/api/connectors/presets", () => json(CONNECTOR_PRESETS));
+route("GET", "/api/connectors/status", () => json(connectorStatus()));
 route("POST", "/api/connectors", async (req) => {
   const b = await body(req);
+  const before = typeof b.id === "string" ? findConnector(b.id) : null;
+  if (before && before.url !== String(b.url ?? "")) await forget(before);
   const c = db.saveConnector({
     id: b.id ?? db.newId(),
     name: String(b.name ?? "Connector"),
@@ -442,11 +449,47 @@ route("POST", "/api/connectors", async (req) => {
     url: String(b.url ?? ""),
     headers: b.headers ?? {},
   });
+  if (typeof b.oauthClientId === "string") configureClient(c, b.oauthClientId, typeof b.oauthClientSecret === "string" ? b.oauthClientSecret : undefined);
+  void connectorSaved(c);
   return json(c);
 });
-route("DELETE", "/api/connectors/:id", (_r, p) => {
+route("DELETE", "/api/connectors/:id", async (_r, p) => {
+  const c = findConnector(p.id!);
+  if (c) await forget(c);
   db.deleteConnector(p.id!);
+  publish({ type: "connectors" });
   return json({ ok: true });
+});
+route("POST", "/api/connectors/:id/sign-in", async (req, p, _u, from) => {
+  const c = findConnector(p.id!);
+  if (!c) return bad("not found", 404);
+  const serveUrl = from.viaServe && !usesConfiguredClient(c) ? (await refreshTailscale()).serveUrl : null;
+  const url = await startSignIn(c, `${serveUrl ?? LOCAL_BASE}/oauth/callback`).finally(() => publish({ type: "connectors" }));
+  return json({ url, pasteBack: !serveUrl && !localOwner(req, from.ip, from.viaServe) });
+});
+route("POST", "/api/connectors/:id/sign-in/finish", async (req) => {
+  const { address } = await body<{ address?: string }>(req);
+  let query: URLSearchParams;
+  try {
+    query = new URL(String(address ?? "").trim()).searchParams;
+  } catch {
+    return bad("That isn't the address from the sign-in page. Copy the whole address from the browser's address bar.");
+  }
+  if (!query.get("state")) return bad("That address has no sign-in code. Copy the address of the page you landed on after approving.");
+  await finishConnectorSignIn(query);
+  return json({ ok: true });
+});
+route("POST", "/api/connectors/:id/check", async (req, p) => {
+  const c = findConnector(p.id!);
+  if (!c) return bad("not found", 404);
+  const { botId } = await body<{ botId?: string }>(req);
+  await checkConnector(c, typeof botId === "string" ? botId : undefined);
+  return json(connectorStatus());
+});
+route("DELETE", "/api/connectors/:id/sign-in", async (_r, p) => {
+  const c = findConnector(p.id!);
+  if (!c) return bad("not found", 404);
+  return json({ confirmed: await signOut(c) });
 });
 route("GET", "/api/connectors/inherited", async (_r, _p, url) => {
   const cached = db.getSetting("plugins.inherited");
@@ -468,6 +511,30 @@ function messageParts(text?: string, fileIds?: string[]): MessagePart[] {
   }
   if (text?.trim()) parts.push({ type: "text", text: text.trim() });
   return parts;
+}
+
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+
+async function oauthCallback(url: URL): Promise<Response> {
+  let title = "Sign-in didn't finish";
+  let text = "Something went wrong. Go back to Fabs Bot and try again.";
+  try {
+    const c = await finishConnectorSignIn(url.searchParams);
+    title = `Signed in to ${c.name}`;
+    text = "You can close this tab and go back to Fabs Bot.";
+  } catch (e) {
+    if (e instanceof SignInError) text = e.message;
+    else console.error("sign-in callback failed", (e as Error).message);
+  }
+  const page = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:15vh auto;padding:0 1.5rem;line-height:1.5"><h1 style="font-size:1.4rem">${escapeHtml(title)}</h1><p>${escapeHtml(text)}</p></body>`;
+  return new Response(page, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
+      "Referrer-Policy": "no-referrer",
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 type WsData = { deviceId: string | null; unsubscribe?: () => void; screenBotId?: string; viewer?: Viewer };
@@ -494,6 +561,8 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
     if (viaServe || !isLoopback(ip) || req.headers.get("tailscale-user-login")) return new Response("forbidden", { status: 403 });
     return handleMcp(req, url.pathname.slice(5));
   }
+
+  if (url.pathname === "/oauth/callback") return oauthCallback(url);
 
   if (url.pathname === "/pair") {
     if (!redeemPairingCode(url.searchParams.get("code") ?? ""))
@@ -533,9 +602,10 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
       if (!m) continue;
       const params = Object.fromEntries(keys.map((k, i) => [k, decodeURIComponent(m[i + 1]!)]));
       try {
-        return await h(req, params, url);
+        return await h(req, params, url, { ip, viaServe });
       } catch (e) {
         if (e instanceof HttpError) return bad(e.message, e.status);
+        if (e instanceof SignInError) return bad(e.message, 409);
         console.error(e);
         return bad((e as Error).message, 500);
       }

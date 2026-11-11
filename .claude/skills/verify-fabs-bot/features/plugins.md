@@ -4,7 +4,7 @@ Settings → Plugins is one table of every MCP server a bot can use. Rows come f
 
 ## Sub-features
 
-- `plugins-table` lists Claude rows (name without the `claude.ai ` prefix, `Claude` badge, `Connected` check or `Needs sign-in` / `Failed` text), Codex rows (`Codex` badge, `Enabled` check, `Off` for a server switched off in Codex, `Needs sign-in` for an HTTP server Codex isn't logged in to) and Fabs Bot rows (`Added` check, `Custom` badge for custom servers, a `<name> options` menu).
+- `plugins-table` lists Claude rows (name without the `claude.ai ` prefix, `Claude` badge, `Connected` check or `Needs sign-in` / `Failed` text), Codex rows (`Codex` badge, `Enabled` check, `Off` for a server switched off in Codex, `Needs sign-in` for an HTTP server Codex isn't logged in to) and Fabs Bot rows (`Added` check, `Custom` badge for custom servers, a `<name> options` menu). Fabs Bot HTTP rows show their sign-in state instead; see [Plugin sign-in](./plugin-sign-in.md).
 - `plugins-icons` shows brand logos for Notion, Google Drive, Gmail, Google Calendar, Google Docs, GitHub and Browser (Playwright), and a neutral server tile for everything else.
 - `plugins-add` opens `Add` → a built-in plugin or `Custom server` → the `Add <name>` form → `Save` adds a row.
 - `plugins-add-dedup` hides a built-in plugin from the `Add` menu while a row with the same service is in the table, from any source. Removing that row brings it back. `Custom server` is always offered.

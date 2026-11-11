@@ -1,5 +1,9 @@
 import type { Bot, Connector, ModelOption } from "../../shared/types";
 
+export type RunConnector = Connector & { tokenEnv?: string };
+
+export const serverKey = (c: Connector) => c.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+
 /** Normalized events every CLI adapter emits. `text` appends to the current text part; `text.break` starts a new bubble. */
 export type ProviderEvent =
   | { type: "session"; id: string }
@@ -25,8 +29,22 @@ export interface RunOptions {
   cwd: string;
   /** Our MCP endpoint for this turn (bot ↔ app ↔ other bots). */
   mcpUrl: string;
-  connectors: Connector[];
+  connectors: RunConnector[];
   addDirs: string[];
+  signal: AbortSignal;
+}
+
+export interface CheckResult {
+  state: "ready" | "auth" | "failed";
+  tools: string[];
+  detail: string;
+}
+
+export interface CheckOptions {
+  bot: Bot;
+  launch: Launch;
+  cwd: string;
+  connectors: RunConnector[];
   signal: AbortSignal;
 }
 
@@ -41,4 +59,5 @@ export interface Provider {
   note: string;
   models: ModelOption[];
   run(opts: RunOptions, emit: (e: ProviderEvent) => void): Promise<void>;
+  checkConnectors?(opts: CheckOptions): Promise<Record<string, CheckResult>>;
 }

@@ -3,14 +3,18 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import QRCode from "qrcode";
-import { Check, ChevronDown, Copy as CopyIcon, Ellipsis, ExternalLink, ListFilter, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import type { Connector, Device, HostInfo, PairingLink } from "../../../shared/types";
+import { Check, ChevronDown, Copy as CopyIcon, Ellipsis, ExternalLink, ListFilter, LoaderCircle, LogIn, Pencil, Plus, RefreshCw, Search, Trash2, Unplug } from "lucide-react";
+import { toast } from "sonner";
+import type { Connector, ConnectorAccess, ConnectorCheck, ConnectorStatus, Device, HostInfo, PairingLink, ProviderInfo } from "../../../shared/types";
 import type { ConnectorPreset } from "../../../shared/templates";
 import { api, formatTime } from "../api";
 import { useLoad } from "../hooks";
 import { useStore } from "../store";
+import { BotAvatar } from "./BotAvatar";
 import { Modal } from "./Modal";
 import { PluginIcon, pluginLogo } from "./PluginIcon";
+import { providerName } from "./Providers";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -236,9 +240,24 @@ const PLUGIN_READY: Record<string, string> = { connected: "Connected", enabled: 
 const PLUGIN_STATUS: Record<string, string> = { "needs-auth": "Needs sign-in", failed: "Failed", pending: "Starting", disabled: "Off" };
 const PLUGIN_TYPE: Record<Connector["kind"], string> = { http: "Web", stdio: "Local" };
 const CLI_NAME: Record<CliSource, string> = { claude: "Claude", codex: "Codex" };
+const SIGN_IN_STATES = new Set<ConnectorAccess["auth"]>(["needed", "failed", "expired", "signed-in"]);
+const AUTH_TEXT: Partial<Record<ConnectorAccess["auth"], string>> = {
+  unknown: "Checking…",
+  needed: "Needs sign-in",
+  expired: "Sign-in expired",
+  failed: "Sign-in failed",
+  error: "Can't connect",
+};
+
+type SignInFlow = { connector: Connector; before: number | null; url?: string; pasteBack?: boolean; error?: string };
 
 export function PluginsSettings() {
+  const connectorsVersion = useStore((s) => s.connectorsVersion);
+  const bots = useStore((s) => s.bots);
   const connectors = useLoad(() => api.get<Connector[]>("/api/connectors"), []);
+  const status = useLoad(() => api.get<ConnectorStatus>("/api/connectors/status"), [connectorsVersion]);
+  const providers = useLoad(() => api.get<ProviderInfo[]>("/api/providers"), []).data ?? [];
+  const [signIn, setSignIn] = useState<SignInFlow | null>(null);
   const presets = useLoad(() => api.get<ConnectorPreset[]>("/api/connectors/presets"), []).data ?? [];
   const firstScan = useLoad(() => api.get<Inherited>("/api/connectors/inherited"), []);
   const [rescanned, setRescanned] = useState<Inherited | null>(null);
@@ -283,6 +302,26 @@ export function PluginsSettings() {
   const taken = new Set(rows.map((r) => r.logo));
   const builtIn = presets.filter((p) => p.preset !== "custom" && !taken.has(pluginLogo(p.preset)));
   const custom = presets.find((p) => p.preset === "custom");
+  const accessOf = (id: string) => status.data?.access.find((a) => a.connectorId === id);
+  const beginSignIn = async (c: Connector) => {
+    setSignIn({ connector: c, before: accessOf(c.id)?.signedInAt ?? null });
+    const update = (patch: Partial<SignInFlow>) => setSignIn((f) => (f?.connector.id === c.id ? { ...f, ...patch } : f));
+    try {
+      update(await api.post<{ url: string; pasteBack: boolean }>(`/api/connectors/${c.id}/sign-in`));
+    } catch (e) {
+      update({ error: (e as Error).message });
+    }
+  };
+  const revoke = async (c: Connector) => {
+    const { confirmed } = await api.del<{ confirmed: boolean }>(`/api/connectors/${c.id}/sign-in`);
+    if (confirmed) toast.success(`Signed out of ${c.name}. Its bots lost access.`);
+    else toast.warning(`Removed the sign-in from Fabs Bot. ${c.name} didn't confirm it revoked access, so you can also remove Fabs Bot in its own settings.`);
+  };
+  const access = (status.data?.checks ?? []).flatMap((check) => {
+    const bot = bots.find((b) => b.id === check.botId);
+    const connector = connectors.data?.find((c) => c.id === check.connectorId);
+    return bot && connector ? [{ check, bot, connector }] : [];
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -349,7 +388,12 @@ export function PluginsSettings() {
               <TableCell className="whitespace-normal">
                 <div className="flex items-center gap-3">
                   <PluginIcon logo={r.logo} />
-                  <span className="min-w-0 font-medium wrap-anywhere">{r.name}</span>
+                  <div className="flex min-w-0 flex-col">
+                    <span className="font-medium wrap-anywhere">{r.name}</span>
+                    {r.connector && accessOf(r.connector.id)?.problem && (
+                      <span className="text-xs text-muted-foreground wrap-anywhere">{accessOf(r.connector.id)!.problem}</span>
+                    )}
+                  </div>
                 </div>
               </TableCell>
               <TableCell>
@@ -359,8 +403,10 @@ export function PluginsSettings() {
                   {r.source !== "fabs" && <Badge variant="outline">{CLI_NAME[r.source]}</Badge>}
                 </div>
               </TableCell>
-              <TableCell>
-                {PLUGIN_READY[r.status] ? (
+              <TableCell className="whitespace-normal">
+                {r.connector?.kind === "http" && accessOf(r.connector.id) ? (
+                  <AccessStatus name={r.name} access={accessOf(r.connector.id)!} onSignIn={() => beginSignIn(r.connector!)} />
+                ) : PLUGIN_READY[r.status] ? (
                   <Check className="size-4" aria-label={PLUGIN_READY[r.status]} />
                 ) : (
                   <span className="text-muted-foreground">{PLUGIN_STATUS[r.status] ?? r.status}</span>
@@ -370,8 +416,11 @@ export function PluginsSettings() {
                 {r.connector && (
                   <PluginRowMenu
                     connector={r.connector}
+                    access={accessOf(r.connector.id)}
                     onEdit={(c) => setForm({ ...c, blurb: "", secretKeys: [] })}
                     onRemove={(c) => api.del(`/api/connectors/${c.id}`).then(connectors.reload)}
+                    onSignIn={beginSignIn}
+                    onRevoke={revoke}
                   />
                 )}
               </TableCell>
@@ -397,13 +446,243 @@ export function PluginsSettings() {
           {inherited && !scanning && <span>scanned {formatTime(inherited.scannedAt)}</span>}
         </p>
         <p>Turn plugins on in each bot's settings.</p>
+        <p>
+          Sign-ins for plugins added in Fabs Bot are held by Fabs Bot on this PC and shared by every bot they're turned on for, on any provider. Claude and Codex rows
+          are signed in inside that CLI.
+        </p>
       </div>
-      {form && <ConnectorForm initial={form} onDone={() => (setForm(null), connectors.reload())} />}
+
+      {access.length > 0 && (
+        <section aria-labelledby="bot-access-title" className="flex flex-col gap-2">
+          <div>
+            <h3 id="bot-access-title" className="font-medium">
+              Bot access
+            </h3>
+            <p className="text-sm text-muted-foreground">Each bot is checked through its own CLI, so one bot's access never counts for another.</p>
+          </div>
+          <Table aria-label="Bot access">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Bot</TableHead>
+                <TableHead>Plugin</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-10">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {access.map(({ check, bot, connector }) => {
+                const provider = providers.find((p) => p.id === bot.provider);
+                return (
+                  <TableRow key={`${check.botId}:${check.connectorId}`}>
+                    <TableCell className="whitespace-normal">
+                      <div className="flex items-center gap-2">
+                        <BotAvatar shape={bot.shape} color={bot.color} size={28} className="flex-none" />
+                        <div className="flex min-w-0 flex-col">
+                          <span className="font-medium wrap-anywhere">{bot.name}</span>
+                          {provider && <span className="text-xs text-muted-foreground">{providerName(provider)}</span>}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-normal wrap-anywhere">{connector.name}</TableCell>
+                    <TableCell className="whitespace-normal">
+                      <CheckStatus check={check} />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Check ${bot.name} with ${connector.name}`}
+                        title={`Check ${bot.name} with ${connector.name}`}
+                        disabled={check.state === "checking" || check.state === "unsupported" || (check.state === "auth" && !check.checkedAt)}
+                        onClick={() => api.post(`/api/connectors/${connector.id}/check`, { botId: bot.id }).catch((e: Error) => toast.error(e.message))}
+                      >
+                        <RefreshCw className={cn(check.state === "checking" && "animate-spin")} />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </section>
+      )}
+      {form && (
+        <ConnectorForm
+          initial={form}
+          access={form.id ? accessOf(form.id) : undefined}
+          callbackUrl={status.data?.callbackUrl ?? ""}
+          onDone={() => (setForm(null), connectors.reload())}
+        />
+      )}
+      {signIn && <SignInDialog flow={signIn} access={accessOf(signIn.connector.id)} onRetry={() => beginSignIn(signIn.connector)} onClose={() => setSignIn(null)} />}
     </div>
   );
 }
 
-function PluginRowMenu({ connector, onEdit, onRemove }: { connector: Connector; onEdit(c: Connector): void; onRemove(c: Connector): void }) {
+function AccessStatus({ name, access, onSignIn }: { name: string; access: ConnectorAccess; onSignIn(): void }) {
+  if (access.auth === "signed-in")
+    return (
+      <span className="flex items-center gap-1.5 sm:whitespace-nowrap">
+        <Check className="size-4 flex-none" aria-hidden /> Signed in
+      </span>
+    );
+  if (access.auth === "none" || access.auth === "static")
+    return access.problem ? <span className="text-muted-foreground sm:whitespace-nowrap">Can't connect</span> : <Check className="size-4" aria-label="Added" />;
+  const action = access.auth === "expired" ? "Reconnect" : access.auth === "needed" || access.auth === "failed" ? "Sign in" : null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="text-muted-foreground sm:whitespace-nowrap">{AUTH_TEXT[access.auth]}</span>
+      {action && (
+        <Button size="xs" variant="outline" aria-label={`${action} to ${name}`} onClick={onSignIn}>
+          {action}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function CheckStatus({ check }: { check: ConnectorCheck }) {
+  const tools = check.tools.length;
+  switch (check.state) {
+    case "ready":
+      return (
+        <span className="flex flex-col">
+          <span className="flex items-center gap-1.5">
+            <Check className="size-4 flex-none" aria-hidden /> Ready, {tools} {tools === 1 ? "tool" : "tools"}
+          </span>
+          {check.checkedAt && <span className="text-xs text-muted-foreground">checked {formatTime(check.checkedAt)}</span>}
+        </span>
+      );
+    case "auth":
+      return (
+        <span className="flex flex-col">
+          <span>Authentication required</span>
+          <span className="text-xs text-muted-foreground">
+            {check.checkedAt ? "The server refused this bot's sign-in. Reconnect the plugin above." : "Sign in to the plugin above."}
+          </span>
+        </span>
+      );
+    case "failed":
+      return (
+        <span className="flex flex-col">
+          <span>Can't connect</span>
+          {check.detail && <span className="text-xs text-muted-foreground wrap-anywhere">{check.detail}</span>}
+        </span>
+      );
+    case "checking":
+      return (
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <LoaderCircle className="size-4 flex-none animate-spin" aria-hidden /> Checking…
+        </span>
+      );
+    case "unsupported":
+      return <span className="text-muted-foreground">This bot's CLI can't use plugins</span>;
+    default:
+      return <span className="text-muted-foreground">Not checked yet</span>;
+  }
+}
+
+function SignInDialog({ flow, access, onRetry, onClose }: { flow: SignInFlow; access?: ConnectorAccess; onRetry(): void; onClose(): void }) {
+  const [address, setAddress] = useState("");
+  const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState("");
+  const name = flow.connector.name;
+  const done = access?.auth === "signed-in" && access.signedInAt !== flow.before;
+  const failed = flow.error || (flow.url ? (access?.problem ?? "") : "");
+  const problem = failed || finishError;
+  const finish = async () => {
+    setFinishing(true);
+    setFinishError("");
+    try {
+      await api.post(`/api/connectors/${flow.connector.id}/sign-in/finish`, { address });
+    } catch (e) {
+      setFinishError((e as Error).message);
+    } finally {
+      setFinishing(false);
+    }
+  };
+
+  return (
+    <Modal title={`Sign in to ${name}`} onClose={onClose}>
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">
+          Fabs Bot holds this sign-in on this PC and shares it with every bot that has {name} turned on, on any provider.
+        </p>
+        {done ? (
+          <>
+            <p role="status" className="flex items-center gap-2 font-medium">
+              <Check className="size-4 flex-none" aria-hidden /> Signed in to {name}.
+            </p>
+            <div className="flex justify-end">
+              <Button className="rounded-full px-6" onClick={onClose}>
+                Done
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {problem && (
+              <Alert variant="destructive">
+                <AlertDescription>{problem}</AlertDescription>
+              </Alert>
+            )}
+            {flow.url && !failed ? (
+              <Button asChild className="rounded-full">
+                <a href={flow.url} target="_blank" rel="noreferrer">
+                  <ExternalLink /> Open sign-in page
+                </a>
+              </Button>
+            ) : failed ? (
+              <Button className="rounded-full" onClick={onRetry}>
+                <RefreshCw /> Try again
+              </Button>
+            ) : (
+              <Button className="rounded-full" disabled>
+                <LoaderCircle className="animate-spin" /> Preparing sign-in…
+              </Button>
+            )}
+            {flow.url && flow.pasteBack && !failed && (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm">After you approve, your browser lands on a page that won't load. Copy that page's address and paste it here.</p>
+                <Input aria-label="Address after approving" placeholder="http://127.0.0.1:…" value={address} onChange={(e) => setAddress(e.target.value)} />
+                <div className="flex justify-end">
+                  <Button className="rounded-full px-6" disabled={!address.trim() || finishing} onClick={finish}>
+                    Finish sign-in
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Turn on Tailscale HTTPS in This PC and sign-in finishes on its own.</p>
+              </div>
+            )}
+            {flow.url && !flow.pasteBack && !problem && (
+              <p role="status" className="text-sm text-muted-foreground">
+                Waiting for you to approve in the new tab…
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function PluginRowMenu({
+  connector,
+  access,
+  onEdit,
+  onRemove,
+  onSignIn,
+  onRevoke,
+}: {
+  connector: Connector;
+  access?: ConnectorAccess;
+  onEdit(c: Connector): void;
+  onRemove(c: Connector): void;
+  onSignIn(c: Connector): void;
+  onRevoke(c: Connector): void;
+}) {
+  const auth = access?.auth;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -412,6 +691,16 @@ function PluginRowMenu({ connector, onEdit, onRemove }: { connector: Connector; 
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {auth && SIGN_IN_STATES.has(auth) && (
+          <DropdownMenuItem onSelect={() => onSignIn(connector)}>
+            <LogIn /> {auth === "signed-in" || auth === "expired" ? "Reconnect" : "Sign in"}
+          </DropdownMenuItem>
+        )}
+        {auth === "signed-in" && (
+          <DropdownMenuItem onSelect={() => onRevoke(connector)}>
+            <Unplug /> Revoke access
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={() => onEdit(connector)}>
           <Pencil /> Edit
         </DropdownMenuItem>
@@ -455,8 +744,20 @@ function FormField({ label, hint, children }: { label: string; hint?: string; ch
   );
 }
 
-function ConnectorForm({ initial, onDone }: { initial: ConnectorPreset & { id?: string }; onDone(): void }) {
+function ConnectorForm({
+  initial,
+  access,
+  callbackUrl,
+  onDone,
+}: {
+  initial: ConnectorPreset & { id?: string };
+  access?: ConnectorAccess;
+  callbackUrl: string;
+  onDone(): void;
+}) {
   const [c, setC] = useState(initial);
+  const [clientId, setClientId] = useState(access?.clientId ?? "");
+  const [clientSecret, setClientSecret] = useState("");
   const [env, setEnv] = useState(kv(initial.env));
   const [headers, setHeaders] = useState(Object.entries(initial.headers).map(([k, v]) => `${k}: ${v}`).join("\n"));
   const [args, setArgs] = useState(initial.args.join(" "));
@@ -498,9 +799,20 @@ function ConnectorForm({ initial, onDone }: { initial: ConnectorPreset & { id?: 
             <FormField label="URL">
               <Input value={c.url} onChange={(e) => setC({ ...c, url: e.target.value })} placeholder="https://…/mcp" />
             </FormField>
-            <FormField label="Headers" hint="Name: value per line">
+            <FormField label="Headers" hint="Name: value per line. Servers you sign in to need no Authorization header">
               <Textarea rows={3} className="font-mono" value={headers} onChange={(e) => setHeaders(e.target.value)} />
             </FormField>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="OAuth client ID" hint="optional">
+                <Input value={clientId} onChange={(e) => setClientId(e.target.value)} />
+              </FormField>
+              <FormField label="Client secret" hint="optional">
+                <Input type="password" value={clientSecret} placeholder={access?.hasClientSecret ? "Saved" : ""} onChange={(e) => setClientSecret(e.target.value)} />
+              </FormField>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Only for services that can't register Fabs Bot on their own. Give the app you create there the redirect address {callbackUrl || "shown here"}.
+            </p>
           </>
         )}
         <div className="flex justify-end gap-2">
@@ -515,6 +827,7 @@ function ConnectorForm({ initial, onDone }: { initial: ConnectorPreset & { id?: 
                 args: args.split(/\s+/).filter(Boolean),
                 env: parseKv(env),
                 headers: parseHeaders(headers),
+                ...(c.kind === "http" && { oauthClientId: clientId, ...(clientSecret && { oauthClientSecret: clientSecret }) }),
               });
               onDone();
             }}

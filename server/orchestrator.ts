@@ -5,6 +5,7 @@ import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { LOCAL_BASE, MAX_HOPS, SHARED_DIR } from "./config";
 import * as db from "./db";
 import { endLink, getStatus, publish, setStatus, startLink } from "./bus";
+import { connectorsForRun } from "./connectors";
 import { launchFor, providers } from "./providers";
 import type { ProviderEvent } from "./providers/types";
 import { clip } from "./providers/spawn";
@@ -117,7 +118,7 @@ export function isBusy(threadId: string, botId: string) {
   return queues.has(key(threadId, botId));
 }
 
-export function systemPrompt(bot: Bot, thread: Thread): string {
+export function systemPrompt(bot: Bot, thread: Thread, unavailable: string[] = []): string {
   const team = db
     .listBots()
     .filter((b) => b.id !== bot.id)
@@ -170,6 +171,10 @@ export function systemPrompt(bot: Bot, thread: Thread): string {
       );
     }
   }
+  if (unavailable.length)
+    lines.push(
+      `\nThese plugins are turned on for you, but their tools are missing right now: ${unavailable.join(", ")}. If a task needs one, tell the user to open Settings in Fabs Bot and fix it under Plugins.`,
+    );
   lines.push(
     `\nThe user reads you on a phone. Lead with the result, keep replies short, use Markdown lists sparingly, and put long material in a file you share.`,
   );
@@ -334,16 +339,18 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   };
 
   try {
+    const plugins = await connectorsForRun(bot);
+    const launch = launchFor(bot.provider);
     await provider.run(
       {
         bot,
-        launch: launchFor(bot.provider),
+        launch: { ...launch, env: { ...launch.env, ...plugins.env } },
         prompt: buildPrompt(thread, bot, pending, fresh),
-        systemPrompt: systemPrompt(bot, thread),
+        systemPrompt: systemPrompt(bot, thread, plugins.unavailable),
         sessionId: resume,
         cwd: bot.cwd,
         mcpUrl: `${LOCAL_BASE}/mcp/${token}`,
-        connectors: db.listConnectors().filter((c) => bot.connectorIds.includes(c.id)),
+        connectors: plugins.connectors,
         addDirs: [SHARED_DIR],
         signal: ctrl.signal,
       },
