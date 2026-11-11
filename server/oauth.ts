@@ -26,6 +26,7 @@ type Entry = {
   tokens?: Tokens;
   signedInAt?: number;
   expired?: boolean;
+  refused?: boolean;
   problem?: string;
   renewProblem?: string;
 };
@@ -176,6 +177,7 @@ async function inspect(c: Connector, e: Entry): Promise<void> {
     e.problem = `Couldn't reach ${where}. Check the URL and that the server is running.`;
     return save();
   }
+  e.refused = res.status === 401 && !hasStaticAuth(c);
   if (hasStaticAuth(c)) {
     e.required = false;
     e.problem = res.status === 401 || res.status === 403 ? `${where} refused the Authorization header. Check the token in Edit.` : "";
@@ -232,6 +234,11 @@ async function inspect(c: Connector, e: Entry): Promise<void> {
 export function needsDetect(c: Connector) {
   const e = entries[c.id];
   return c.kind === "http" && (e?.url !== c.url || (e.required === null && !e.problem));
+}
+
+export function needsToken(c: Connector) {
+  const e = entries[c.id];
+  return e?.url === c.url && (e.required === true || e.refused === true);
 }
 
 function clientAuth(meta: Metadata, client: Client, body: URLSearchParams): Record<string, string> {

@@ -3,7 +3,7 @@ import type { Bot, Connector, ConnectorAccess, ConnectorCheck, ConnectorStatus }
 import { publish } from "./bus";
 import { LOCAL_BASE } from "./config";
 import * as db from "./db";
-import { access, bearer, detect, finishSignIn, hasStaticAuth, needsDetect, onAuthChange, renew } from "./oauth";
+import { access, bearer, detect, finishSignIn, hasStaticAuth, needsDetect, needsToken, onAuthChange, renew } from "./oauth";
 import { launchFor, providers } from "./providers";
 import type { CheckResult, RunConnector } from "./providers/types";
 
@@ -73,13 +73,12 @@ export async function connectorsForRun(bot: Bot) {
     }
     if (needsDetect(c)) await detect(c);
     const token = await bearer(c);
-    const { auth } = access(c);
     if (token) {
       const tokenEnv = `FABS_MCP_TOKEN_${Object.keys(env).length + 1}`;
       env[tokenEnv] = token;
       connectors.push({ ...c, headers: withoutAuthorization(c.headers), tokenEnv });
-    } else if (auth === "none") connectors.push(c);
-    else unavailable.push(`${c.name} (${auth === "error" || auth === "unknown" ? "can't connect" : "needs sign-in"})`);
+    } else if (!needsToken(c)) connectors.push(c);
+    else unavailable.push(`${c.name} (${access(c).auth === "error" ? "can't sign in" : "needs sign-in"})`);
   }
   return { connectors, env, unavailable };
 }
