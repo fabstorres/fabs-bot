@@ -402,7 +402,7 @@ async function refresh(c: Connector, e: Entry) {
     delete e.renewProblem;
     save();
   } catch (err) {
-    if (err instanceof TokenError && err.status >= 400 && err.status < 500) return expire();
+    if (err instanceof TokenError && [400, 401, 403].includes(err.status)) return expire();
     e.renewProblem = `Couldn't renew the sign-in to ${c.name}: ${host(e.meta.issuer)} didn't answer. Fabs Bot will try again on the next turn.`;
     save();
   }
@@ -433,6 +433,7 @@ export async function renew(c: Connector): Promise<boolean> {
 }
 
 export async function signOut(c: Connector): Promise<boolean> {
+  await refreshing.get(c.id);
   const e = entries[c.id];
   const tokens = e?.tokens;
   if (!e || !tokens) {
