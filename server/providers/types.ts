@@ -34,6 +34,20 @@ export interface RunOptions {
   signal: AbortSignal;
 }
 
+export interface CheckResult {
+  state: "ready" | "auth" | "failed";
+  tools: string[];
+  detail: string;
+}
+
+export interface CheckOptions {
+  bot: Bot;
+  launch: Launch;
+  cwd: string;
+  connectors: RunConnector[];
+  signal: AbortSignal;
+}
+
 export interface Provider {
   id: Bot["provider"];
   label: string;
@@ -45,4 +59,5 @@ export interface Provider {
   note: string;
   models: ModelOption[];
   run(opts: RunOptions, emit: (e: ProviderEvent) => void): Promise<void>;
+  checkConnectors?(opts: CheckOptions): Promise<Record<string, CheckResult>>;
 }

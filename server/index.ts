@@ -7,7 +7,7 @@ import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, LOCAL_BASE, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
 import { authorized, deviceId, isLoopback, listDevices, localOwner, ownerOnly, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
-import { connectorSaved, connectorStatus, findConnector, finishConnectorSignIn } from "./connectors";
+import { botSaved, checkConnector, connectorSaved, connectorStatus, findConnector, finishConnectorSignIn } from "./connectors";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { SignInError, configureClient, forget, signOut, startSignIn, usesConfiguredClient } from "./oauth";
@@ -217,6 +217,7 @@ route("PUT", "/api/bots/:id", async (req, p) => {
   const next = sanitizeBot(await body(req), existing);
   if (next.provider !== existing.provider || next.cwd !== existing.cwd) db.resetSessionsForBot(existing.id);
   const bot = saveAndPublish({ ...next, createdAt: existing.createdAt });
+  botSaved(existing, bot);
   return json(bot);
 });
 route("DELETE", "/api/bots/:id", async (_r, p) => {
@@ -439,6 +440,13 @@ route("POST", "/api/connectors/:id/sign-in/finish", async (req) => {
   if (!query.get("state")) return bad("That address has no sign-in code. Copy the address of the page you landed on after approving.");
   await finishConnectorSignIn(query);
   return json({ ok: true });
+});
+route("POST", "/api/connectors/:id/check", async (req, p) => {
+  const c = findConnector(p.id!);
+  if (!c) return bad("not found", 404);
+  const { botId } = await body<{ botId?: string }>(req);
+  await checkConnector(c, typeof botId === "string" ? botId : undefined);
+  return json(connectorStatus());
 });
 route("DELETE", "/api/connectors/:id/sign-in", async (_r, p) => {
   const c = findConnector(p.id!);

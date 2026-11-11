@@ -1,5 +1,5 @@
-import { parseJson, spawnLines, summarizeToolInput } from "./spawn";
-import { serverKey, type Launch, type Provider, type RunConnector } from "./types";
+import { clip, jsonSession, parseJson, spawnLines, summarizeToolInput } from "./spawn";
+import { serverKey, type CheckResult, type Launch, type Provider, type RunConnector } from "./types";
 
 export function prettyToolName(name: string): string {
   const m = name.match(/^mcp__(.+?)__(.+)$/);
@@ -30,6 +30,13 @@ const SHADOWED_TOOLS = ["SendMessage", "ListAgents", "CronCreate", "CronDelete",
 
 /** Read-only tools a bot in "ask" mode may use without asking. */
 const SAFE_TOOLS = ["Read", "Glob", "Grep", "LS", "WebSearch", "WebFetch", "TodoWrite", "mcp__fabsbot"];
+
+function claudeCheck(s: any): CheckResult {
+  if (s.status === "connected") return { state: "ready", tools: (s.tools ?? []).map((t: any) => String(t.name)), detail: "" };
+  const error = typeof s.error === "string" ? s.error : "";
+  if (s.status === "needs-auth" || /\b40[13]\b|unauthori[sz]ed|forbidden/i.test(error)) return { state: "auth", tools: [], detail: "" };
+  return { state: "failed", tools: [], detail: s.status === "pending" ? "It didn't finish connecting in time." : clip(error || `Claude Code reported ${s.status}.`, 160) };
+}
 
 function resultText(content: unknown): string | undefined {
   if (typeof content === "string") return content;
@@ -141,6 +148,47 @@ export const claude: Provider = {
       else emit({ type: "error", message: stderr.trim() || `claude exited with code ${code}` });
       emit({ type: "done" });
     }
+  },
+
+  async checkConnectors(o) {
+    const results: Record<string, CheckResult> = {};
+    const ids = new Map(o.connectors.map((c) => [serverKey(c), c.id]));
+    const status = { type: "control_request", request_id: "status", request: { subtype: "mcp_status" } };
+    let tries = 0;
+    await jsonSession({
+      cmd: [
+        o.launch.bin,
+        ...o.launch.args,
+        "-p",
+        "--input-format",
+        "stream-json",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--strict-mcp-config",
+        "--mcp-config",
+        JSON.stringify({ mcpServers: connectorServers(o.connectors) }),
+      ],
+      cwd: o.cwd,
+      env: o.launch.env,
+      signal: o.signal,
+      start: (send) => send({ type: "control_request", request_id: "init", request: { subtype: "initialize" } }),
+      onMessage(m, send, finish) {
+        if (m.type !== "control_response") return;
+        const r = m.response ?? {};
+        if (r.subtype !== "success") return finish();
+        if (r.request_id === "init") return send(status);
+        if (r.request_id !== "status") return;
+        const servers: any[] = r.response?.mcpServers ?? [];
+        if (servers.some((s) => s.status === "pending") && ++tries < 30) return void setTimeout(() => send(status), 500);
+        for (const s of servers) {
+          const id = ids.get(s.name);
+          if (id) results[id] = claudeCheck(s);
+        }
+        finish();
+      },
+    });
+    return results;
   },
 };
 

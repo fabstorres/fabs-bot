@@ -83,6 +83,59 @@ export async function spawnLines(o: SpawnLinesOptions): Promise<{ code: number; 
   return { code, stderr };
 }
 
+export interface JsonSessionOptions {
+  cmd: string[];
+  cwd: string;
+  env?: Record<string, string>;
+  signal: AbortSignal;
+  start(send: (msg: unknown) => void): void;
+  onMessage(msg: any, send: (msg: unknown) => void, finish: () => void): void;
+}
+
+export async function jsonSession(o: JsonSessionOptions): Promise<{ code: number; stderr: string }> {
+  const bin = which(o.cmd[0]!);
+  if (!bin) throw new Error(`${o.cmd[0]} is not installed or not on PATH`);
+  const proc = Bun.spawn([bin, ...o.cmd.slice(1)], { cwd: o.cwd, env: { ...childEnv, ...o.env }, stdin: "pipe", stdout: "pipe", stderr: "pipe" });
+  let open = true;
+  const send = (msg: unknown) => {
+    if (!open) return;
+    proc.stdin.write(JSON.stringify(msg) + "\n");
+    void proc.stdin.flush();
+  };
+  const finish = () => {
+    if (!open) return;
+    open = false;
+    void proc.stdin.end();
+  };
+  const kill = () => {
+    finish();
+    proc.kill("SIGKILL");
+  };
+  o.signal.addEventListener("abort", kill, { once: true });
+  if (o.signal.aborted) kill();
+  o.start(send);
+
+  let stderr = "";
+  const errPump = (async () => {
+    for await (const chunk of proc.stderr as ReadableStream<Uint8Array>) stderr = (stderr + new TextDecoder().decode(chunk)).slice(-4000);
+  })();
+  const decoder = new TextDecoder();
+  let buf = "";
+  for await (const chunk of proc.stdout as ReadableStream<Uint8Array>) {
+    buf += decoder.decode(chunk, { stream: true });
+    let nl: number;
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      const msg = parseJson(buf.slice(0, nl));
+      buf = buf.slice(nl + 1);
+      if (msg) o.onMessage(msg, send, finish);
+    }
+  }
+  const code = await proc.exited;
+  await errPump;
+  o.signal.removeEventListener("abort", kill);
+  return { code, stderr };
+}
+
 export function parseJson(line: string): any | null {
   try {
     return JSON.parse(line);

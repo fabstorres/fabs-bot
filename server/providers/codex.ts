@@ -1,5 +1,6 @@
-import { clip, parseJson, spawnLines, summarizeToolInput } from "./spawn";
-import { serverKey, type Launch, type Provider, type RunConnector } from "./types";
+import { version } from "../../package.json";
+import { clip, jsonSession, parseJson, spawnLines, summarizeToolInput } from "./spawn";
+import { serverKey, type CheckResult, type Launch, type Provider, type RunConnector } from "./types";
 import type { InheritedServer } from "./claude";
 
 /** Codex `-c key=value` values are parsed as TOML; JSON strings are valid TOML basic strings. */
@@ -99,7 +100,48 @@ export const codex: Provider = {
       emit({ type: "done" });
     }
   },
+
+  async checkConnectors(o) {
+    const results: Record<string, CheckResult> = {};
+    const asked = new Map<number, string>();
+    const cmd = [o.launch.bin, "app-server"];
+    for (const c of connectorConfig(o.connectors)) cmd.push("-c", c);
+    await jsonSession({
+      cmd,
+      cwd: o.cwd,
+      env: o.launch.env,
+      signal: o.signal,
+      start: (send) => send({ id: 0, method: "initialize", params: { clientInfo: { name: "fabs-bot", title: "Fabs Bot", version }, capabilities: null } }),
+      onMessage(m, send, finish) {
+        if (m.method !== undefined || typeof m.id !== "number") return;
+        if (m.id === 0) {
+          if (m.error) return finish();
+          send({ method: "initialized" });
+          o.connectors.forEach((c, i) => {
+            asked.set(i + 1, c.id);
+            send({ id: i + 1, method: "mcpServerStatus/list", params: { serverName: serverKey(c), detail: "toolsAndAuthOnly" } });
+          });
+          if (!asked.size) finish();
+          return;
+        }
+        const id = asked.get(m.id);
+        if (!id) return;
+        asked.delete(m.id);
+        results[id] = codexCheck(m.result?.data?.[0], m.error);
+        if (!asked.size) finish();
+      },
+    });
+    return results;
+  },
 };
+
+function codexCheck(s: any, error: any): CheckResult {
+  if (!s) return { state: "failed", tools: [], detail: clip(String(error?.message ?? "Codex didn't report this plugin."), 160) };
+  const problem = typeof s.toolsError === "string" ? s.toolsError : "";
+  if (!problem) return { state: "ready", tools: Object.keys(s.tools ?? {}), detail: "" };
+  if (s.authStatus === "notLoggedIn" || /auth required|\b40[13]\b|unauthori[sz]ed|forbidden/i.test(problem)) return { state: "auth", tools: [], detail: "" };
+  return { state: "failed", tools: [], detail: clip(problem.replace(/\s*\[[^\]]*\]/g, ""), 160) };
+}
 
 export function readableError(message: string): string {
   const body = parseJson(message);

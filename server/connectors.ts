@@ -1,14 +1,29 @@
-import type { Bot, Connector, ConnectorStatus } from "../shared/types";
+import { mkdirSync } from "node:fs";
+import type { Bot, Connector, ConnectorAccess, ConnectorCheck, ConnectorStatus } from "../shared/types";
 import { publish } from "./bus";
 import * as db from "./db";
-import { access, bearer, detect, finishSignIn, hasStaticAuth, needsDetect, onAuthChange } from "./oauth";
-import type { RunConnector } from "./providers/types";
+import { access, bearer, detect, finishSignIn, hasStaticAuth, needsDetect, onAuthChange, renew } from "./oauth";
+import { launchFor, providers } from "./providers";
+import type { CheckResult, RunConnector } from "./providers/types";
+
+const CHECK_MS = 45_000;
+const NO_TOKEN = new Set<ConnectorAccess["auth"]>(["needed", "expired", "failed"]);
 
 export const findConnector = (id: string) => db.listConnectors().find((c) => c.id === id) ?? null;
 
 const detecting = new Set<string>();
+const checking = new Set<string>();
+const pair = (botId: string, connectorId: string) => `${botId}:${connectorId}`;
+let queue: Promise<unknown> = Promise.resolve();
 
-onAuthChange(() => publish({ type: "connectors" }));
+const usersOf = (connectorId: string) => db.listBots().filter((b) => b.connectorIds.includes(connectorId)).map((b) => b.id);
+
+onAuthChange((connectorId) => {
+  db.clearChecks({ connectorId });
+  publish({ type: "connectors" });
+  const c = findConnector(connectorId);
+  if (c && access(c).auth === "signed-in") void checkBots(usersOf(connectorId), connectorId);
+});
 
 function detectLater(c: Connector) {
   if (detecting.has(c.id)) return;
@@ -19,15 +34,26 @@ function detectLater(c: Connector) {
   });
 }
 
+function checkFor(bot: Bot, a: ConnectorAccess, saved: ConnectorCheck | undefined): ConnectorCheck {
+  const base: ConnectorCheck = { botId: bot.id, connectorId: a.connectorId, state: "unchecked", tools: [], detail: "", checkedAt: null };
+  if (!providers[bot.provider].checkConnectors) return { ...base, state: "unsupported" };
+  if (checking.has(pair(bot.id, a.connectorId))) return { ...base, state: "checking" };
+  if (NO_TOKEN.has(a.auth)) return { ...base, state: "auth" };
+  if (a.auth === "error") return { ...base, state: "failed", detail: a.problem };
+  return saved ?? base;
+}
+
 export function connectorStatus(): ConnectorStatus {
   const connectors = db.listConnectors();
   for (const c of connectors) if (needsDetect(c)) detectLater(c);
-  return { access: connectors.map(access), checks: [] };
-}
-
-export async function connectorSaved(c: Connector) {
-  await detect(c);
-  publish({ type: "connectors" });
+  const accesses = connectors.map(access);
+  const saved = new Map(db.listChecks().map((r) => [pair(r.botId, r.connectorId), r]));
+  const checks = db.listBots().flatMap((bot) =>
+    connectors
+      .filter((c) => c.kind === "http" && bot.connectorIds.includes(c.id))
+      .map((c) => checkFor(bot, accesses.find((a) => a.connectorId === c.id)!, saved.get(pair(bot.id, c.id)))),
+  );
+  return { access: accesses, checks };
 }
 
 const withoutAuthorization = (headers: Record<string, string>) =>
@@ -53,6 +79,85 @@ export async function connectorsForRun(bot: Bot) {
     else unavailable.push(`${c.name} (${auth === "error" || auth === "unknown" ? "can't connect" : "needs sign-in"})`);
   }
   return { connectors, env, unavailable };
+}
+
+const scrub = (text: string, secrets: string[]) => secrets.reduce((t, s) => t.split(s).join("…"), text);
+
+async function checkBot(bot: Bot, list: Connector[], retry = true): Promise<void> {
+  const refused: Connector[] = [];
+  try {
+    const plugins = await connectorsForRun({ ...bot, connectorIds: list.map((c) => c.id) });
+    const reachable = plugins.connectors.filter((c) => c.kind === "http");
+    if (!reachable.length) return;
+    const launch = launchFor(bot.provider);
+    const label = providers[bot.provider].label;
+    let results: Record<string, CheckResult> = {};
+    let failure = "";
+    try {
+      mkdirSync(bot.cwd, { recursive: true });
+      results = await providers[bot.provider].checkConnectors!({
+        bot,
+        launch: { ...launch, env: { ...launch.env, ...plugins.env } },
+        cwd: bot.cwd,
+        connectors: reachable,
+        signal: AbortSignal.timeout(CHECK_MS),
+      });
+    } catch (e) {
+      failure = (e as Error).message;
+    }
+    const secrets = Object.values(plugins.env);
+    for (const c of reachable) {
+      const r = results[c.id] ?? { state: "failed", tools: [], detail: failure || `${label} didn't report ${c.name} in time.` };
+      try {
+        db.saveCheck({ botId: bot.id, connectorId: c.id, state: r.state, tools: r.tools, detail: scrub(r.detail, secrets) });
+      } catch {}
+      if (retry && c.tokenEnv && r.state === "auth") refused.push(c);
+    }
+  } finally {
+    for (const c of list) checking.delete(pair(bot.id, c.id));
+    publish({ type: "connectors" });
+  }
+  const renewed: Connector[] = [];
+  for (const c of refused) if (await renew(c)) renewed.push(c);
+  if (renewed.length) await checkBot(bot, renewed, false);
+}
+
+export function checkBots(botIds: string[], connectorId?: string): Promise<void> {
+  const jobs: [Bot, Connector[]][] = [];
+  for (const id of botIds) {
+    const bot = db.getBot(id);
+    if (!bot || !providers[bot.provider].checkConnectors) continue;
+    const list = db.listConnectors().filter((c) => c.kind === "http" && bot.connectorIds.includes(c.id) && (!connectorId || c.id === connectorId));
+    if (!list.length) continue;
+    for (const c of list) checking.add(pair(bot.id, c.id));
+    jobs.push([bot, list]);
+  }
+  if (!jobs.length) return Promise.resolve();
+  publish({ type: "connectors" });
+  const run = queue.then(async () => {
+    for (const [bot, list] of jobs) await checkBot(bot, list);
+  });
+  queue = run.catch(() => {});
+  return run;
+}
+
+export async function checkConnector(c: Connector, botId?: string) {
+  await detect(c);
+  publish({ type: "connectors" });
+  await checkBots(botId ? [botId] : usersOf(c.id), c.id);
+}
+
+export async function connectorSaved(c: Connector) {
+  db.clearChecks({ connectorId: c.id });
+  await checkConnector(c);
+}
+
+export function botSaved(before: Bot, after: Bot) {
+  const sameIds = before.connectorIds.length === after.connectorIds.length && before.connectorIds.every((id) => after.connectorIds.includes(id));
+  if (before.provider === after.provider && sameIds) return;
+  db.clearChecks({ botId: after.id });
+  publish({ type: "connectors" });
+  void checkBots([after.id]);
 }
 
 export const finishConnectorSignIn = (query: URLSearchParams) => finishSignIn(query, findConnector);
