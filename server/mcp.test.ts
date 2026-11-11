@@ -84,3 +84,11 @@ test("a send_webhook retry with a request id from another group is rejected befo
   expect(result.content[0]!.text).toContain("isn't a request id this group sent");
   expect(parts).toEqual([]);
 });
+
+test("a webhook send still in flight when the server stops reads as stopped after a restart", () => {
+  const sender = bot("Restarted");
+  const group = db.createThread("group", [sender.id, mockups.id]);
+  const m = db.addMessage({ threadId: group.id, author: "bot", botId: sender.id, status: "streaming", parts: [{ type: "webhook", requestId: "fabs-in-flight", state: "sending", detail: "" }] });
+  db.closeDanglingMessages();
+  expect(db.getMessage(m.id)!.parts).toEqual([{ type: "webhook", requestId: "fabs-in-flight", state: "failed", detail: "Stopped before the endpoint answered. It may still have arrived" }]);
+});

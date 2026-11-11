@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { join } from "node:path";
 import { DATA_DIR } from "./config";
+import { WEBHOOK_STOPPED } from "./webhook";
 import type {
   Bot,
   Connector,
@@ -371,7 +372,6 @@ export function updateMessage(id: string, parts: MessagePart[], status?: Message
 export function deleteMessage(id: string) {
   db.query("DELETE FROM messages WHERE id = ?").run(id);
 }
-/** Messages left "streaming" by a crash or restart. Their approval prompts died with the turn. */
 export function closeDanglingMessages() {
   const rows = db.query("SELECT * FROM messages WHERE status = 'streaming'").all() as MessageRow[];
   for (const m of rows.map(toMessage)) {
@@ -379,7 +379,13 @@ export function closeDanglingMessages() {
     for (const p of m.parts)
       if (p.type === "approval" && !p.decision)
         logEvent({ type: "approval.decision", actor: "system", threadId: m.threadId, threadKind: kind, approvalId: p.requestId, outcome: "cancelled" });
-    const parts = m.parts.map((p) => (p.type === "approval" && !p.decision ? { ...p, decision: "deny" as const } : p));
+    const parts = m.parts.map((p) =>
+      p.type === "approval" && !p.decision
+        ? { ...p, decision: "deny" as const }
+        : p.type === "webhook" && p.state === "sending"
+          ? { ...p, state: "failed" as const, detail: WEBHOOK_STOPPED }
+          : p,
+    );
     updateMessage(m.id, parts, "error");
   }
 }

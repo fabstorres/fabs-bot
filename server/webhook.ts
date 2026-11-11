@@ -5,6 +5,7 @@ import type { ThreadWebhook } from "./db";
 
 export const WEBHOOK_TIMEOUT_MS = 10_000;
 export const WEBHOOK_BODY_MAX = 1024 * 1024;
+export const WEBHOOK_STOPPED = "Stopped before the endpoint answered. It may still have arrived";
 
 const HEADER_NAME = /^[A-Za-z0-9!#$%&'*+.^_`|~-]{1,64}$/;
 const HEADER_PREFIX = /^[\x21-\x7e]{0,32}$/;
@@ -36,7 +37,7 @@ export async function deliver(hook: ThreadWebhook, body: string, stop: AbortSign
     const code = timeout.aborted ? "timeout" : stop.aborted ? "stopped" : ((e as { code?: string }).code ?? (e as Error).name);
     console.warn(`webhook delivery failed: ${code}`);
     if (timeout.aborted) return { ok: false, detail: `No answer within ${WEBHOOK_TIMEOUT_MS / 1000} seconds. It may still have arrived` };
-    if (stop.aborted) return { ok: false, detail: "Stopped before the endpoint answered. It may still have arrived" };
+    if (stop.aborted) return { ok: false, detail: WEBHOOK_STOPPED };
     return { ok: false, detail: "Couldn't reach the endpoint" };
   }
   void res.body?.cancel().catch(() => {});
