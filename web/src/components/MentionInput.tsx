@@ -128,7 +128,7 @@ export function MentionInput({ ref, value, onChange, onSubmit, bots, placeholder
   }));
 
   return (
-    <div className="relative min-w-0 flex-1">
+    <div className="min-w-0 flex-1">
       {matches.length > 0 && (
         <div
           className="absolute bottom-[calc(100%+14px)] left-0 z-50 w-72 max-w-full rounded-2xl border bg-popover p-1.5 shadow-lg animate-in fade-in-0 zoom-in-95"
