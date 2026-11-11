@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node
 import { hostname } from "node:os";
 import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
-import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, type ProviderSettings, type ServerEvent } from "../shared/types";
+import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, type ProviderSettings, type ServerEvent, type WebhookSettings } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, LOCAL_BASE, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
@@ -20,6 +20,7 @@ import { isLimitsProviderId, providerLimits } from "./providers/limits";
 import { fireRoutine, reschedule, withNextRun } from "./scheduler";
 import { closeAllScreens, findChromium, forgetScreen, listScreens, releaseScreen, unwatchScreen, viewerMessage, watchScreen, type Viewer } from "./screen";
 import { disableServe, enableServe, killRunningCommands, tailscaleState, type ServeProblem } from "./tailscale";
+import { isSignatureHeader, isSignaturePrefix, isWebhookUrl } from "./webhook";
 
 db.closeDanglingMessages();
 db.pruneEvents();
@@ -318,6 +319,41 @@ route("POST", "/api/threads/:id/members", async (req, p) => {
   const { botId } = await body(req);
   const thread = bringInBot(p.id!, String(botId), API);
   return thread ? json(thread) : bad("not found", 404);
+});
+
+function webhookSettings(threadId: string): WebhookSettings {
+  const w = db.getWebhook(threadId);
+  return { configured: !!w, signing: { enabled: !!w?.secret, header: w?.header ?? "", encoding: w?.encoding ?? "hex", prefix: w?.prefix ?? "" } };
+}
+
+function groupThread(id: string) {
+  const t = db.getThread(id);
+  if (t?.kind !== "group") throw new HttpError(404, "Webhooks belong to group chats.");
+  return t;
+}
+
+route("GET", "/api/threads/:id/webhook", (_r, p) => json(webhookSettings(groupThread(p.id!).id)));
+route("PUT", "/api/threads/:id/webhook", async (req, p) => {
+  const thread = groupThread(p.id!);
+  const b = await body<{ url?: string; signing?: boolean; secret?: string; header?: string; encoding?: string; prefix?: string }>(req);
+  const saved = db.getWebhook(thread.id);
+  const url = String(b.url ?? "").trim() || saved?.url || "";
+  if (!url) return bad("Paste the webhook address.");
+  if (!isWebhookUrl(url)) return bad("That isn't a web address. It should start with https:// or http://.");
+  const signing = b.signing === true;
+  const secret = signing ? String(b.secret ?? "") || saved?.secret || "" : "";
+  const header = signing ? String(b.header ?? "").trim() : "";
+  const prefix = signing ? String(b.prefix ?? "").trim() : "";
+  if (signing && !secret) return bad("Paste the signing secret, or turn signing off.");
+  if (signing && !isSignatureHeader(header)) return bad("Give the signature header a name like X-Signature, using letters, digits and dashes.");
+  if (!isSignaturePrefix(prefix)) return bad("The prefix can be up to 32 characters, with no spaces.");
+  db.saveWebhook({ threadId: thread.id, url, secret, header, encoding: b.encoding === "base64" ? "base64" : "hex", prefix });
+  return json(webhookSettings(thread.id));
+});
+route("DELETE", "/api/threads/:id/webhook", (_r, p) => {
+  const thread = groupThread(p.id!);
+  db.deleteWebhook(thread.id);
+  return json(webhookSettings(thread.id));
 });
 
 route("POST", "/api/messages/:id/answer", async (req, p) => {

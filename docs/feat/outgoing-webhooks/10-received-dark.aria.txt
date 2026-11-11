@@ -1,0 +1,36 @@
+# http://127.0.0.1:5910/  viewport=1440x900
+- region "Thread with Login bug":
+  - text: Login bug
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the login failure"
+    - text: Chief
+    - time: 12:00 AM
+    - group "Work log":
+      - button "2 steps · 1 failed"
+    - group "Webhook setup":
+      - text: This group's webhook
+      - paragraph: Set where this group sends tasks. The address and secret stay on this PC, and bots never see them.
+      - button "Set up webhook"
+    - paragraph: This group has no webhook yet, so I couldn't send "Investigate the login failure." I posted a setup card. Tap it to add the address and secret, then ask me again and I'll send the task.
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the login failure"
+    - text: Chief
+    - time: 12:00 AM
+    - group "Work log":
+      - button "1 step"
+    - group "Webhook delivery":
+      - status: Received by the webhook
+      - paragraph: HTTP 202
+      - paragraph: Request fabs-b8105e3c-a758-4345-b843-0c5e53760d4e
+      - paragraph: Received only. The work isn't done yet, and no reply comes back here.
+    - paragraph: The task "Investigate the login failure" reached the webhook endpoint (HTTP 202). I won't get a reply back, so I can't confirm it started or finished.
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

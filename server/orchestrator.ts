@@ -164,6 +164,12 @@ export function systemPrompt(bot: Bot, thread: Thread, unavailable: string[] = [
       `- screen_open / screen_read / screen_click / screen_type / screen_press / screen_scroll / screen_wait / screen_close: your own Chromium browser, which the user watches as "${bot.name}'s screen". Open a page, read it to get element refs, act on a ref, then read again. It keeps your logins between chats, so stay signed in.`,
       `- screen_hand_over: when a page needs something only the user can do (signing in, a CAPTCHA, a payment), ask them to take over your screen, then end your turn.`,
     );
+    if (thread.kind === "group") {
+      lines.push(
+        `- send_webhook: when the user asks, send a task to this group's webhook (${db.getWebhook(thread.id) ? "set up" : "not set up yet"}). You never see its address or secret. Success means received only: you won't learn whether the work starts or finishes, and no reply comes back.`,
+        `- setup_webhook: post a card the user taps to set up or change this group's webhook. Never ask for the address or secret in chat.`,
+      );
+    }
   }
   if (unavailable.length)
     lines.push(
@@ -195,6 +201,10 @@ function describeMessage(m: Message, self: Bot): string {
           return `[asked: ${p.question} Options: ${p.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join(" ")}]`;
         case "screen":
           return `[asked the user to take over the screen: ${p.reason}]`;
+        case "webhook":
+          return `[sent to this group's webhook, request ${p.requestId}: ${p.state === "received" ? "received only, nothing known about the work" : p.state === "failed" ? "not delivered" : "sending"}${p.detail ? `, ${p.detail}` : ""}]`;
+        case "webhook-setup":
+          return "[posted a card to set up this group's webhook]";
         default:
           return "";
       }

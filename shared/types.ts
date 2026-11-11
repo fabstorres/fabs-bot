@@ -80,9 +80,18 @@ export type MessagePart =
       summary: string;
       decision?: "allow" | "deny";
     }
-  | { type: "screen"; botId: string; reason: string; outcome?: ScreenOutcome };
+  | { type: "screen"; botId: string; reason: string; outcome?: ScreenOutcome }
+  | { type: "webhook"; requestId: string; state: "sending" | "received" | "failed"; detail: string }
+  | { type: "webhook-setup" };
 
 export type ScreenOutcome = "done" | "skipped" | "closed";
+
+export type WebhookEncoding = "hex" | "base64";
+
+export interface WebhookSettings {
+  configured: boolean;
+  signing: { enabled: boolean; header: string; encoding: WebhookEncoding; prefix: string };
+}
 
 export interface ScreenState {
   botId: string;

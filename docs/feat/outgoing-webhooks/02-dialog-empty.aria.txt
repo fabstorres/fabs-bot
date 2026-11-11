@@ -1,0 +1,14 @@
+# http://127.0.0.1:5910/  viewport=1440x900
+- dialog "Outgoing webhook":
+  - heading "Outgoing webhook" [level=2]
+  - paragraph: Outgoing webhook
+  - status: Not set up yet. Once it is, bots in this group send tasks to it when you ask.
+  - text: Endpoint URL
+  - textbox "Endpoint URL":
+    - /placeholder: https://
+  - text: Sign requests Adds an HMAC-SHA256 signature of the body in a header.
+  - switch "Sign requests"
+  - paragraph: The address and secret stay on this PC. Bots never see them, and they aren't shown again after you save.
+  - button "Cancel"
+  - button "Save"
+  - button "Close"

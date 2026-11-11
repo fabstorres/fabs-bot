@@ -1,5 +1,5 @@
 import { type RefObject, type UIEvent, useId, useRef, useState } from "react";
-import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowUp, ChevronLeft, Ellipsis, LoaderCircle, Mic, Monitor, Paperclip, Pencil, Square, Trash2, UserPlus, Webhook, X } from "lucide-react";
 import { mentionedBots } from "../../../shared/mentions";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, isImage } from "../api";
@@ -12,6 +12,7 @@ import { MentionInput, type MentionInputHandle } from "./MentionInput";
 import { MessageList } from "./Messages";
 import { Modal } from "./Modal";
 import { OfflineBanner } from "./OfflineBanner";
+import { WebhookDialog } from "./Webhook";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WindowControls } from "./WindowControls";
@@ -132,6 +133,7 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
   const others = bots.filter((b) => !thread.memberIds.includes(b.id));
   const [renaming, setRenaming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [webhook, setWebhook] = useState(false);
   const more = useRef<HTMLButtonElement>(null);
 
   async function bringIn(botId: string) {
@@ -164,6 +166,11 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}
+        {thread.kind === "group" && (
+          <DropdownMenuItem onSelect={() => setWebhook(true)}>
+            <Webhook /> Outgoing webhook
+          </DropdownMenuItem>
+        )}
         {members.map((m) => (
           <DropdownMenuItem key={m.id} onSelect={() => openModal({ kind: "bot", botId: m.id })}>
             <BotAvatar shape={m.shape} color={m.color} size={16} /> Edit {m.name}
@@ -176,6 +183,7 @@ function ThreadMenu({ thread, members }: { thread: Thread; members: Bot[] }) {
       </DropdownMenuContent>
       {renaming && <RenameThread thread={thread} trigger={more} onClose={() => setRenaming(false)} />}
       {deleting && <DeleteThread thread={thread} members={members} trigger={more} onClose={() => setDeleting(false)} />}
+      {webhook && <WebhookDialog threadId={thread.id} trigger={more} onClose={() => setWebhook(false)} />}
     </DropdownMenu>
   );
 }

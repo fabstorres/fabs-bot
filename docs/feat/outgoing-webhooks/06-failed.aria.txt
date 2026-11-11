@@ -1,0 +1,26 @@
+# http://127.0.0.1:5910/  viewport=1440x900
+- region "Thread with Login bug":
+  - text: Login bug
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the failed login. Don't retry on your own."
+    - text: Chief
+    - time: 11:49 AM
+    - group "Work log":
+      - button "1 step · 1 failed"
+    - group "Webhook delivery":
+      - status: Not delivered to the webhook
+      - paragraph: HTTP 500
+      - paragraph: Request fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+    - paragraph:
+      - text: "The login investigation task was not delivered: the group webhook returned HTTP 500. I haven't retried, as you asked. If you want me to resend it, say so and I'll use request id"
+      - code: fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+      - text: so the receiver can drop duplicates. The webhook endpoint may need checking on your side first.
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]

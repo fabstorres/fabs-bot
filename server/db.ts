@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { join } from "node:path";
 import { DATA_DIR } from "./config";
+import { WEBHOOK_STOPPED } from "./webhook";
 import type {
   Bot,
   Connector,
@@ -10,6 +11,7 @@ import type {
   Routine,
   Thread,
   ThreadKind,
+  WebhookEncoding,
 } from "../shared/types";
 
 export const db = new Database(join(DATA_DIR, "fabs-bot.db"), { create: true });
@@ -101,6 +103,15 @@ CREATE TABLE IF NOT EXISTS files (
   created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS thread_webhooks (
+  thread_id TEXT PRIMARY KEY REFERENCES threads(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  secret TEXT NOT NULL DEFAULT '',
+  header TEXT NOT NULL DEFAULT '',
+  encoding TEXT NOT NULL DEFAULT 'hex',
+  prefix TEXT NOT NULL DEFAULT '',
+  updated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at INTEGER NOT NULL,
@@ -371,7 +382,6 @@ export function updateMessage(id: string, parts: MessagePart[], status?: Message
 export function deleteMessage(id: string) {
   db.query("DELETE FROM messages WHERE id = ?").run(id);
 }
-/** Messages left "streaming" by a crash or restart. Their approval prompts died with the turn. */
 export function closeDanglingMessages() {
   const rows = db.query("SELECT * FROM messages WHERE status = 'streaming'").all() as MessageRow[];
   for (const m of rows.map(toMessage)) {
@@ -379,7 +389,13 @@ export function closeDanglingMessages() {
     for (const p of m.parts)
       if (p.type === "approval" && !p.decision)
         logEvent({ type: "approval.decision", actor: "system", threadId: m.threadId, threadKind: kind, approvalId: p.requestId, outcome: "cancelled" });
-    const parts = m.parts.map((p) => (p.type === "approval" && !p.decision ? { ...p, decision: "deny" as const } : p));
+    const parts = m.parts.map((p) =>
+      p.type === "approval" && !p.decision
+        ? { ...p, decision: "deny" as const }
+        : p.type === "webhook" && p.state === "sending"
+          ? { ...p, state: "failed" as const, detail: WEBHOOK_STOPPED }
+          : p,
+    );
     updateMessage(m.id, parts, "error");
   }
 }
@@ -498,6 +514,34 @@ export function clearChecks(where: { botId?: string; connectorId?: string }) {
   if (where.connectorId) db.query("DELETE FROM connector_checks WHERE connector_id = ?").run(where.connectorId);
 }
 
+export type ThreadWebhook = { threadId: string; url: string; secret: string; header: string; encoding: WebhookEncoding; prefix: string };
+type WebhookRow = { thread_id: string; url: string; secret: string; header: string; encoding: string; prefix: string };
+
+export function getWebhook(threadId: string): ThreadWebhook | null {
+  const r = db.query("SELECT * FROM thread_webhooks WHERE thread_id = ?").get(threadId) as WebhookRow | null;
+  if (!r) return null;
+  return { threadId: r.thread_id, url: r.url, secret: r.secret, header: r.header, encoding: r.encoding === "base64" ? "base64" : "hex", prefix: r.prefix };
+}
+export function saveWebhook(w: ThreadWebhook) {
+  db.query(
+    `INSERT INTO thread_webhooks (thread_id, url, secret, header, encoding, prefix, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(thread_id) DO UPDATE SET url = excluded.url, secret = excluded.secret, header = excluded.header,
+       encoding = excluded.encoding, prefix = excluded.prefix, updated_at = excluded.updated_at`,
+  ).run(w.threadId, w.url, w.secret, w.header, w.encoding, w.prefix, now());
+}
+export function deleteWebhook(threadId: string) {
+  db.query("DELETE FROM thread_webhooks WHERE thread_id = ?").run(threadId);
+}
+export function webhookSent(threadId: string, requestId: string): boolean {
+  return !!db
+    .query(
+      `SELECT 1 FROM messages m, json_each(m.parts) p
+       WHERE m.thread_id = ? AND json_extract(p.value, '$.type') = 'webhook' AND json_extract(p.value, '$.requestId') = ?
+       LIMIT 1`,
+    )
+    .get(threadId, requestId);
+}
+
 export type FileRow = {
   id: string; thread_id: string | null; bot_id: string | null; path: string; name: string; size: number; created_at: number;
 };
@@ -522,7 +566,7 @@ export const TOOL_NAMES = [
   "list_bots", "message_bot", "ask_user", "share_file", "set_status", "set_topic", "notify_user", "list_threads",
   "read_thread", "schedule_routine", "list_routines", "delete_routine", "start_group", "invite_bot", "approve",
   "screen_open", "screen_read", "screen_click", "screen_type", "screen_press", "screen_scroll", "screen_wait", "screen_close",
-  "screen_hand_over",
+  "screen_hand_over", "send_webhook", "setup_webhook",
 ] as const;
 export const EVENT_RETENTION_MS = 30 * 24 * 60 * 60_000;
 const EVENT_PAGE_MAX = 500;

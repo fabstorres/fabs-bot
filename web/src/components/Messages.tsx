@@ -10,6 +10,7 @@ import { isConnected, openDirect, openModal, openNestedThread, openScreen, useSt
 import { BotAvatar } from "./BotAvatar";
 import { ScreenThumb, settleHandOver } from "./Screen";
 import { MentionChip } from "./MentionChip";
+import { WebhookDelivery, WebhookSetupCard } from "./Webhook";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -149,6 +150,10 @@ function Part({ part, index, message, bot, bots, error }: { part: MessagePart; i
       return <ApprovalCard part={part} />;
     case "screen":
       return <ScreenCard part={part} index={index} message={message} />;
+    case "webhook":
+      return <WebhookDelivery part={part} />;
+    case "webhook-setup":
+      return <WebhookSetupCard threadId={message.threadId} />;
     default:
       return null;
   }

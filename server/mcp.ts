@@ -14,6 +14,7 @@ import { bringInBot, directThread, kickoff, messageBot, turnsByToken, type TurnC
 import { reschedule } from "./scheduler";
 import { clip } from "./providers/spawn";
 import * as screen from "./screen";
+import { deliver, WEBHOOK_BODY_MAX } from "./webhook";
 
 type ToolOutput = string | { text: string; image?: Uint8Array };
 
@@ -145,6 +146,15 @@ async function leadOrApproved(ctx: TurnContext, callId: string, tool: string, su
   if (!db.getBot(ctx.botId)?.isTeamLead) return (await askApproval(ctx, callId, tool, summary)) === "allow";
   logTurnEvent(ctx, callId, { type: "approval.decision", toolName: tool, outcome: "bypassed" });
   return true;
+}
+
+const NOT_A_GROUP = "Webhooks are set up per group chat, and this isn't one. In a group chat, call setup_webhook to post a setup card for the user.";
+const NO_WEBHOOK =
+  "This group has no webhook set up yet. Call setup_webhook to post a setup card for the user, then end your turn. Never ask for the address or secret in chat.";
+
+function groupWebhook(ctx: TurnContext): db.ThreadWebhook {
+  if (threadKind(ctx.threadId) !== "group") return reject("not_a_group", NOT_A_GROUP);
+  return db.getWebhook(ctx.threadId) ?? reject("no_webhook", NO_WEBHOOK);
 }
 
 function findTeammate(name: string, ctx: TurnContext): Bot {
@@ -439,6 +449,54 @@ const tools: ToolDef[] = [
       if (db.getThread(ctx.threadId)?.memberIds.includes(bot.id)) return reject("already_member", `${bot.name} is already in this chat.`);
       if (!bringInBot(ctx.threadId, bot.id)) return reject("gone", "This chat or teammate no longer exists. Nothing changed.");
       return `${bot.name} joined this chat. Write @${handleOf(bot.name)} to hand them the floor.`;
+    },
+  },
+  {
+    name: "send_webhook",
+    description:
+      "Send a task to this group chat's webhook, which the user set up. Fabs Bot posts the task and a request id to it; you never see the address or secret. Success only means the endpoint received it, not that the work is done, and no reply comes back. Only works in a group chat with a webhook set up.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        task: str("The task for the receiver, in plain words with the context it needs"),
+        request_id: str("Only to retry a send that failed: its request id from this group, so the receiver can drop duplicates"),
+      },
+      required: ["task"],
+    },
+    async run(args, ctx, callId) {
+      groupWebhook(ctx);
+      const task = String(args.task ?? "").trim();
+      if (!task) return reject("no_task", "Pass task: what the receiver should do.");
+      const retry = args.request_id ? String(args.request_id) : null;
+      if (retry && !db.webhookSent(ctx.threadId, retry)) {
+        return reject("unknown_request_id", `"${clip(retry, 80)}" isn't a request id this group sent. Leave request_id out for a new send, or pass the id of an earlier send in this group.`);
+      }
+      const requestId = retry ?? `fabs-${crypto.randomUUID()}`;
+      const body = JSON.stringify({ requestId, task });
+      if (Buffer.byteLength(body) > WEBHOOK_BODY_MAX) return reject("task_too_long", "The task is over 1 MiB. Shorten it, or share the details as a file and summarize them.");
+      if (db.getBot(ctx.botId)?.autonomy === "ask" && (await askApproval(ctx, callId, "send_webhook", `Send to this group's webhook: ${clip(task, 300)}`)) !== "allow") {
+        return "The user declined sending it. Nothing was sent.";
+      }
+      const hook = groupWebhook(ctx);
+      const sending: MessagePart = { type: "webhook", requestId, state: "sending", detail: "" };
+      const index = ctx.addPart(sending);
+      const result = await deliver(hook, body, ctx.signal);
+      ctx.updatePart(index, { ...sending, state: result.ok ? "received" : "failed", detail: result.detail });
+      if (!result.ok) {
+        return reject("not_delivered", `Not delivered: ${result.detail}. Tell the group it failed. To retry, call send_webhook again with request_id ${requestId} so the receiver can drop duplicates.`);
+      }
+      return `Received by the endpoint (${result.detail}, request ${requestId}). That only means it arrived. You won't learn whether the work starts or finishes, and no reply comes back here. Tell the group in one line that it was received; don't say it's running or done.`;
+    },
+  },
+  {
+    name: "setup_webhook",
+    description:
+      "Post a card in this group chat that the user taps to set up or change its webhook. They enter the address and any secret there, so never ask for them in chat. Only works in a group chat.",
+    inputSchema: { type: "object", properties: {} },
+    run(_args, ctx) {
+      if (threadKind(ctx.threadId) !== "group") return reject("not_a_group", "Webhooks are set up per group chat, and this isn't one. Ask the user to open a group chat for it first.");
+      ctx.addPart({ type: "webhook-setup" });
+      return "Posted the setup card. The user enters the address and any signing secret there; you never see them. End your turn with one short line pointing to the card.";
     },
   },
   {

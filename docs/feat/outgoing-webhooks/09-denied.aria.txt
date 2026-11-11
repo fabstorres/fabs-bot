@@ -1,0 +1,53 @@
+# http://127.0.0.1:5910/  viewport=1440x900
+- region "Thread with Login bug":
+  - text: Login bug
+  - button "Open desk"
+  - button "More"
+  - log "Conversation":
+    - paragraph:
+      - button "@Chief": Chief
+      - text: "send_webhook the task: Investigate the failed login. Don't retry on your own."
+    - text: Chief
+    - time: 11:49 AM
+    - group "Work log":
+      - button "1 step · 1 failed"
+    - group "Webhook delivery":
+      - status: Not delivered to the webhook
+      - paragraph: HTTP 500
+      - paragraph: Request fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+    - paragraph:
+      - text: "The login investigation task was not delivered: the group webhook returned HTTP 500. I haven't retried, as you asked. If you want me to resend it, say so and I'll use request id"
+      - code: fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+      - text: so the receiver can drop duplicates. The webhook endpoint may need checking on your side first.
+    - paragraph:
+      - button "@Chief": Chief
+      - text: retry that failed send now, reusing its request_id.
+    - text: Chief
+    - time: 11:49 AM
+    - group "Work log":
+      - button "1 step"
+    - group "Webhook delivery":
+      - status: Received by the webhook
+      - paragraph: HTTP 202
+      - paragraph: Request fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+      - paragraph: Received only. The work isn't done yet, and no reply comes back here.
+    - paragraph:
+      - text: The retry with request id
+      - code: fabs-65e3799f-4fe6-4cca-86b6-376629306c52
+      - text: was received by the endpoint (HTTP 202). I can't see whether the investigation starts or finishes, and no reply comes back here.
+    - paragraph:
+      - button "@Careful": Careful
+      - text: "send_webhook the task: Reproduce the login failure on mobile. I authorize sending it."
+    - text: Careful
+    - time: 11:51 AM
+    - group "Work log":
+      - button "1 step"
+    - 'group "Approval: send_webhook"':
+      - text: "Wants to use send_webhook Send to this group's webhook: Reproduce the login failure on mobile. The user has authorized this send."
+      - status: Denied
+    - paragraph: The webhook send was declined, so nothing went out. I haven't retried. If you want the mobile reproduction task sent, tell me to resend it, or tell me if the wording or the target should change.
+  - textbox "Message":
+    - paragraph
+  - button "Attach"
+  - button "Dictate"
+  - button "Send" [disabled]
