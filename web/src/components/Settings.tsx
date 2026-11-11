@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const SECTIONS: { id: SettingsSection; label: string; Icon: LucideIcon; keywords: string }[] = [
   { id: "providers", label: "Providers", Icon: SquareTerminal, keywords: "agent cli claude codex cursor opencode gemini binary path launch arguments environment variables models" },
-  { id: "plugins", label: "Plugins", Icon: Plug, keywords: "mcp servers connectors notion google drive github browser" },
+  { id: "plugins", label: "Plugins", Icon: Plug, keywords: "mcp servers connectors notion google drive github browser sign in oauth access revoke" },
   { id: "pc", label: "This PC", Icon: Monitor, keywords: "pair device phone laptop qr code paired devices tailscale https version desks folder" },
   { id: "appearance", label: "Appearance", Icon: Palette, keywords: "theme dark mode light mode system colors accent color bubbles" },
 ];

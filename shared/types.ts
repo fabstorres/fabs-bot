@@ -134,6 +134,36 @@ export interface Connector {
   createdAt: number;
 }
 
+export type ConnectorAuthState = "unknown" | "none" | "static" | "needed" | "signed-in" | "expired" | "failed" | "error";
+
+export interface ConnectorAccess {
+  connectorId: string;
+  auth: ConnectorAuthState;
+  issuer: string;
+  clientId: string;
+  hasClientSecret: boolean;
+  signedInAt: number | null;
+  expiresAt: number | null;
+  problem: string;
+}
+
+export type ConnectorCheckState = "ready" | "auth" | "failed" | "checking" | "unchecked" | "unsupported";
+
+export interface ConnectorCheck {
+  botId: string;
+  connectorId: string;
+  state: ConnectorCheckState;
+  tools: string[];
+  detail: string;
+  checkedAt: number | null;
+}
+
+export interface ConnectorStatus {
+  access: ConnectorAccess[];
+  checks: ConnectorCheck[];
+  callbackUrl: string;
+}
+
 export const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export interface ProviderSettings {
@@ -221,6 +251,7 @@ export type ServerEvent =
   | { type: "link.start"; link: Link }
   | { type: "link.end"; linkId: string }
   | { type: "devices" }
+  | { type: "connectors" }
   | { type: "screen"; screen: ScreenState }
   | { type: "heartbeat"; everyMs: number };
 

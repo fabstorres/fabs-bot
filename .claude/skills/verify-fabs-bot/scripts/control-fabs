@@ -6,7 +6,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { redact, risky } from "./privacy.mjs";
 
@@ -28,6 +28,7 @@ type State = {
   rev: string;
   startedAt: string;
   shimDir?: string;
+  oauthMcp?: { pid: number; port: number };
   browser?: { pid: number; cdpPort: number; viewport: string; desktop?: { compositorPid: number; inspectPort: number } };
 };
 
@@ -597,6 +598,56 @@ const commands: Record<string, () => Promise<void>> = {
     if (!ok) process.exit(1);
   },
 
+  async "oauth-mcp"() {
+    const s = loadState()!;
+    const action = positional[1] ?? "state";
+    const running = s.oauthMcp && alive(s.oauthMcp.pid) ? s.oauthMcp : null;
+    if (action === "start") {
+      if (running) die(`the test OAuth server already runs at http://127.0.0.1:${running.port}; stop it first`);
+      const port = Number(flag("port") ?? (await freePort(s.port + 5)));
+      if ((await freePort(port)) !== port) die(`port ${port} is in use`);
+      const opts = ["--port", String(port), "--ttl", flag("ttl") ?? "60", ...(flags["no-register"] === true ? ["--no-register"] : [])];
+      const log = join(s.runDir, "oauth-mcp.log");
+      const start = await sh(["sh", "-c", `setsid bun '${join(import.meta.dir, "oauth-mcp.ts")}' ${opts.join(" ")} >> '${log}' 2>&1 < /dev/null & echo $!`]);
+      s.oauthMcp = { pid: Number(start.out), port };
+      saveState(s);
+      for (let i = 0; i < 50; i++) {
+        if (await fetch(`http://127.0.0.1:${port}/test/state`).then((r) => r.ok).catch(() => false)) {
+          console.log(`test OAuth server up  mcp=http://127.0.0.1:${port}/mcp  nometa=…/nometa/mcp  open=…/open/mcp  ttl=${opts[3]}s${flags["no-register"] === true ? "  client=fabs-test-client secret=fabs-test-secret" : ""}`);
+          return;
+        }
+        await Bun.sleep(100);
+      }
+      die(`the test OAuth server did not start; see ${log}`);
+    }
+    if (!running) die("the test OAuth server isn't running; `control-fabs oauth-mcp start` first");
+    const base = `http://127.0.0.1:${running.port}`;
+    if (action === "stop") {
+      stopGroup(running.pid);
+      delete s.oauthMcp;
+      saveState(s);
+      console.log("test OAuth server stopped");
+    } else if (action === "expire") {
+      console.log(JSON.stringify(await fetch(`${base}/test/expire${flags.refresh === true ? "?refresh" : ""}`, { method: "POST" }).then((r) => r.json())));
+    } else if (action === "state") {
+      const text = JSON.stringify(await fetch(`${base}/test/state`).then((r) => r.json()));
+      if (flag("path")) writeFileSync(artifactPath(s, flag("path")!), text + "\n");
+      console.log(text);
+    } else if (action === "log") {
+      console.log(readFileSync(join(s.runDir, "oauth-mcp.log"), "utf8").trim());
+    } else die("usage: control-fabs oauth-mcp start [--port N] [--ttl S] [--no-register] | state [--path rel.txt] | expire [--refresh] | log | stop");
+  },
+
+  async "claude-creds"() {
+    const file = join(homedir(), ".claude", ".credentials.json");
+    const keys = existsSync(file) ? Object.keys(JSON.parse(readFileSync(file, "utf8")).mcpOAuth ?? {}).sort() : [];
+    const digest = new Bun.CryptoHasher("sha256").update(JSON.stringify(keys)).digest("hex").slice(0, 16);
+    const text = `mcpOAuth entries: ${keys.length}  key fingerprint: ${digest}`;
+    const s = loadState(false);
+    if (s && flag("path")) writeFileSync(artifactPath(s, flag("path")!), text + "\n");
+    console.log(text);
+  },
+
   async desktop() {
     const s = loadState()!;
     const usage = 'usage: control-fabs desktop start [--fresh] | menu "<item label>" | stop';
@@ -640,6 +691,7 @@ const commands: Record<string, () => Promise<void>> = {
       return;
     }
     await browserStop(s, false);
+    if (s.oauthMcp) stopGroup(s.oauthMcp.pid);
     if (await stopServer(s)) console.log(`stopped server ${s.pid}`);
     rmSync(s.runDir, { recursive: true, force: true });
     if (currentRunId() === s.runId) rmSync(join(HOME, "current"), { force: true });
@@ -667,10 +719,14 @@ const commands: Record<string, () => Promise<void>> = {
           fill: --value V (@pair-link mints a one-time link; @pair-link / @tailnet-url type the tailnet link unseen)   press: --key K   wait: --state visible|hidden [--timeout s]
           click --accept-dialog [--dialog-text T]   accept the confirm()/prompt() the click opens
   browser snapshot --path rel.aria.txt [target] | screenshot --path rel.png [--full-page] [--no-mask] | eval '<js>'
+          any browser action takes --tab <text> to drive the tab whose address contains <text> (a link opened in a new tab); browser close --tab <text> closes it
   browser stop
   desktop start [--fresh] | desktop menu "<label>" | desktop stop   the Electron app on a headless compositor; browser actions then drive it
   serve-shim state|log|occupy <port>|fail <stderr> [--path rel.txt]   inspect or rig the simulated tailscale serve (needs --tailscale-shim)
   serve-check [--path tailscale-https/serve-check.txt]         auth matrix for the Tailscale HTTPS listener (Tailscale HTTPS must be on)
+  oauth-mcp start [--port N] [--ttl S] [--no-register] | state [--path rel.txt] | expire [--refresh] | log | stop
+                                                               a loopback MCP server behind OAuth for connector sign-in (stopped by cleanup)
+  claude-creds [--path rel.txt]                                read-only: count + fingerprint of the mcpOAuth key names in ~/.claude/.credentials.json
   privacy-check [dir]                                          scan evidence for tailnet hostnames/IPs/tokens
   cleanup                                                      stop what this run started, delete scratch, keep evidence
 
