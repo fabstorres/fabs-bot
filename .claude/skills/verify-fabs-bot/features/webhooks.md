@@ -8,7 +8,7 @@ A group chat can have one outgoing webhook: an endpoint the user sets up, with a
 - `webhook-dialog` sets the endpoint from `More` → `Outgoing webhook` in a group (not in 1:1s): Endpoint URL and Signing secret are password fields, never prefilled after saving, with signature header, Hex / Base64 encoding and an optional prefix. Remove clears it.
 - `webhook-write-only` keeps the address and secret out of every response the client gets, the thread dump, the server log and ARIA snapshots taken after saving.
 - `webhook-send` delivers `{"requestId","task"}` from the bot that was asked (`send_webhook`), signed when signing is on, and shows `Received by the webhook` with the HTTP status and Fabs Bot's request id. Nothing from the receiver's reply is shown or passed to the bot.
-- `webhook-errors` shows `Not delivered to the webhook` with `HTTP <code>`, a redirect that isn't followed, `No answer within 10 seconds`, or `Couldn't reach the endpoint`, never the response body.
+- `webhook-errors` shows `Not delivered to the webhook` with `HTTP <code>`, a redirect that isn't followed, `No answer within 10 seconds`, `Couldn't reach the endpoint`, or `Stopped before the endpoint answered` (Stop pressed mid-send, or the server restarted during it), never the response body.
 - `webhook-retry` resends a failed delivery with the same request id so the receiver can drop duplicates. An id this group didn't send is refused.
 - `webhook-ask` gives an "ask"-autonomy bot an `Approval: send_webhook` card first. Deny sends nothing.
 - `webhook-refusals` makes `send_webhook` in a 1:1, or in a group with no webhook, fail with a pointer to `setup_webhook`.
