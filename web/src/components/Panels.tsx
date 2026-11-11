@@ -590,7 +590,8 @@ function SignInDialog({ flow, access, onRetry, onClose }: { flow: SignInFlow; ac
   const [finishError, setFinishError] = useState("");
   const name = flow.connector.name;
   const done = access?.auth === "signed-in" && access.signedInAt !== flow.before;
-  const problem = flow.error || finishError || (flow.url ? (access?.problem ?? "") : "");
+  const failed = flow.error || (flow.url ? (access?.problem ?? "") : "");
+  const problem = failed || finishError;
   const finish = async () => {
     setFinishing(true);
     setFinishError("");
@@ -627,13 +628,13 @@ function SignInDialog({ flow, access, onRetry, onClose }: { flow: SignInFlow; ac
                 <AlertDescription>{problem}</AlertDescription>
               </Alert>
             )}
-            {flow.url ? (
+            {flow.url && !failed ? (
               <Button asChild className="rounded-full">
                 <a href={flow.url} target="_blank" rel="noreferrer">
                   <ExternalLink /> Open sign-in page
                 </a>
               </Button>
-            ) : flow.error ? (
+            ) : failed ? (
               <Button className="rounded-full" onClick={onRetry}>
                 <RefreshCw /> Try again
               </Button>
@@ -642,7 +643,7 @@ function SignInDialog({ flow, access, onRetry, onClose }: { flow: SignInFlow; ac
                 <LoaderCircle className="animate-spin" /> Preparing sign-in…
               </Button>
             )}
-            {flow.url && flow.pasteBack && (
+            {flow.url && flow.pasteBack && !failed && (
               <div className="flex flex-col gap-2">
                 <p className="text-sm">After you approve, your browser lands on a page that won't load. Copy that page's address and paste it here.</p>
                 <Input aria-label="Address after approving" placeholder="http://127.0.0.1:…" value={address} onChange={(e) => setAddress(e.target.value)} />
