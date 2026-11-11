@@ -91,7 +91,7 @@ function staticHeaders(c: Connector) {
 function entryFor(c: Connector): Entry {
   const old = entries[c.id];
   if (old?.url === c.url) return old;
-  return (entries[c.id] = { url: c.url, required: null, clients: {}, configured: old?.configured });
+  return (entries[c.id] = { url: c.url, required: null, clients: {} });
 }
 
 async function getJson(url: string): Promise<any | null> {

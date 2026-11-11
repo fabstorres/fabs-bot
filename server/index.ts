@@ -400,6 +400,8 @@ route("GET", "/api/connectors/presets", () => json(CONNECTOR_PRESETS));
 route("GET", "/api/connectors/status", () => json(connectorStatus()));
 route("POST", "/api/connectors", async (req) => {
   const b = await body(req);
+  const before = typeof b.id === "string" ? findConnector(b.id) : null;
+  if (before && before.url !== String(b.url ?? "")) await forget(before);
   const c = db.saveConnector({
     id: b.id ?? db.newId(),
     name: String(b.name ?? "Connector"),
