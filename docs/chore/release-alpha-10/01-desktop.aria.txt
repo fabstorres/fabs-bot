@@ -1,0 +1,34 @@
+# http://127.0.0.1:4870/  viewport=window
+- complementary "Bots":
+  - group "Window controls":
+    - button "Minimize"
+    - button "Maximize"
+    - button "Close"
+  - heading "Fabs Bot" [level=1]
+  - button "Limits"
+  - button "New bot"
+  - textbox "Search bots":
+    - /placeholder: Search
+  - navigation "Chats":
+    - button "Bot Chief of Staff": Chief of Staff 1:24 PM Hey, I'm Chief of Staff. What's the main thing you want me on?
+  - button "PC This PC": This PC
+  - button "Settings"
+- main:
+  - region "Thread with Chief of Staff":
+    - text: Chief of Staff
+    - button "Open desk"
+    - button "More"
+    - log "Conversation":
+      - paragraph: Hey, I'm Chief of Staff. What's the main thing you want me on?
+      - 'group "Question: What should I own for you?"':
+        - text: What should I own for you?
+        - button "A Day-to-day ops"
+        - button "B A specific project"
+        - button "C Research and writing"
+        - button "D Something else"
+    - button "Attach"
+    - textbox "Message":
+      - paragraph
+    - button "Dictate"
+    - button "Send" [disabled]
+- region "Notifications alt+T"
