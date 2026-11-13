@@ -1,0 +1,9 @@
+ok    server pid 14529 running
+ok    port 4870 owned by our server
+ok    isolated work root confirmed
+ok    tailscale running, instance is loopback-only
+ok    Tailscale HTTPS is off
+ok    web build is fresh
+ok    agent CLIs installed: claude, codex, cursor, opencode, gemini
+ok    desktop app up
+run=run-20261113212445 url=http://127.0.0.1:4870 rev=9cff5cd+dirty

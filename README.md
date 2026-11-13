@@ -116,6 +116,12 @@ $C launch && $C doctor && $C seed && $C browser start && $C browser open /
 $C privacy-check && $C cleanup
 ```
 
+## License
+
+Fabs Bot is available under the [MIT License](LICENSE), provided "as is" without warranty. You can use, modify, and redistribute it, including commercially, while keeping the copyright and license notice.
+
+Third-party code and assets retain their own licenses and notices, including the [provider icons](web/src/components/ProviderIcon.LICENSE) and [plugin logos](web/src/assets/plugins/LICENSE).
+
 ## Layout
 
 ```
