@@ -394,7 +394,7 @@ route("POST", "/api/upload", async (req) => {
   const out = [];
   for (const value of form.getAll("file")) {
     if (!(value instanceof File)) continue;
-    const name = basename(value.name) || "upload";
+    const name = basename(value.name).replace(/^\.+$/, "") || "upload";
     const dest = join(SHARED_DIR, "uploads", db.newId(), name);
     await Bun.write(dest, value);
     const f = db.addFile({ thread_id: null, bot_id: null, path: dest, name, size: value.size });

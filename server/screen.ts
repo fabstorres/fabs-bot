@@ -361,11 +361,12 @@ export function waitFor(botId: string, opts: { text?: string; url?: string; time
 }
 
 const ONE_FILE = "This file field takes one file. Pass a single path.";
+const PICKER_GONE = "That file picker is gone. Click the upload button again.";
 
 async function pickFiles(s: Screen, chooser: FileChooser, files: string[]) {
   if (files.length > 1 && !chooser.isMultiple()) return fail("one_file", ONE_FILE);
   if (s.chooser === chooser) setChooser(s, null);
-  await chooser.setFiles(files).catch(() => fail("picker_gone", "That file picker is gone. Click the upload button again."));
+  await chooser.setFiles(files).catch(() => fail("picker_gone", PICKER_GONE));
 }
 
 export function upload(botId: string, files: string[], t: { ref?: string; selector?: string }) {
@@ -391,13 +392,11 @@ export function upload(botId: string, files: string[], t: { ref?: string; select
   });
 }
 
-const tellChooser = (v: Viewer, chooser: { id: number; accept: string; multiple: boolean } | null, error?: string) =>
-  v.send(JSON.stringify({ type: "chooser", chooser, error }));
-
-async function offerChooser(s: Screen, v: Viewer) {
+async function offerChooser(s: Screen, v: Viewer, error?: string) {
   const chooser = s.chooser;
   const accept = chooser ? await chooser.element().getAttribute("accept").catch(() => null) : null;
-  if (s.chooser === chooser && s.controller === v) tellChooser(v, chooser && { id: s.chooserId, accept: accept ?? "", multiple: chooser.isMultiple() });
+  if (s.chooser !== chooser || s.controller !== v) return;
+  v.send(JSON.stringify({ type: "chooser", chooser: chooser && { id: s.chooserId, accept: accept ?? "", multiple: chooser.isMultiple() }, error }));
 }
 
 function setChooser(s: Screen, chooser: FileChooser | null) {
@@ -413,10 +412,10 @@ async function dropIfDetached(s: Screen, chooser: FileChooser) {
 
 async function chooseFor(s: Screen, v: Viewer, m: { id: unknown; fileIds: unknown }) {
   const chooser = s.chooser;
-  if (!chooser || m.id !== s.chooserId) return;
   const paths = (Array.isArray(m.fileIds) ? m.fileIds : []).flatMap((id) => getFile(String(id))?.path ?? []);
+  if (!chooser || m.id !== s.chooserId) return paths.length ? offerChooser(s, v, PICKER_GONE) : undefined;
   if (!paths.length) return setChooser(s, null);
-  await pickFiles(s, chooser, paths).catch((e) => tellChooser(v, null, firstLine(e)));
+  await pickFiles(s, chooser, paths).catch((e) => offerChooser(s, v, firstLine(e)));
 }
 
 export async function closeScreen(botId: string) {

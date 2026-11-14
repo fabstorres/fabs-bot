@@ -95,6 +95,7 @@ test.skipIf(!screen.findChromium())(
     screen.viewerMessage(controller, JSON.stringify({ type: "choose", id: earlier.id, fileIds: [stale.id] }));
     screen.viewerMessage(controller, JSON.stringify({ type: "choose", id: newer.id, fileIds: [file.id] }));
     await until(() => sent.some((m) => m.includes('"chooser":null')));
+    expect(sent.some((m) => m.includes("That file picker is gone"))).toBe(true);
     screen.viewerMessage(controller, JSON.stringify({ type: "release" }));
     const page = await screen.readPage(botId, false);
     expect(page.title).toBe("cover:cv.pdf");
