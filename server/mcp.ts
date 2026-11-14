@@ -32,6 +32,7 @@ const TARGET = {
 };
 const target = (args: any) => ({ ref: args.ref ? String(args.ref) : undefined, selector: args.selector ? String(args.selector) : undefined });
 const onPage = (url: string) => `Done. Now on ${url}. Call screen_read to see the result.`;
+const PICKER_OPEN = "A file picker is open on this page. Call screen_upload with the file paths (no ref needed) to fill it.";
 
 export class ToolRejection extends Error {
   constructor(
@@ -45,6 +46,12 @@ export class ToolRejection extends Error {
 const reject = (code: string, message: string): never => {
   throw new ToolRejection(code, message);
 };
+
+function botFile(botId: string, path: string) {
+  const full = isAbsolute(path) ? path : resolve(db.getBot(botId)!.cwd, path);
+  if (!existsSync(full) || !statSync(full).isFile()) return reject("no_file", `No file at ${full}`);
+  return full;
+}
 
 type ApprovalOutcome = "approved" | "denied" | "cancelled";
 const pendingApprovals = new Map<string, { resolve: (o: ApprovalOutcome) => void; ctx: TurnContext; index: number }>();
@@ -231,10 +238,7 @@ const tools: ToolDef[] = [
       required: ["path"],
     },
     run(args, ctx) {
-      const bot = db.getBot(ctx.botId)!;
-      const p = String(args.path);
-      const full = isAbsolute(p) ? p : resolve(bot.cwd, p);
-      if (!existsSync(full) || !statSync(full).isFile()) return reject("no_file", `No file at ${full}`);
+      const full = botFile(ctx.botId, String(args.path));
       const size = statSync(full).size;
       if (size > 50 * 1024 * 1024) return reject("file_too_large", "File is over 50 MB; share a smaller file or a link.");
       const f = db.addFile({ thread_id: ctx.threadId, bot_id: ctx.botId, path: "", name: basename(full), size });
@@ -516,7 +520,7 @@ const tools: ToolDef[] = [
     inputSchema: { type: "object", properties: { screenshot: { type: "boolean", description: "Also return a screenshot" } } },
     async run(args, ctx) {
       const page = await screen.readPage(ctx.botId, args.screenshot === true);
-      return { text: `${page.url}${page.title ? ` · ${page.title}` : ""}\n\n${page.tree}`, image: page.image };
+      return { text: `${page.url}${page.title ? ` · ${page.title}` : ""}\n\n${page.tree}${page.picker ? `\n\n${PICKER_OPEN}` : ""}`, image: page.image };
     },
   },
   {
@@ -573,6 +577,23 @@ const tools: ToolDef[] = [
       const text = args.text ? String(args.text) : undefined;
       const url = args.url ? String(args.url) : undefined;
       return onPage(await screen.waitFor(ctx.botId, { text, url, timeoutMs }));
+    },
+  },
+  {
+    name: "screen_upload",
+    description:
+      "Upload files from this PC into a page on your screen, e.g. a resume PDF on a job form. Pass the ref of the upload button or file field, or no ref when screen_read says a file picker is open. File pickers never show on your screen, so don't try keyboard shortcuts for them.",
+    inputSchema: {
+      type: "object",
+      properties: { paths: { type: "array", items: { type: "string" }, description: "Files to upload, absolute or relative to your workspace" }, ...TARGET },
+      required: ["paths"],
+    },
+    async run(args, ctx) {
+      const paths = (Array.isArray(args.paths) ? args.paths : [args.paths]).filter(Boolean).map(String);
+      if (!paths.length) return reject("no_paths", "Pass paths: the files to upload.");
+      const files = paths.map((p) => botFile(ctx.botId, p));
+      await screen.upload(ctx.botId, files, target(args));
+      return `Uploaded ${files.map((f) => basename(f)).join(", ")}. Call screen_read to check the page took it.`;
     },
   },
   {

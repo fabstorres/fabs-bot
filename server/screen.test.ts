@@ -52,3 +52,62 @@ test.skipIf(!screen.findChromium())(
   },
   60_000,
 );
+
+const form = join(scratch, "form.html");
+writeFileSync(
+  form,
+  `<title>Form</title>
+  <input id="cover" type="file" accept=".pdf,.txt" style="position:fixed;left:0;top:0;width:300px;height:60px">
+  <button style="position:fixed;left:0;top:100px" onclick="document.getElementById('resume').click()">Upload resume</button>
+  <input id="resume" type="file" hidden>
+  <script>for (const i of document.querySelectorAll("input")) i.onchange = () => (document.title = i.id + ":" + [...i.files].map((f) => f.name));</script>`,
+);
+const cv = join(scratch, "cv.pdf");
+writeFileSync(cv, "%PDF-1.4");
+const until = async (check: () => boolean) => {
+  for (let i = 0; i < 100 && !check(); i++) await Bun.sleep(50);
+};
+
+test.skipIf(!screen.findChromium())(
+  "a file picker opened while the user has control goes only to the controlling viewer, and their pick lands on the page",
+  async () => {
+    const { addFile } = await import("./db");
+    const botId = crypto.randomUUID();
+    const sent: string[] = [];
+    const controller: Viewer = { ...viewer(botId), send: (d) => typeof d === "string" && sent.push(d) };
+    const watcher: string[] = [];
+    screen.watchScreen(controller);
+    screen.watchScreen({ ...viewer(botId), send: (d) => typeof d === "string" && watcher.push(d) });
+    await screen.openPage(botId, `file://${form}`);
+    screen.viewerMessage(controller, JSON.stringify({ type: "take" }));
+    for (const action of ["down", "up"]) screen.viewerMessage(controller, JSON.stringify({ type: "mouse", action, x: 20, y: 20 }));
+    const offered = () => sent.map((m) => JSON.parse(m)).find((m) => m.type === "chooser");
+    await until(() => !!offered());
+    expect(offered()).toEqual({ type: "chooser", chooser: { accept: ".pdf,.txt", multiple: false } });
+    expect(watcher.some((m) => m.includes("chooser"))).toBe(false);
+    const file = addFile({ thread_id: null, bot_id: null, path: cv, name: "cv.pdf", size: 8 });
+    screen.viewerMessage(controller, JSON.stringify({ type: "choose", fileIds: [file.id] }));
+    await until(() => sent.some((m) => m.includes('"chooser":null')));
+    screen.viewerMessage(controller, JSON.stringify({ type: "release" }));
+    const page = await screen.readPage(botId, false);
+    expect(page.title).toBe("cover:cv.pdf");
+    expect(page.picker).toBe(false);
+    await screen.closeScreen(botId);
+  },
+  60_000,
+);
+
+test.skipIf(!screen.findChromium())(
+  "a button that opens a single-file picker refuses two files, and the bot can then fill the still-open picker without a ref",
+  async () => {
+    const botId = crypto.randomUUID();
+    await screen.openPage(botId, `file://${form}`);
+    const ref = refOf((await screen.readPage(botId, false)).tree, "Upload resume");
+    await expect(screen.upload(botId, [cv, page], { ref })).rejects.toMatchObject({ code: "one_file" });
+    expect((await screen.readPage(botId, false)).picker).toBe(true);
+    await screen.upload(botId, [cv], {});
+    expect((await screen.readPage(botId, false)).title).toBe("resume:cv.pdf");
+    await screen.closeScreen(botId);
+  },
+  60_000,
+);

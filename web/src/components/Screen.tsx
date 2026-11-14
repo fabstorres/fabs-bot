@@ -10,12 +10,15 @@ import {
   useState,
 } from "react";
 import { ChevronLeft, Keyboard, LoaderCircle, Maximize2, MonitorOff, X } from "lucide-react";
+import { toast } from "sonner";
 import type { Bot, Message, ScreenState, Thread } from "../../../shared/types";
 import { api } from "../api";
 import { useNow } from "../hooks";
 import { closeScreen, isConnected, useStore, usingScreen } from "../store";
 import { BotAvatar, LiveAvatar } from "./BotAvatar";
+import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
+import { DialogFooter } from "@/components/ui/dialog";
 import { WindowControls } from "./WindowControls";
 import { cn } from "@/lib/utils";
 
@@ -35,15 +38,19 @@ function closedState(botId: string): ScreenState {
 
 const useScreenState = (botId: string) => useStore((s) => s.screens[botId]) ?? closedState(botId);
 
+type Chooser = { accept: string; multiple: boolean };
+
 type Stream = {
   canvas: RefObject<HTMLCanvasElement | null>;
   hasFrame: boolean;
   lastFrameAt: RefObject<number>;
   pointer: { x: number; y: number; at: number } | null;
   mine: boolean;
+  chooser: Chooser | null;
   send(message: object): void;
   take(): void;
   release(): void;
+  choose(fileIds: string[]): void;
 };
 
 export function useScreenStream(botId: string, takeOnOpen = false): Stream {
@@ -54,6 +61,7 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
   const [hasFrame, setHasFrame] = useState(false);
   const [pointer, setPointer] = useState<Stream["pointer"]>(null);
   const [mine, setMine] = useState(false);
+  const [chooser, setChooser] = useState<Chooser | null>(null);
 
   useEffect(() => {
     let stopped = false;
@@ -69,6 +77,11 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
           if (e.type === "control") {
             wantsControl.current = e.mine;
             setMine(e.mine);
+            if (!e.mine) setChooser(null);
+          }
+          if (e.type === "chooser") {
+            setChooser(e.chooser);
+            if (e.error) toast.error(e.error);
           }
           return;
         }
@@ -106,6 +119,7 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
     lastFrameAt,
     pointer,
     mine,
+    chooser,
     send,
     take() {
       wantsControl.current = true;
@@ -114,7 +128,12 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
     release() {
       wantsControl.current = false;
       setMine(false);
+      setChooser(null);
       send({ type: "release" });
+    },
+    choose(fileIds: string[]) {
+      setChooser(null);
+      send({ type: "choose", fileIds });
     },
   };
 }
@@ -317,6 +336,71 @@ function useControls(stream: Stream, keys: RefObject<HTMLTextAreaElement | null>
   };
 }
 
+function FilePicker({ bot, chooser, onChoose }: { bot: Bot; chooser: Chooser; onChoose(fileIds: string[]): void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const chooseButton = useRef<HTMLButtonElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const noun = chooser.multiple ? "files" : "file";
+  const accepts = chooser.accept.split(",").map((a) => a.trim()).filter(Boolean).join(", ");
+
+  const upload = async (files: File[]) => {
+    if (!files.length) return;
+    setBusy(true);
+    setError("");
+    try {
+      onChoose((await api.upload(files)).map((f) => f.fileId));
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={chooser.multiple ? "Choose files" : "Choose a file"}
+      initialFocus={chooseButton}
+      onClose={() => !busy && onChoose([])}
+      onCloseAutoFocus={(e) => e.preventDefault()}
+    >
+      <p className="text-sm text-muted-foreground">
+        The page on {bot.name}'s screen is asking for {chooser.multiple ? "files" : "a file"}. Pick {chooser.multiple ? "them" : "it"} from this device.
+      </p>
+      {accepts && <p className="mt-2 text-sm text-muted-foreground">It accepts {accepts}.</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-failing">
+          {error}
+        </p>
+      )}
+      <input
+        ref={input}
+        type="file"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        accept={chooser.accept || undefined}
+        multiple={chooser.multiple}
+        onChange={(e) => void upload([...(e.target.files ?? [])])}
+      />
+      <DialogFooter className="mt-6">
+        <Button variant="outline" className="rounded-full" disabled={busy} onClick={() => onChoose([])}>
+          Cancel
+        </Button>
+        <Button ref={chooseButton} className="rounded-full" disabled={busy} onClick={() => input.current?.click()}>
+          {busy ? (
+            <>
+              <LoaderCircle className="size-4 animate-spin" />
+              Uploading…
+            </>
+          ) : (
+            `Choose ${noun}`
+          )}
+        </Button>
+      </DialogFooter>
+    </Modal>
+  );
+}
+
 export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; onBack(): void }) {
   const takeOnOpen = useStore((s) => s.screen?.take ?? false);
   const state = useScreenState(bot.id);
@@ -412,6 +496,8 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
           {...(controlling ? controls.keys : {})}
         />
       </div>
+
+      {controlling && stream.chooser && <FilePicker bot={bot} chooser={stream.chooser} onChoose={stream.choose} />}
 
       <footer className="flex flex-none flex-col gap-3 p-4 md:hidden">
         <StatusChip bot={bot} state={state} controlling={controlling} now={now} className="self-start bg-muted" />

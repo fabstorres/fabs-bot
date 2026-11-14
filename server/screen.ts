@@ -2,10 +2,11 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
-import { chromium, type BrowserContext, type CDPSession, type Locator, type Page } from "playwright-core";
+import { chromium, type BrowserContext, type CDPSession, type FileChooser, type Locator, type Page } from "playwright-core";
 import type { ScreenState } from "../shared/types";
 import { publish } from "./bus";
 import { DATA_DIR } from "./config";
+import { getFile } from "./db";
 
 export const VIEWPORT = { width: 1280, height: 800 };
 const ACTION_TIMEOUT_MS = 15_000;
@@ -13,6 +14,7 @@ const LOAD_TIMEOUT_MS = 30_000;
 const IDLE_MS = 30 * 60_000;
 const READ_CAP = 20_000;
 const FRAME_QUALITY = 70;
+const PICKER_WAIT_MS = 5_000;
 
 export class ScreenError extends Error {
   constructor(
@@ -104,6 +106,7 @@ type Screen = {
   queue: Promise<unknown>;
   input: Promise<unknown>;
   controller: Viewer | null;
+  chooser: FileChooser | null;
   usedAt: number;
 };
 
@@ -177,7 +180,12 @@ async function title(page: Page) {
 
 function follow(s: Screen, page: Page) {
   page.on("framenavigated", (frame) => {
-    if (frame === page.mainFrame() && s.page === page) update(s.botId, { url: page.url() });
+    if (frame !== page.mainFrame() || s.page !== page) return;
+    if (s.chooser) setChooser(s, null);
+    update(s.botId, { url: page.url() });
+  });
+  page.on("filechooser", (chooser) => {
+    if (s.page === page) setChooser(s, chooser);
   });
   page.on("load", async () => {
     if (s.page === page) update(s.botId, { status: "live", url: page.url(), title: await title(page) });
@@ -190,6 +198,7 @@ function follow(s: Screen, page: Page) {
 
 async function show(s: Screen, page: Page) {
   s.page = page;
+  if (s.chooser) setChooser(s, null);
   await stopCast(s);
   void startCast(s);
   update(s.botId, { url: page.url(), title: await title(page) });
@@ -211,7 +220,7 @@ async function launch(botId: string): Promise<Screen> {
     .catch((e: Error) => fail("launch_failed", `Your screen's browser didn't start: ${firstLine(e)}`));
   context.setDefaultTimeout(ACTION_TIMEOUT_MS);
   const page = context.pages()[0] ?? (await context.newPage());
-  const s: Screen = { botId, context, page, cdp: null, queue: Promise.resolve(), input: Promise.resolve(), controller: null, usedAt: Date.now() };
+  const s: Screen = { botId, context, page, cdp: null, queue: Promise.resolve(), input: Promise.resolve(), controller: null, chooser: null, usedAt: Date.now() };
   screens.set(botId, s);
   follow(s, page);
   context.on("page", (p) => {
@@ -295,7 +304,7 @@ export function readPage(botId: string, withImage: boolean) {
     const tree = await s.page.ariaSnapshot({ mode: "ai", timeout: ACTION_TIMEOUT_MS });
     const image = withImage ? new Uint8Array(await s.page.screenshot({ type: "jpeg", quality: 60 })) : undefined;
     const clipped = tree.length > READ_CAP ? `${tree.slice(0, READ_CAP)}\n[truncated, ${tree.length - READ_CAP} more chars; scroll and read again]` : tree;
-    return { url: s.page.url(), title: await title(s.page), tree: clipped, image };
+    return { url: s.page.url(), title: await title(s.page), tree: clipped, image, picker: !!s.chooser };
   });
 }
 
@@ -347,6 +356,58 @@ export function waitFor(botId: string, opts: { text?: string; url?: string; time
     await Promise.all(waits).catch((e) => fail("timeout", `Still waiting after ${timeout / 1000}s: ${firstLine(e)}`));
     return s.page.url();
   });
+}
+
+const ONE_FILE = "This file field takes one file. Pass a single path.";
+
+async function pickFiles(s: Screen, chooser: FileChooser, files: string[]) {
+  if (files.length > 1 && !chooser.isMultiple()) return fail("one_file", ONE_FILE);
+  if (s.chooser === chooser) setChooser(s, null);
+  await chooser.setFiles(files).catch(() => fail("picker_gone", "That file picker is gone. Click the upload button again."));
+}
+
+export function upload(botId: string, files: string[], t: { ref?: string; selector?: string }) {
+  return asBot(botId, async (s) => {
+    if (!t.ref && !t.selector) {
+      await pickFiles(s, s.chooser ?? fail("no_picker", "No file picker is open. Pass the ref of the upload button or file field."), files);
+      return s.page.url();
+    }
+    const loc = await target(s.page, t);
+    await pointAt(s, loc);
+    const field = await loc.evaluate((el) => (el instanceof HTMLInputElement && el.type === "file" ? { multiple: el.multiple } : null));
+    if (field) {
+      if (files.length > 1 && !field.multiple) return fail("one_file", ONE_FILE);
+      await loc.setInputFiles(files);
+      return s.page.url();
+    }
+    const opened = s.page.waitForEvent("filechooser", { timeout: PICKER_WAIT_MS }).catch(() => null);
+    await loc.click();
+    const chooser = (await opened) ?? fail("no_picker", "That click didn't open a file picker. Call screen_read: the page may show a menu first, such as Upload from device.");
+    await pickFiles(s, chooser, files);
+    return s.page.url();
+  });
+}
+
+const tellChooser = (v: Viewer, chooser: { accept: string; multiple: boolean } | null, error?: string) =>
+  v.send(JSON.stringify({ type: "chooser", chooser, error }));
+
+async function offerChooser(s: Screen, v: Viewer) {
+  const chooser = s.chooser;
+  const accept = chooser ? await chooser.element().getAttribute("accept").catch(() => null) : null;
+  if (s.chooser === chooser && s.controller === v) tellChooser(v, chooser && { accept: accept ?? "", multiple: chooser.isMultiple() });
+}
+
+function setChooser(s: Screen, chooser: FileChooser | null) {
+  s.chooser = chooser;
+  if (s.controller) void offerChooser(s, s.controller);
+}
+
+async function chooseFor(s: Screen, v: Viewer, fileIds: unknown) {
+  const chooser = s.chooser;
+  if (!chooser) return;
+  const paths = (Array.isArray(fileIds) ? fileIds : []).flatMap((id) => getFile(String(id))?.path ?? []);
+  if (!paths.length) return setChooser(s, null);
+  await pickFiles(s, chooser, paths).catch((e) => tellChooser(v, null, firstLine(e)));
 }
 
 export async function closeScreen(botId: string) {
@@ -408,7 +469,8 @@ type ViewerMessage =
   | { type: "mouse"; action: "down" | "up" | "move"; x: number; y: number; button?: "left" | "right" | "middle" }
   | { type: "wheel"; x: number; y: number; dx: number; dy: number }
   | { type: "key"; action: "down" | "up"; key: string }
-  | { type: "text"; text: string };
+  | { type: "text"; text: string }
+  | { type: "choose"; fileIds: string[] };
 
 const inside = (n: unknown, max: number) => Math.min(Math.max(Number(n) || 0, 0), max);
 
@@ -455,6 +517,7 @@ export function viewerMessage(v: Viewer, raw: string) {
     s.controller = v;
     s.usedAt = Date.now();
     tellControl(v, true);
+    if (s.chooser) void offerChooser(s, v);
     update(v.botId, { controller: "user" });
     return;
   }
@@ -464,7 +527,7 @@ export function viewerMessage(v: Viewer, raw: string) {
   }
   if (s.controller !== v) return;
   s.usedAt = Date.now();
-  s.input = s.input.then(() => drive(s, m)).catch(() => {});
+  s.input = s.input.then(() => (m.type === "choose" ? chooseFor(s, v, m.fileIds) : drive(s, m))).catch(() => {});
 }
 
 setInterval(() => {

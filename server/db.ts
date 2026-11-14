@@ -566,7 +566,7 @@ export const TOOL_NAMES = [
   "list_bots", "message_bot", "ask_user", "share_file", "set_status", "set_topic", "notify_user", "list_threads",
   "read_thread", "schedule_routine", "list_routines", "delete_routine", "start_group", "invite_bot", "approve",
   "screen_open", "screen_read", "screen_click", "screen_type", "screen_press", "screen_scroll", "screen_wait", "screen_close",
-  "screen_hand_over", "send_webhook", "setup_webhook",
+  "screen_upload", "screen_hand_over", "send_webhook", "setup_webhook",
 ] as const;
 export const EVENT_RETENTION_MS = 30 * 24 * 60 * 60_000;
 const EVENT_PAGE_MAX = 500;
