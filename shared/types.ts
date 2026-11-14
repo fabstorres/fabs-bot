@@ -80,11 +80,15 @@ export type MessagePart =
       summary: string;
       decision?: "allow" | "deny";
     }
-  | { type: "screen"; botId: string; reason: string; outcome?: ScreenOutcome }
+  | { type: "screen"; botId: string; reason: string; outcome?: ScreenOutcome; surface?: ScreenSurface }
   | { type: "webhook"; requestId: string; state: "sending" | "received" | "failed"; detail: string }
   | { type: "webhook-setup" };
 
 export type ScreenOutcome = "done" | "skipped" | "closed";
+
+export type ScreenSurface = "browser" | "computer";
+
+export type ComputerSupport = "ready" | "not-linux" | "no-kwin";
 
 export type WebhookEncoding = "hex" | "base64";
 
@@ -248,7 +252,7 @@ export interface Link {
 }
 
 export type ServerEvent =
-  | { type: "hello"; bots: Bot[]; statuses: BotStatus[]; threads: Thread[]; links: Link[]; screens: ScreenState[]; chromium: boolean }
+  | { type: "hello"; bots: Bot[]; statuses: BotStatus[]; threads: Thread[]; links: Link[]; screens: ScreenState[]; chromium: boolean; computers: ScreenState[]; computer: ComputerSupport }
   | { type: "bot"; bot: Bot }
   | { type: "bot.deleted"; botId: string }
   | { type: "status"; status: BotStatus }
@@ -262,6 +266,7 @@ export type ServerEvent =
   | { type: "devices" }
   | { type: "connectors" }
   | { type: "screen"; screen: ScreenState }
+  | { type: "computer"; computer: ScreenState }
   | { type: "heartbeat"; everyMs: number };
 
 export const PC_ICONS = ["monitor", "laptop", "pc-case", "server", "house", "briefcase"] as const;
