@@ -719,7 +719,7 @@ const commands: Record<string, () => Promise<void>> = {
   pair-check [--expiry] [--path pairing/pair-check.txt]        remote-device auth checks over the tailnet (needs --tailnet; --expiry waits 5 min for a link to expire)
   browser start [--viewport 1440x900|430x932]                  headless Chromium on CDP (restart to change viewport)
   browser open [/path] [--via tailnet] | browser pair
-  browser click|fill|press|wait|count|text  --role R --name N | --label L | --text T | --selector S [--nth i] [--exact]  (click: [--at x,y], fractions ≤1 of the target's box)
+  browser click|fill|press|wait|count|text  --role R --name N | --label L | --text T | --selector S [--nth i] [--exact]  (click: [--at x,y], fractions ≤1 of the target's box; [--choose-files a,b] answers the file picker the click opens)
           fill: --value V (@pair-link mints a one-time link; @pair-link / @tailnet-url type the tailnet link unseen)   press: --key K   wait: --state visible|hidden [--timeout s]
           click --accept-dialog [--dialog-text T]   accept the confirm()/prompt() the click opens
   browser snapshot --path rel.aria.txt [target] | screenshot --path rel.png [--full-page] [--no-mask] | eval '<js>'

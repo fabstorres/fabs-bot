@@ -70,13 +70,21 @@ try {
       console.log("paired this browser over the tailnet");
       break;
     case "click": {
+      const files = flag("choose-files")?.split(",").map((f) => (isAbsolute(f) ? f : join(job.repo, f)));
+      const picker = files && page.waitForEvent("filechooser");
       const at = flag("at");
       if (at) {
         const box = (await pick().boundingBox()) ?? die("the target has no box to click in");
         const [x, y] = at.split(",").map(Number);
         await pick().click({ position: { x: x <= 1 ? x * box.width : x, y: y <= 1 ? y * box.height : y } });
       } else await pick().click();
-      console.log("clicked");
+      if (!picker) {
+        console.log("clicked");
+        break;
+      }
+      const chooser = await picker;
+      await chooser.setFiles(files);
+      console.log(`clicked, a file picker opened (accept=${(await chooser.element().getAttribute("accept")) ?? ""} multiple=${chooser.isMultiple()}) and got ${files.length} file(s)`);
       break;
     }
     case "fill":
