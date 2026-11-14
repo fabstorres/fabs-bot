@@ -479,7 +479,8 @@ export async function postUserMessage(threadId: string, parts: MessagePart[], ca
 
 export async function replyToCard(card: Message, text: string) {
   const thread = db.getThread(card.threadId);
-  if (!thread || !card.botId || !thread.memberIds.includes(card.botId)) return;
+  if (!thread) return;
+  if (!card.botId || !thread.memberIds.includes(card.botId)) return publish({ type: "thread", thread });
   const to = thread.kind === "direct" ? "" : `${mentionOf({ id: card.botId })} `;
   await postUserMessage(thread.id, [{ type: "text", text: to + text }], card.botId);
 }
