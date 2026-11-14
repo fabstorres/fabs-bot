@@ -38,7 +38,7 @@ function closedState(botId: string): ScreenState {
 
 const useScreenState = (botId: string) => useStore((s) => s.screens[botId]) ?? closedState(botId);
 
-type Chooser = { accept: string; multiple: boolean };
+type Chooser = { id: number; accept: string; multiple: boolean };
 
 type Stream = {
   canvas: RefObject<HTMLCanvasElement | null>;
@@ -50,7 +50,7 @@ type Stream = {
   send(message: object): void;
   take(): void;
   release(): void;
-  choose(fileIds: string[]): void;
+  choose(id: number, fileIds: string[]): void;
 };
 
 export function useScreenStream(botId: string, takeOnOpen = false): Stream {
@@ -131,9 +131,9 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
       setChooser(null);
       send({ type: "release" });
     },
-    choose(fileIds: string[]) {
-      setChooser(null);
-      send({ type: "choose", fileIds });
+    choose(id: number, fileIds: string[]) {
+      setChooser((open) => (open?.id === id ? null : open));
+      send({ type: "choose", id, fileIds });
     },
   };
 }
@@ -336,7 +336,7 @@ function useControls(stream: Stream, keys: RefObject<HTMLTextAreaElement | null>
   };
 }
 
-function FilePicker({ bot, chooser, onChoose }: { bot: Bot; chooser: Chooser; onChoose(fileIds: string[]): void }) {
+function FilePicker({ bot, chooser, onChoose }: { bot: Bot; chooser: Chooser; onChoose(id: number, fileIds: string[]): void }) {
   const input = useRef<HTMLInputElement>(null);
   const chooseButton = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
@@ -349,7 +349,7 @@ function FilePicker({ bot, chooser, onChoose }: { bot: Bot; chooser: Chooser; on
     setBusy(true);
     setError("");
     try {
-      onChoose((await api.upload(files)).map((f) => f.fileId));
+      onChoose(chooser.id, (await api.upload(files)).map((f) => f.fileId));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -360,7 +360,7 @@ function FilePicker({ bot, chooser, onChoose }: { bot: Bot; chooser: Chooser; on
     <Modal
       title={chooser.multiple ? "Choose files" : "Choose a file"}
       initialFocus={chooseButton}
-      onClose={() => !busy && onChoose([])}
+      onClose={() => !busy && onChoose(chooser.id, [])}
       onCloseAutoFocus={(e) => e.preventDefault()}
     >
       <p className="text-sm text-muted-foreground">
@@ -383,7 +383,7 @@ function FilePicker({ bot, chooser, onChoose }: { bot: Bot; chooser: Chooser; on
         onChange={(e) => void upload([...(e.target.files ?? [])])}
       />
       <DialogFooter className="mt-6">
-        <Button variant="outline" className="rounded-full" disabled={busy} onClick={() => onChoose([])}>
+        <Button variant="outline" className="rounded-full" disabled={busy} onClick={() => onChoose(chooser.id, [])}>
           Cancel
         </Button>
         <Button ref={chooseButton} className="rounded-full" disabled={busy} onClick={() => input.current?.click()}>
@@ -497,7 +497,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
         />
       </div>
 
-      {controlling && stream.chooser && <FilePicker bot={bot} chooser={stream.chooser} onChoose={stream.choose} />}
+      {controlling && stream.chooser && <FilePicker key={stream.chooser.id} bot={bot} chooser={stream.chooser} onChoose={stream.choose} />}
 
       <footer className="flex flex-none flex-col gap-3 p-4 md:hidden">
         <StatusChip bot={bot} state={state} controlling={controlling} now={now} className="self-start bg-muted" />

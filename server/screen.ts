@@ -107,6 +107,7 @@ type Screen = {
   input: Promise<unknown>;
   controller: Viewer | null;
   chooser: FileChooser | null;
+  chooserId: number;
   usedAt: number;
 };
 
@@ -115,6 +116,7 @@ const launching = new Map<string, Promise<Screen>>();
 const states = new Map<string, ScreenState>();
 const viewers = new Map<string, Set<Viewer>>();
 const lastFrames = new Map<string, Uint8Array>();
+let lastChooserId = 0;
 
 const viewersOf = (botId: string) => viewers.get(botId) ?? new Set<Viewer>();
 
@@ -181,7 +183,7 @@ async function title(page: Page) {
 function follow(s: Screen, page: Page) {
   page.on("framenavigated", (frame) => {
     if (frame !== page.mainFrame() || s.page !== page) return;
-    if (s.chooser) setChooser(s, null);
+    if (s.chooser) void dropIfDetached(s, s.chooser);
     update(s.botId, { url: page.url() });
   });
   page.on("filechooser", (chooser) => {
@@ -220,7 +222,7 @@ async function launch(botId: string): Promise<Screen> {
     .catch((e: Error) => fail("launch_failed", `Your screen's browser didn't start: ${firstLine(e)}`));
   context.setDefaultTimeout(ACTION_TIMEOUT_MS);
   const page = context.pages()[0] ?? (await context.newPage());
-  const s: Screen = { botId, context, page, cdp: null, queue: Promise.resolve(), input: Promise.resolve(), controller: null, chooser: null, usedAt: Date.now() };
+  const s: Screen = { botId, context, page, cdp: null, queue: Promise.resolve(), input: Promise.resolve(), controller: null, chooser: null, chooserId: 0, usedAt: Date.now() };
   screens.set(botId, s);
   follow(s, page);
   context.on("page", (p) => {
@@ -377,6 +379,7 @@ export function upload(botId: string, files: string[], t: { ref?: string; select
     const field = await loc.evaluate((el) => (el instanceof HTMLInputElement && el.type === "file" ? { multiple: el.multiple } : null));
     if (field) {
       if (files.length > 1 && !field.multiple) return fail("one_file", ONE_FILE);
+      if (s.chooser) setChooser(s, null);
       await loc.setInputFiles(files);
       return s.page.url();
     }
@@ -388,24 +391,30 @@ export function upload(botId: string, files: string[], t: { ref?: string; select
   });
 }
 
-const tellChooser = (v: Viewer, chooser: { accept: string; multiple: boolean } | null, error?: string) =>
+const tellChooser = (v: Viewer, chooser: { id: number; accept: string; multiple: boolean } | null, error?: string) =>
   v.send(JSON.stringify({ type: "chooser", chooser, error }));
 
 async function offerChooser(s: Screen, v: Viewer) {
   const chooser = s.chooser;
   const accept = chooser ? await chooser.element().getAttribute("accept").catch(() => null) : null;
-  if (s.chooser === chooser && s.controller === v) tellChooser(v, chooser && { accept: accept ?? "", multiple: chooser.isMultiple() });
+  if (s.chooser === chooser && s.controller === v) tellChooser(v, chooser && { id: s.chooserId, accept: accept ?? "", multiple: chooser.isMultiple() });
 }
 
 function setChooser(s: Screen, chooser: FileChooser | null) {
   s.chooser = chooser;
+  if (chooser) s.chooserId = ++lastChooserId;
   if (s.controller) void offerChooser(s, s.controller);
 }
 
-async function chooseFor(s: Screen, v: Viewer, fileIds: unknown) {
+async function dropIfDetached(s: Screen, chooser: FileChooser) {
+  const attached = await chooser.element().evaluate((el) => el.isConnected).catch(() => false);
+  if (!attached && s.chooser === chooser) setChooser(s, null);
+}
+
+async function chooseFor(s: Screen, v: Viewer, m: { id: unknown; fileIds: unknown }) {
   const chooser = s.chooser;
-  if (!chooser) return;
-  const paths = (Array.isArray(fileIds) ? fileIds : []).flatMap((id) => getFile(String(id))?.path ?? []);
+  if (!chooser || m.id !== s.chooserId) return;
+  const paths = (Array.isArray(m.fileIds) ? m.fileIds : []).flatMap((id) => getFile(String(id))?.path ?? []);
   if (!paths.length) return setChooser(s, null);
   await pickFiles(s, chooser, paths).catch((e) => tellChooser(v, null, firstLine(e)));
 }
@@ -470,7 +479,7 @@ type ViewerMessage =
   | { type: "wheel"; x: number; y: number; dx: number; dy: number }
   | { type: "key"; action: "down" | "up"; key: string }
   | { type: "text"; text: string }
-  | { type: "choose"; fileIds: string[] };
+  | { type: "choose"; id: number; fileIds: string[] };
 
 const inside = (n: unknown, max: number) => Math.min(Math.max(Number(n) || 0, 0), max);
 
@@ -527,7 +536,7 @@ export function viewerMessage(v: Viewer, raw: string) {
   }
   if (s.controller !== v) return;
   s.usedAt = Date.now();
-  s.input = s.input.then(() => (m.type === "choose" ? chooseFor(s, v, m.fileIds) : drive(s, m))).catch(() => {});
+  s.input = s.input.then(() => (m.type === "choose" ? chooseFor(s, v, m) : drive(s, m))).catch(() => {});
 }
 
 setInterval(() => {
