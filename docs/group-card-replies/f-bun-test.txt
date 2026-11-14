@@ -1,0 +1,12 @@
+bun test (full suite at the end; the new edge-case test is the last one in server/orchestrator.test.ts)
+(pass) server/orchestrator.test.ts > a kickoff from deep in a bot chain keeps the chain's hop budget
+(pass) server/orchestrator.test.ts > a kickoff linked before approval still starts a teammate renamed while it waited
+(pass) server/orchestrator.test.ts > the chat scope rules sit alongside the group hand-off and backchannel instructions
+(pass) server/orchestrator.test.ts > when every group bot passes, no partial pass is shown and the user sees nobody took it
+(pass) server/orchestrator.test.ts > a bot handed the floor in a no-mention turn can't pass
+(pass) server/orchestrator.test.ts > a reply that stops partway through the pass token is kept
+(pass) server/orchestrator.test.ts > a card reply in a group reaches only the card's bot, even while the team lead is mid-turn
+65 pass
+0 fail
+151 expect() calls
+Ran 65 tests across 15 files. [10.23s]
