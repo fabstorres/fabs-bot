@@ -392,12 +392,10 @@ route("POST", "/api/approvals/:id", async (req, p) => {
 route("POST", "/api/upload", async (req) => {
   const form = await req.formData();
   const out = [];
-  const dir = join(SHARED_DIR, "uploads");
-  mkdirSync(dir, { recursive: true });
   for (const value of form.getAll("file")) {
     if (!(value instanceof File)) continue;
     const name = basename(value.name) || "upload";
-    const dest = join(dir, `${Date.now().toString(36)}-${name}`);
+    const dest = join(SHARED_DIR, "uploads", db.newId(), name);
     await Bun.write(dest, value);
     const f = db.addFile({ thread_id: null, bot_id: null, path: dest, name, size: value.size });
     out.push({ fileId: f.id, name, size: value.size });
