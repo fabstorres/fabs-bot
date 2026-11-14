@@ -6,3 +6,4 @@ handover-dialog.png — The cover-letter dialog after taking over from Chief.
 phone-dialog.png — The file dialog in the phone layout.
 bot-upload.gif — Chief's upload request and completed result.
 user-upload.gif — Taking control, choosing a resume, and handing the screen back.
+handover-done.png — Chief confirms the attached cover letter after handback.
