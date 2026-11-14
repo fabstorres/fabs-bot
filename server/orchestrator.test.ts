@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { linkHandles } from "../shared/mentions";
+import { linkHandles, mentionOf } from "../shared/mentions";
 import type { Bot, ServerEvent } from "../shared/types";
 
 const scratch = mkdtempSync(join(tmpdir(), "fabs-orchestrator-test-"));
@@ -10,7 +10,7 @@ process.env.FABS_DATA_DIR = join(scratch, "data");
 process.env.FABS_WORK_ROOT = join(scratch, "work");
 const db = await import("./db");
 const { MAX_HOPS } = await import("./config");
-const { isBusy, kickoff, postUserMessage, stopTurns, systemPrompt } = await import("./orchestrator");
+const { isBusy, kickoff, postUserMessage, replyToCard, stopTurns, systemPrompt } = await import("./orchestrator");
 const { providers } = await import("./providers");
 const { subscribe } = await import("./bus");
 
@@ -127,4 +127,31 @@ test("a reply that stops partway through the pass token is kept", async () => {
   await until(() => db.listMessages(group.id).some((m) => m.author === "bot" && m.status === "done"));
 
   expect(db.listMessages(group.id).map((m) => (m.author === "bot" ? m.parts : m.author))).toEqual(["user", [{ type: "text", text: "[p" }]]);
+});
+
+test("a card reply in a group reaches only the card's bot, even while the team lead is mid-turn", async () => {
+  const lead = db.saveBot({ ...bot("Lead"), isTeamLead: true });
+  const clicker = bot("Clicker");
+  const scribe = bot("Scribe");
+  replies.set("Lead", ["Planning", " the launch."]).set("Clicker", ["Signed in."]).set("Scribe", ["On it."]);
+  const group = db.createThread("group", [lead.id, clicker.id, scribe.id], "Launch");
+  const ran: string[] = [];
+  const run = providers.claude.run;
+  providers.claude.run = (opts, emit) => (ran.push(opts.bot.name), run(opts, emit));
+  try {
+    await postUserMessage(group.id, [{ type: "text", text: `${mentionOf(lead)} plan the launch` }]);
+    await until(() => db.listMessages(group.id).some((m) => m.botId === lead.id));
+    const card = db.addMessage({ threadId: group.id, author: "bot", botId: clicker.id, parts: [{ type: "screen", botId: clicker.id, reason: "Sign in" }] });
+    const question = db.addMessage({ threadId: group.id, author: "bot", botId: scribe.id, parts: [{ type: "question", question: "Tone?", options: ["Calm", "Bold"] }] });
+    await replyToCard(card, "I'm done on your screen.");
+    await until(() => !isBusy(group.id, lead.id) && !isBusy(group.id, clicker.id));
+
+    expect(ran.sort()).toEqual(["Clicker", "Lead"]);
+    expect(db.listMessages(group.id).find((m) => m.author === "user" && m.seq > card.seq)?.parts).toEqual([
+      { type: "text", text: `${mentionOf(clicker)} I'm done on your screen.` },
+    ]);
+    expect(db.getMessage(question.id)?.parts[0]).not.toHaveProperty("answered");
+  } finally {
+    providers.claude.run = run;
+  }
 });
