@@ -96,14 +96,16 @@ function snapToBottom(e: UIEvent<HTMLElement>) {
 function DeskButton({ members }: { members: Bot[] }) {
   const panelOpen = useStore((s) => s.panelOpen);
   const screens = useStore((s) => s.screens);
+  const computers = useStore((s) => s.computers);
   const now = useNow(5_000);
-  const busy = members.find((m) => usingScreen(screens[m.id], now));
+  const busy = members.find((m) => usingScreen(screens[m.id], now) || usingScreen(computers[m.id], now));
+  const busyOn = busy && usingScreen(computers[busy.id], now) ? "computer" : "screen";
   return (
     <Button
       variant="ghost"
       size="icon"
       className={cn("relative rounded-full", panelOpen && "bg-accent")}
-      title={busy ? `${busy.name} is using its screen` : "Open the bot's desk and routines"}
+      title={busy ? `${busy.name} is using its ${busyOn}` : "Open the bot's desk and routines"}
       id="open-desk"
       aria-label="Open desk"
       aria-pressed={panelOpen}
@@ -111,7 +113,7 @@ function DeskButton({ members }: { members: Bot[] }) {
     >
       <Monitor className="size-5" />
       {busy && (
-        <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full ring-2 ring-background" style={{ background: busy.color }} role="img" aria-label={`${busy.name} is using its screen`} />
+        <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full ring-2 ring-background" style={{ background: busy.color }} role="img" aria-label={`${busy.name} is using its ${busyOn}`} />
       )}
     </Button>
   );

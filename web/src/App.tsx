@@ -68,7 +68,7 @@ export function App() {
           <NewBot />
         ) : thread && screenBot ? (
           <>
-            <ScreenView key={`screen-${screenBot.id}-${screen?.openedAt}`} bot={screenBot} thread={thread} onBack={backToDesk} />
+            <ScreenView key={`screen-${screenBot.id}-${screen?.openedAt}`} bot={screenBot} surface={screen?.surface ?? "browser"} thread={thread} onBack={backToDesk} />
             <Chat key={`chat-${thread.id}`} thread={thread} side />
           </>
         ) : thread ? (

@@ -2,7 +2,7 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import { Check, ChevronDown, ChevronRight, Download, Monitor, Zap } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Computer, Download, Monitor, Zap } from "lucide-react";
 import { hideDeleted, type MdNode, splitMentions, textNodes } from "../../../shared/mentions";
 import type { Bot, Message, MessagePart } from "../../../shared/types";
 import { api, formatSize, formatTime, isImage } from "../api";
@@ -356,6 +356,8 @@ function ScreenCard({ part, index, message }: { part: Extract<MessagePart, { typ
   const [busy, setBusy] = useState(false);
   const pending = !part.outcome;
   const name = bot?.name ?? "A former teammate";
+  const surface = part.surface ?? "browser";
+  const Icon = surface === "computer" ? Computer : Monitor;
   const settle = (outcome: "done" | "skipped") => {
     setBusy(true);
     settleHandOver(message.id, index, outcome).catch(() => setBusy(false));
@@ -364,22 +366,24 @@ function ScreenCard({ part, index, message }: { part: Extract<MessagePart, { typ
     <div
       className={cn("w-full max-w-md rounded-3xl border bg-background p-4", pending && "border-amber-300 bg-amber-50/40 dark:border-amber-500/40 dark:bg-amber-500/10")}
       role="group"
-      aria-label={`Screen: ${part.reason}`}
+      aria-label={`${surface === "computer" ? "Computer" : "Screen"}: ${part.reason}`}
     >
       <div className="flex items-center gap-2 text-sm">
-        <Monitor className="size-4 flex-none" />
-        <span className="flex-1 truncate font-medium">{name}'s screen</span>
+        <Icon className="size-4 flex-none" />
+        <span className="flex-1 truncate font-medium">
+          {name}'s {surface === "computer" ? "computer" : "screen"}
+        </span>
         {pending && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">Needs you</span>}
       </div>
       <p className="mt-2">{part.reason}</p>
       {pending && bot && (
         <div className="mt-3">
-          <ScreenThumb bot={bot} />
+          <ScreenThumb bot={bot} surface={surface} />
         </div>
       )}
       {pending && bot ? (
         <div className="mt-3 flex items-center gap-2">
-          <Button className="rounded-full" disabled={busy || !online} onClick={() => openScreen(bot.id, true)}>
+          <Button className="rounded-full" disabled={busy || !online} onClick={() => openScreen(bot.id, true, surface)}>
             Take over
           </Button>
           <Button variant="outline" className="rounded-full" disabled={busy || !online} onClick={() => settle("done")}>
