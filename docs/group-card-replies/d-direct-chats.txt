@@ -1,0 +1,11 @@
+Direct chats are unchanged.
+
+## Scout's 1:1: tapping "A Day-to-day ops" on the greeting card sends plain text, no mention
+#1 Scout (done): "Hey, I'm Chief. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=0]
+#2 user (done): "A. Day-to-day ops"
+#3 Scout (done): "Got it, Chief. I'll take day-to-day web ops: browsing, checking pages, filling in forms, and pulling information off sites. I work on my own screen, and I'll st"
+
+## Design's 1:1: typing a message still closes the open greeting card (answered=-1)
+#1 Design (done): "Hey, I'm Design. What's the main thing you want me on?" [question "What should I own for you?" options=4 answered=-1]
+#2 user (done): "Hi, reply with exactly the word: ready"
+#3 Design (done): "ready"
