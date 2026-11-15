@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Bot, MessagePart } from "../shared/types";
@@ -7,7 +7,10 @@ import type { Bot, MessagePart } from "../shared/types";
 const scratch = mkdtempSync(join(tmpdir(), "fabs-mcp-test-"));
 process.env.FABS_DATA_DIR = join(scratch, "data");
 process.env.FABS_WORK_ROOT = join(scratch, "work");
+process.env.FABS_CHROMIUM_SANDBOX ??= "0";
 const db = await import("./db");
+const screen = await import("./screen");
+const computer = await import("./computer");
 const { handleMcp } = await import("./mcp");
 const { turnsByToken } = await import("./orchestrator");
 
@@ -92,3 +95,27 @@ test("a webhook send still in flight when the server stops reads as stopped afte
   db.closeDanglingMessages();
   expect(db.getMessage(m.id)!.parts).toEqual([{ type: "webhook", requestId: "fabs-in-flight", state: "failed", detail: "Stopped before the endpoint answered. It may still have arrived" }]);
 });
+
+test.skipIf(!screen.findChromium() || computer.computerSupport() !== "ready")(
+  "a bot has one of its screen and computer open: the computer closes the screen unless the user has it, and screen_open waits for computer_close",
+  async () => {
+    const caller = bot("Switcher");
+    const page = join(scratch, "page.html");
+    writeFileSync(page, "<title>Page</title><h1>Page</h1>");
+    expect((await call(caller, "screen_open", { url: `file://${page}` })).result.isError).toBeFalsy();
+    const viewer = { botId: caller.id, ready: true, pending: null, send() {} };
+    screen.watchScreen(viewer);
+    screen.viewerMessage(viewer, JSON.stringify({ type: "take" }));
+    expect((await call(caller, "computer_open", { command: "true" })).result.isError).toBe(true);
+    expect(screen.isOpen(caller.id)).toBe(true);
+    expect(computer.isComputerOpen(caller.id)).toBe(false);
+    screen.unwatchScreen(viewer);
+    const opened = await call(caller, "computer_open", { command: "true" });
+    expect(opened.result.content[0]!.text).toContain("browser screen was closed");
+    expect(screen.isOpen(caller.id)).toBe(false);
+    expect((await call(caller, "screen_open", { url: `file://${page}` })).result.isError).toBe(true);
+    expect(screen.isOpen(caller.id)).toBe(false);
+    await computer.closeComputer(caller.id);
+  },
+  60_000,
+);

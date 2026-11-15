@@ -64,10 +64,7 @@ export function DeskPanel({ thread }: { thread: Thread }) {
       <div className="flex-1 overflow-y-auto px-4 pb-6">
         {page === "desk" ? (
           <>
-            <div className="mb-6 grid grid-cols-2 gap-3">
-              <ScreenTile key={`screen-${bot.id}`} bot={bot} surface="browser" onOpen={() => openScreen(bot.id)} />
-              <ScreenTile key={`computer-${bot.id}`} bot={bot} surface="computer" onOpen={() => openScreen(bot.id, false, "computer")} />
-            </div>
+            <ScreenTile key={`screen-${bot.id}`} bot={bot} onOpen={() => openScreen(bot.id)} />
             <Desk key={bot.id} bot={bot} />
             <Routines bot={bot} />
             <OtherChats bot={bot} openId={thread.id} />

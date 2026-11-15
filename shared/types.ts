@@ -88,8 +88,6 @@ export type ScreenOutcome = "done" | "skipped" | "closed";
 
 export type ScreenSurface = "browser" | "computer";
 
-export type ComputerSupport = "ready" | "not-linux" | "no-kwin";
-
 export type WebhookEncoding = "hex" | "base64";
 
 export interface WebhookSettings {
@@ -252,7 +250,7 @@ export interface Link {
 }
 
 export type ServerEvent =
-  | { type: "hello"; bots: Bot[]; statuses: BotStatus[]; threads: Thread[]; links: Link[]; screens: ScreenState[]; chromium: boolean; computers: ScreenState[]; computer: ComputerSupport }
+  | { type: "hello"; bots: Bot[]; statuses: BotStatus[]; threads: Thread[]; links: Link[]; screens: ScreenState[]; chromium: boolean; computers: ScreenState[] }
   | { type: "bot"; bot: Bot }
   | { type: "bot.deleted"; botId: string }
   | { type: "status"; status: BotStatus }

@@ -34,6 +34,15 @@ const TARGET = {
 const target = (args: any) => ({ ref: args.ref ? String(args.ref) : undefined, selector: args.selector ? String(args.selector) : undefined });
 const onPage = (url: string) => `Done. Now on ${url}. Call screen_read to see the result.`;
 const onComputer = (image: Uint8Array) => ({ text: "Done. This is your computer's screen now.", image, imageType: "image/png" as const });
+const ONE_AT_A_TIME = "Only one of your screen and your computer can be open at a time.";
+
+async function makeRoomForComputer(botId: string) {
+  if (computer.computerSupport() !== "ready" || computer.isComputerOpen(botId) || !screen.isOpen(botId)) return false;
+  if (screen.screenState(botId).controller === "user") {
+    return reject("user_has_control", `${ONE_AT_A_TIME} The user has control of your screen right now, so it stays open. Wait until they hand it back, or ask in chat.`);
+  }
+  return screen.closeForBot(botId);
+}
 const coordinate = (description: string) => ({ type: "number", description });
 const POINT = { x: coordinate("Pixels from the left edge of the screenshot"), y: coordinate("Pixels from the top edge of the screenshot") };
 
@@ -509,6 +518,9 @@ const tools: ToolDef[] = [
       "Open a web page on your screen: your own Chromium browser on the user's PC, which the user can watch as your screen. It keeps your logins between chats. Use it when a task needs a real browser (signing in, clicking, filling forms, checking a site you built); WebFetch is fine for just reading a page.",
     inputSchema: { type: "object", properties: { url: str("Address to open, e.g. localhost:5173 or https://example.com") }, required: ["url"] },
     async run(args, ctx) {
+      if (computer.isComputerOpen(ctx.botId)) {
+        return reject("computer_open", `${ONE_AT_A_TIME} Your computer is open: finish there, save your work and call computer_close, then screen_open again. Or use a browser inside your computer.`);
+      }
       const page = await screen.openPage(ctx.botId, String(args.url ?? ""));
       return `Opened ${page.url}${page.title ? ` ("${page.title}")` : ""}${page.status >= 400 ? `, HTTP ${page.status}` : ""}. Call screen_read to see the page and get element refs.`;
     },
@@ -605,13 +617,15 @@ const tools: ToolDef[] = [
   {
     name: "computer_open",
     description:
-      "Start a program on your computer: your own Linux desktop on the user's PC (1280x800, no taskbar), which the user can watch as your computer. Use it for desktop apps and native dialogs outside a web page; use screen_open for web pages. Pass a shell command, e.g. kwrite notes.txt or dolphin ~/Downloads. Starts the computer if it's off and returns a screenshot.",
+      "Start a program on your computer: your own Linux desktop on the user's PC (1280x800, no taskbar), which the user can watch as your computer. Use it for desktop apps and native dialogs outside a web page; use screen_open for web pages. Pass a shell command, e.g. kwrite notes.txt or dolphin ~/Downloads. Starts the computer if it's off, closing your browser screen first (only one can be open at a time), and returns a screenshot.",
     inputSchema: { type: "object", properties: { command: str("Shell command that starts the program, run in your workspace folder") }, required: ["command"] },
     async run(args, ctx) {
       const command = String(args.command ?? "");
+      const closedScreen = await makeRoomForComputer(ctx.botId);
       const started = await computer.openProgram(ctx.botId, command, db.getBot(ctx.botId)?.cwd ?? "");
       const exited = started.exitCode === null ? "" : ` It exited with code ${started.exitCode}.${started.output ? `\n${started.output}` : ""}`;
-      return { text: `Started ${clip(command, 80)}.${exited} This is your computer's screen now.`, image: started.image, imageType: "image/png" };
+      const closed = closedScreen ? ` ${ONE_AT_A_TIME} Your browser screen was closed to open your computer: its logins are kept, its open pages aren't. If you need a browser now, start one inside your computer.` : "";
+      return { text: `Started ${clip(command, 80)}.${exited}${closed} This is your computer's screen now.`, image: started.image, imageType: "image/png" };
     },
   },
   {

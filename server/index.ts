@@ -9,7 +9,7 @@ import * as db from "./db";
 import { authorized, deviceId, isLoopback, listDevices, localOwner, ownerOnly, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
 import { botSaved, checkConnector, connectorSaved, connectorStatus, findConnector, finishConnectorSignIn } from "./connectors";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
-import { closeAllComputers, computerSupport, computerViewerMessage, forgetComputer, listComputers, releaseComputer, unwatchComputer, watchComputer } from "./computer";
+import { closeAllComputers, computerViewerMessage, forgetComputer, listComputers, releaseComputer, unwatchComputer, watchComputer } from "./computer";
 import { handleMcp, decideApproval } from "./mcp";
 import { SignInError, configureClient, forget, signOut, startSignIn, usesConfiguredClient } from "./oauth";
 import { realPathWithin, within } from "./paths";
@@ -642,7 +642,6 @@ const websocket = {
       screens: listScreens(),
       chromium: !!findChromium(),
       computers: listComputers(),
-      computer: computerSupport(),
     };
     ws.send(JSON.stringify(hello));
     ws.send(JSON.stringify(heartbeat));

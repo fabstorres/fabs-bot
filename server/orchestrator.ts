@@ -167,7 +167,8 @@ export function systemPrompt(bot: Bot, thread: Thread, unavailable: string[] = [
     );
     if (computerSupport() === "ready") {
       lines.push(
-        `- computer_open / computer_screenshot / computer_click / computer_type / computer_key / computer_scroll / computer_close: your own Linux desktop, which the user watches as "${bot.name}'s computer". Use it for desktop apps and native dialogs (like a file picker) outside a web page. Start a program with computer_open, then act by pixel position on the 1280x800 screenshot each action returns. There's no taskbar: use alt+tab to switch windows. It shuts down after 30 minutes unused and closes its programs, so save your work.`,
+        `- computer_open / computer_screenshot / computer_click / computer_type / computer_key / computer_scroll / computer_close: your own Linux desktop, which the user watches as "${bot.name}'s computer". Use it for desktop apps and native dialogs (like a file picker) outside a web page; most work belongs in your screen, and the computer is for when a task needs more. Start a program with computer_open, then act by pixel position on the 1280x800 screenshot each action returns. There's no taskbar: use alt+tab to switch windows. It shuts down after 30 minutes unused and closes its programs, so save your work.`,
+        `- Only one of your screen and your computer is open at a time. computer_open closes your screen (its logins stay, open pages don't); start a browser inside your computer if you need one there. While your computer is open, screen_open is refused: finish, save and computer_close first.`,
         `- computer_hand_over: when something on your computer needs the user (a password, a confirmation only they can give), ask them to take over your computer, then end your turn.`,
       );
     }

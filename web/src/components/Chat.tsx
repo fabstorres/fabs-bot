@@ -4,7 +4,7 @@ import { mentionedBots } from "../../../shared/mentions";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, isImage } from "../api";
 import { toast } from "sonner";
-import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore, usingScreen } from "../store";
+import { attachFiles, enterThread, goBack, isConnected, openModal, shownSurface, threadTitle, togglePanel, updateAttachments, useStore, usingScreen } from "../store";
 import { useNow } from "../hooks";
 import { accentStyle, useTheme } from "../theme";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
@@ -98,8 +98,9 @@ function DeskButton({ members }: { members: Bot[] }) {
   const screens = useStore((s) => s.screens);
   const computers = useStore((s) => s.computers);
   const now = useNow(5_000);
-  const busy = members.find((m) => usingScreen(screens[m.id], now) || usingScreen(computers[m.id], now));
-  const busyOn = busy && usingScreen(computers[busy.id], now) ? "computer" : "screen";
+  const shown = (botId: string) => shownSurface(computers, botId);
+  const busy = members.find((m) => usingScreen((shown(m.id) === "computer" ? computers : screens)[m.id], now));
+  const busyOn = busy && shown(busy.id) === "computer" ? "computer" : "screen";
   return (
     <Button
       variant="ghost"

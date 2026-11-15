@@ -3,7 +3,7 @@ import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 import type { Subprocess } from "bun";
-import type { ComputerSupport, ScreenState } from "../shared/types";
+import type { ScreenState } from "../shared/types";
 import { publish } from "./bus";
 import { DATA_DIR } from "./config";
 import { type ButtonName, type Stroke, chordCodes, FakeInput, keyCode, strokeFor, strokesFor, TYPING_SHIFT } from "./fake-input";
@@ -46,6 +46,8 @@ const fail = (code: string, message: string): never => {
 const firstLine = (e: unknown) => String((e as Error)?.message ?? e).split("\n")[0]!.replace(/^\w+Error: /, "");
 
 const which = (name: string) => Bun.which(name, { PATH: SYSTEM_PATH });
+
+export type ComputerSupport = "ready" | "not-linux" | "no-kwin";
 
 function programs() {
   const override = process.env.FABS_KWIN;
@@ -96,6 +98,7 @@ export function computerState(botId: string): ScreenState {
 
 export const listComputers = () => [...states.values()];
 export const isComputerOn = (botId: string) => computers.has(botId);
+export const isComputerOpen = (botId: string) => computers.has(botId) || starting.has(botId);
 
 function update(botId: string, patch: Partial<Omit<ScreenState, "botId">>) {
   const next: ScreenState = { ...computerState(botId), ...patch, botId, updatedAt: Date.now() };

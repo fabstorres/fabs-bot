@@ -10,10 +10,10 @@ import {
   useState,
 } from "react";
 import { ChevronLeft, Keyboard, LoaderCircle, Maximize2, MonitorOff, X } from "lucide-react";
-import type { Bot, ComputerSupport, Message, ScreenState, ScreenSurface, Thread } from "../../../shared/types";
+import type { Bot, Message, ScreenState, ScreenSurface, Thread } from "../../../shared/types";
 import { api } from "../api";
 import { useNow } from "../hooks";
-import { closeScreen, isConnected, useStore, usingScreen } from "../store";
+import { closeScreen, isConnected, shownSurface, useStore, usingScreen } from "../store";
 import { BotAvatar, LiveAvatar } from "./BotAvatar";
 import { Button } from "@/components/ui/button";
 import { WindowControls } from "./WindowControls";
@@ -36,8 +36,6 @@ function closedState(botId: string): ScreenState {
 const useScreenState = (botId: string, surface: ScreenSurface) => useStore((s) => (surface === "computer" ? s.computers : s.screens)[botId]) ?? closedState(botId);
 
 const noun = (surface: ScreenSurface) => (surface === "computer" ? "computer" : "screen");
-
-const COMPUTER_MISSING: Record<ComputerSupport, string> = { ready: "", "not-linux": "Computer use is Linux only", "no-kwin": "KWin not found" };
 
 type Stream = {
   canvas: RefObject<HTMLCanvasElement | null>;
@@ -125,7 +123,7 @@ export function useScreenStream(botId: string, surface: ScreenSurface, takeOnOpe
 }
 
 function ScreenFrame({ bot, surface, state, stream, dim = false }: { bot: Bot; surface: ScreenSurface; state: ScreenState; stream: Stream; dim?: boolean }) {
-  const missing = useStore((s) => (surface === "computer" ? COMPUTER_MISSING[s.computer] : s.chromium ? "" : "No Chromium browser found"));
+  const chromium = useStore((s) => s.chromium);
   const open = state.status !== "closed";
   const live = open && stream.hasFrame;
   return (
@@ -133,10 +131,10 @@ function ScreenFrame({ bot, surface, state, stream, dim = false }: { bot: Bot; s
       <canvas ref={stream.canvas} className={cn("absolute inset-0 size-full bg-white", !live && "invisible", dim && "opacity-60 grayscale")} />
       {!live && (
         <span className="absolute inset-0 grid place-items-center bg-muted p-3 text-center text-[13px] text-muted-foreground">
-          {!open && missing ? (
+          {!open && surface === "browser" && !chromium ? (
             <span className="flex flex-col items-center gap-2">
               <MonitorOff className="size-6" />
-              {missing}
+              No Chromium browser found
             </span>
           ) : !open ? (
             <span className="flex flex-col items-center gap-2">
@@ -162,7 +160,12 @@ function ago(ms: number) {
   return `${Math.floor(minutes / 60)} h ago`;
 }
 
-export function ScreenTile({ bot, surface, onOpen }: { bot: Bot; surface: ScreenSurface; onOpen(): void }) {
+export function ScreenTile({ bot, onOpen }: { bot: Bot; onOpen(): void }) {
+  const surface = useStore((s) => shownSurface(s.computers, bot.id));
+  return <SurfaceTile key={surface} bot={bot} surface={surface} onOpen={onOpen} />;
+}
+
+function SurfaceTile({ bot, surface, onOpen }: { bot: Bot; surface: ScreenSurface; onOpen(): void }) {
   const state = useScreenState(bot.id, surface);
   const stream = useScreenStream(bot.id, surface);
   const online = useStore(isConnected);
@@ -170,7 +173,7 @@ export function ScreenTile({ bot, surface, onOpen }: { bot: Bot; surface: Screen
   const live = state.status !== "closed" && stream.hasFrame;
   const stale = live && !online;
   return (
-    <section className="min-w-0" aria-label={`${bot.name}'s ${noun(surface)}`}>
+    <section className="mb-6" aria-label={`${bot.name}'s ${noun(surface)}`}>
       <button
         type="button"
         disabled={!live || stale}
@@ -186,12 +189,12 @@ export function ScreenTile({ bot, surface, onOpen }: { bot: Bot; surface: Screen
           </span>
         )}
         {stale && (
-          <span className="absolute top-1/2 left-1/2 -translate-1/2 rounded-full bg-black/60 px-2.5 py-1 text-xs whitespace-nowrap text-white">
+          <span className="absolute top-1/2 left-1/2 -translate-1/2 rounded-full bg-black/60 px-3 py-1.5 text-sm whitespace-nowrap text-white">
             Last seen {ago(now - stream.lastFrameAt.current)}
           </span>
         )}
       </button>
-      <p className="mt-2 truncate text-center text-[13px] text-muted-foreground">
+      <p className="mt-2 text-center text-[13px] text-muted-foreground">
         {bot.name}'s {noun(surface)}
       </p>
     </section>

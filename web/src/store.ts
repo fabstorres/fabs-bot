@@ -1,6 +1,6 @@
 import { flushSync } from "react-dom";
 import { create } from "zustand";
-import type { Bot, BotStatus, ComputerSupport, HostInfo, Link, Message, ScreenState, ScreenSurface, ServerEvent, Thread } from "../../shared/types";
+import type { Bot, BotStatus, HostInfo, Link, Message, ScreenState, ScreenSurface, ServerEvent, Thread } from "../../shared/types";
 import { api, Unpaired } from "./api";
 
 export type Modal = { kind: "bot"; botId: string } | { kind: "file"; url: string; name: string } | null;
@@ -30,8 +30,7 @@ interface State {
   screens: Record<string, ScreenState>;
   chromium: boolean;
   computers: Record<string, ScreenState>;
-  computer: ComputerSupport;
-  screen: { botId: string; take: boolean; openedAt: number; surface: ScreenSurface } | null;
+  screen: { botId: string; take: boolean; openedAt: number; surface?: ScreenSurface } | null;
   messages: Record<string, Message[]>;
   openThreadId: string | null;
   creating: boolean;
@@ -62,7 +61,6 @@ export const useStore = create<State>(() => ({
   screens: {},
   chromium: true,
   computers: {},
-  computer: "ready",
   screen: null,
   messages: {},
   openThreadId: null,
@@ -102,7 +100,6 @@ function apply(e: ServerEvent) {
         screens: Object.fromEntries(e.screens.map((s) => [s.botId, s])),
         chromium: e.chromium,
         computers: Object.fromEntries(e.computers.map((s) => [s.botId, s])),
-        computer: e.computer,
         loaded: true,
         devicesVersion: get().devicesVersion + 1,
         connectorsVersion: get().connectorsVersion + 1,
@@ -363,7 +360,10 @@ export const openModal = (modal: Modal) => set({ modal, modalOpener: focusedOpen
 export const closeModal = () => set({ modal: null });
 export const togglePanel = () => set({ panelOpen: !get().panelOpen });
 export const closePanel = () => set({ panelOpen: false });
-export const openScreen = (botId: string, take = false, surface: ScreenSurface = "browser") => set({ screen: { botId, take, openedAt: Date.now(), surface } });
+export const openScreen = (botId: string, take = false, surface?: ScreenSurface) => set({ screen: { botId, take, openedAt: Date.now(), surface } });
+
+export const shownSurface = (computers: Record<string, ScreenState>, botId: string): ScreenSurface =>
+  computers[botId] && computers[botId].status !== "closed" ? "computer" : "browser";
 export const closeScreen = () => set({ screen: null });
 export const backToDesk = () => set({ screen: null, panelOpen: true });
 
