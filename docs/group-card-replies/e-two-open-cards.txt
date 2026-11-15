@@ -1,0 +1,27 @@
+Bots: Chief of Staff (team lead) = 68f713e0-034f-4710-b72f-ce539ecb5f50, Scout (screen) = f46aaef0-b842-461c-9c1c-a03df39d0160, Design = 92aef215-be8a-45cd-b037-e6fa3dff5489, Careful (writer) = 95ecd218-8a7e-4017-8e65-e2820158ae8e. All on claude-haiku-5-5. Group "Launch crew" = c2a86639-ae77-4908-9c8c-503ba12040db.
+
+One message @mentioned Scout and Design. Scout posted a screen card, Design a question card, both open.
+
+## Tapping "A Teal" on Design's card: only Design runs, Scout's card stays pending (#21 reads skipped here because this dump was taken after the Skip below)
+#20 user (done): "<@f46aaef0-b842-461c-9c1c-a03df39d0160> <@92aef215-be8a-45cd-b037-e6fa3dff5489> both cards were closed. Scout: call screen_hand_over again now so I can check yo"
+#21 Scout (done): [tool fabsbot · screen_hand_over done] [screen "Please check the Acme page at localhost:5017/index.html on my screen. Hand the screen back when you're done and I'll carry on." skipped] "@fabs, I've asked you to check the Acme page at `localho
+#22 Design (done): [tool fabsbot · ask_user done] [question "Which color should the launch page footer use?" options=2 answered=0] "Posted a new question: Teal or Plum for the footer. Waiting on your pick."
+#23 user (done): "<@92aef215-be8a-45cd-b037-e6fa3dff5489> A. Teal"
+#24 Design (done): "Footer set to Teal."
+23:30:08.734 message 87a99361-9522-415f-acc5-6c6b6ebecee0 user  done ["<@DESIGN> A. Teal"]
+23:30:08.734 status DESIGN thinking c2a86639-ae77-4908-9c8c-503ba12040db
+
+Right after the answer, Scout's card in the page (ARIA snapshot) is still open, and Scout's sidebar row reads "Needs you on its screen":
+    - 'group "Screen: Please check the Acme page at localhost:5017/index.html on my screen. Hand the screen back when you''re done and I''ll carry on."':
+      - text: Scout's screen Needs you
+      - paragraph: Please check the Acme page at localhost:5017/index.html on my screen. Hand the screen back when you're done and I'll carry on.
+      - button "Take over"
+      - button "I'm done"
+      - button "Skip"
+    - paragraph:
+
+## Then Skip on Scout's card: only Scout runs
+#25 user (done): "<@f46aaef0-b842-461c-9c1c-a03df39d0160> Skip that step on your screen and carry on without it."
+#26 Scout (done): "@fabs, skipped. The Acme page check is dropped and I have no other steps pending on my screen. The page is still open at `localhost:5017/index.html`; I haven't "
+23:30:32.629 message d3e2dce1-88fd-4a09-a4d5-891fba14483e user  done ["<@SCOUT> Skip that step on your screen and carry "]
+23:30:32.629 status SCOUT thinking c2a86639-ae77-4908-9c8c-503ba12040db

@@ -12,7 +12,7 @@ import { getLinks, getStatuses, publish, subscribe } from "./bus";
 import { handleMcp, decideApproval } from "./mcp";
 import { SignInError, configureClient, forget, signOut, startSignIn, usesConfiguredClient } from "./oauth";
 import { realPathWithin, within } from "./paths";
-import { bringInBot, directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
+import { bringInBot, directThread, editMessageParts, greet, postUserMessage, replyToCard, stopTurns } from "./orchestrator";
 import { isProviderId, launchFor, providerInfo, providerSettings, updateProvider } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { scanCodexInventory } from "./providers/codex";
@@ -366,7 +366,7 @@ route("POST", "/api/messages/:id/answer", async (req, p) => {
     if (live?.type === "question") live.answered = option;
   });
   const letter = String.fromCharCode(65 + option);
-  await postUserMessage(m.threadId, [{ type: "text", text: `${letter}. ${part.options[option]}` }]);
+  await replyToCard(m, `${letter}. ${part.options[option]}`);
   return json({ ok: true });
 });
 route("POST", "/api/messages/:id/screen", async (req, p) => {
@@ -381,7 +381,7 @@ route("POST", "/api/messages/:id/screen", async (req, p) => {
   });
   releaseScreen(part.botId);
   const text = done ? "I'm done on your screen. It's yours again, carry on." : "Skip that step on your screen and carry on without it.";
-  await postUserMessage(m.threadId, [{ type: "text", text }]);
+  await replyToCard(m, text);
   return json({ ok: true });
 });
 route("POST", "/api/approvals/:id", async (req, p) => {
