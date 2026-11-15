@@ -333,14 +333,20 @@ function pngChunk(type: string, data: Uint8Array) {
 export function encodePng({ pixels, width, height, stride }: Omit<Shot, "hash">): Uint8Array {
   const rowSize = 1 + width * 3;
   const rows = new Uint8Array(height * rowSize);
+  const plain = new Uint8Array(width * 3);
+  const sub = new Uint8Array(width * 3);
+  const cost = (bytes: Uint8Array) => bytes.reduce((sum, b) => sum + (b < 128 ? b : 256 - b), 0);
   for (let y = 0; y < height; y++) {
-    let o = y * rowSize + 1;
     for (let x = 0; x < width; x++) {
       const i = y * stride + x * 4;
-      rows[o++] = pixels[i + 2]!;
-      rows[o++] = pixels[i + 1]!;
-      rows[o++] = pixels[i]!;
+      plain[x * 3] = pixels[i + 2]!;
+      plain[x * 3 + 1] = pixels[i + 1]!;
+      plain[x * 3 + 2] = pixels[i]!;
     }
+    for (let b = 0; b < plain.length; b++) sub[b] = (plain[b]! - (b >= 3 ? plain[b - 3]! : 0)) & 0xff;
+    const useSub = cost(sub) < cost(plain);
+    rows[y * rowSize] = useSub ? 1 : 0;
+    rows.set(useSub ? sub : plain, y * rowSize + 1);
   }
   const header = new Uint8Array(13);
   const view = new DataView(header.buffer);
