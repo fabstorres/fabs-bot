@@ -589,7 +589,7 @@ const tools: ToolDef[] = [
       required: ["paths"],
     },
     async run(args, ctx) {
-      const paths = (Array.isArray(args.paths) ? args.paths : [args.paths]).filter(Boolean).map(String);
+      const paths: string[] = (Array.isArray(args.paths) ? args.paths : [args.paths]).filter(Boolean).map(String);
       if (!paths.length) return reject("no_paths", "Pass paths: the files to upload.");
       const files = paths.map((p) => botFile(ctx.botId, p));
       await screen.upload(ctx.botId, files, target(args));
