@@ -2,13 +2,14 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node
 import { hostname } from "node:os";
 import { basename, join, relative } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
-import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, type ProviderSettings, type ServerEvent, type WebhookSettings } from "../shared/types";
+import { ENV_NAME, type Bot, type HostInfo, type MessagePart, type PairingLink, type ProviderSettings, type ScreenSurface, type ServerEvent, type WebhookSettings } from "../shared/types";
 import { BOT_TEMPLATES, CONNECTOR_PRESETS } from "../shared/templates";
 import { FILES_DIR, LOCAL_BASE, PORT, SERVE_TARGET_PORT, SHARED_DIR, TAILSCALE_SERVE_PORT, VERSION, WEB_DIST, WORK_ROOT } from "./config";
 import * as db from "./db";
 import { authorized, deviceId, isLoopback, listDevices, localOwner, ownerOnly, newPairingCode, pairCookie, pairDevice, redeemPairingCode, removeDevice, sameOrigin } from "./auth";
 import { botSaved, checkConnector, connectorSaved, connectorStatus, findConnector, finishConnectorSignIn } from "./connectors";
 import { getLinks, getStatuses, publish, subscribe } from "./bus";
+import { closeAllComputers, computerViewerMessage, forgetComputer, listComputers, releaseComputer, unwatchComputer, watchComputer } from "./computer";
 import { handleMcp, decideApproval } from "./mcp";
 import { SignInError, configureClient, forget, signOut, startSignIn, usesConfiguredClient } from "./oauth";
 import { realPathWithin, within } from "./paths";
@@ -64,7 +65,7 @@ function shutdown() {
   if (stopping) return;
   stopping = true;
   const off = serveQueue.then(() => (serveEnabled() ? disableServe(SERVE_TARGET_PORT, TAILSCALE_SERVE_PORT) : null));
-  Promise.race([Promise.all([off, closeAllScreens()]), Bun.sleep(5_000)]).finally(() => {
+  Promise.race([Promise.all([off, closeAllScreens(), closeAllComputers()]), Bun.sleep(5_000)]).finally(() => {
     killRunningCommands();
     process.exit(0);
   });
@@ -223,6 +224,7 @@ route("PUT", "/api/bots/:id", async (req, p) => {
 });
 route("DELETE", "/api/bots/:id", async (_r, p) => {
   await forgetScreen(p.id!);
+  await forgetComputer(p.id!);
   db.deleteBot(p.id!);
   publish({ type: "bot.deleted", botId: p.id! });
   reschedule();
@@ -379,8 +381,10 @@ route("POST", "/api/messages/:id/screen", async (req, p) => {
     const live = parts[partIndex];
     if (live?.type === "screen") live.outcome = done ? "done" : "skipped";
   });
-  releaseScreen(part.botId);
-  const text = done ? "I'm done on your screen. It's yours again, carry on." : "Skip that step on your screen and carry on without it.";
+  const where = part.surface === "computer" ? "computer" : "screen";
+  if (where === "computer") releaseComputer(part.botId);
+  else releaseScreen(part.botId);
+  const text = done ? `I'm done on your ${where}. It's yours again, carry on.` : `Skip that step on your ${where} and carry on without it.`;
   await replyToCard(m, text);
   return json({ ok: true });
 });
@@ -535,7 +539,7 @@ async function oauthCallback(url: URL): Promise<Response> {
   });
 }
 
-type WsData = { deviceId: string | null; unsubscribe?: () => void; screenBotId?: string; viewer?: Viewer };
+type WsData = { deviceId: string | null; unsubscribe?: () => void; screenBotId?: string; surface?: ScreenSurface; viewer?: Viewer };
 const sockets = new Set<ServerWebSocket<WsData>>();
 
 function serveStatic(url: URL): Response {
@@ -570,7 +574,7 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
     return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": pairCookie(token) } });
   }
 
-  const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws" || url.pathname === "/screen";
+  const isApi = url.pathname.startsWith("/api/") || url.pathname.startsWith("/files/") || url.pathname === "/ws" || url.pathname === "/screen" || url.pathname === "/computer";
   if (isApi && !authorized(req, ip, viaServe)) return json({ error: "unpaired" }, 401);
   if (isApi && !sameOrigin(req)) return bad("cross-origin request refused", 403);
   if (/^\/api\/threads\/[^/]+\/events$/.test(url.pathname) && !ownerOnly(req, ip, viaServe)) return bad("only available on this PC", 403);
@@ -579,10 +583,11 @@ async function fetchHandler(req: Request, server: Server<WsData>, viaServe = fal
     return server.upgrade(req, { data: { deviceId: deviceId(req) } }) ? undefined : new Response("expected websocket", { status: 400 });
   }
 
-  if (url.pathname === "/screen") {
+  if (url.pathname === "/screen" || url.pathname === "/computer") {
     const bot = db.getBot(url.searchParams.get("bot") ?? "");
     if (!bot) return bad("not found", 404);
-    return server.upgrade(req, { data: { deviceId: deviceId(req), screenBotId: bot.id } }) ? undefined : new Response("expected websocket", { status: 400 });
+    const surface: ScreenSurface = url.pathname === "/computer" ? "computer" : "browser";
+    return server.upgrade(req, { data: { deviceId: deviceId(req), screenBotId: bot.id, surface } }) ? undefined : new Response("expected websocket", { status: 400 });
   }
 
   if (url.pathname.startsWith("/files/")) {
@@ -622,7 +627,8 @@ const websocket = {
     sockets.add(ws);
     if (ws.data.screenBotId) {
       ws.data.viewer = { botId: ws.data.screenBotId, send: (data) => void ws.send(data), ready: true, pending: null };
-      watchScreen(ws.data.viewer);
+      if (ws.data.surface === "computer") watchComputer(ws.data.viewer);
+      else watchScreen(ws.data.viewer);
       return;
     }
     const hello: ServerEvent = {
@@ -633,17 +639,20 @@ const websocket = {
       links: getLinks(),
       screens: listScreens(),
       chromium: !!findChromium(),
+      computers: listComputers(),
     };
     ws.send(JSON.stringify(hello));
     ws.send(JSON.stringify(heartbeat));
     ws.data.unsubscribe = subscribe((e) => ws.send(JSON.stringify(e)));
   },
   message(ws: ServerWebSocket<WsData>, raw: string | Buffer) {
-    if (ws.data.viewer) viewerMessage(ws.data.viewer, String(raw));
+    if (!ws.data.viewer) return;
+    if (ws.data.surface === "computer") computerViewerMessage(ws.data.viewer, String(raw));
+    else viewerMessage(ws.data.viewer, String(raw));
   },
   close(ws: ServerWebSocket<WsData>) {
     sockets.delete(ws);
-    if (ws.data.viewer) return unwatchScreen(ws.data.viewer);
+    if (ws.data.viewer) return ws.data.surface === "computer" ? unwatchComputer(ws.data.viewer) : unwatchScreen(ws.data.viewer);
     ws.data.unsubscribe?.();
   },
 };

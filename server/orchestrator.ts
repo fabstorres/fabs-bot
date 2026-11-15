@@ -5,6 +5,7 @@ import type { Bot, Message, MessagePart, Thread } from "../shared/types";
 import { LOCAL_BASE, MAX_HOPS, SHARED_DIR } from "./config";
 import * as db from "./db";
 import { endLink, getStatus, publish, setStatus, startLink } from "./bus";
+import { computerSupport } from "./computer";
 import { connectorsForRun } from "./connectors";
 import { launchFor, providers } from "./providers";
 import type { ProviderEvent } from "./providers/types";
@@ -165,6 +166,13 @@ export function systemPrompt(bot: Bot, thread: Thread, unavailable: string[] = [
       `- screen_upload: put files from this PC into a page's file upload, e.g. a resume PDF. Pass the upload button's ref and the paths. File pickers never appear on your screen, so never use keyboard shortcuts for them; screen_read says when one is open. If you don't have the file, ask the user to attach it in chat.`,
       `- screen_hand_over: when a page needs something only the user can do (signing in, a CAPTCHA, a payment), ask them to take over your screen, then end your turn.`,
     );
+    if (computerSupport() === "ready") {
+      lines.push(
+        `- computer_open / computer_screenshot / computer_click / computer_type / computer_key / computer_scroll / computer_close: your own Linux desktop, which the user watches as "${bot.name}'s computer". Use it for desktop apps and native dialogs (like a file picker) outside a web page; most work belongs in your screen, and the computer is for when a task needs more. Start a program with computer_open, then act by pixel position on the 1280x800 screenshot each action returns. There's no taskbar: use alt+tab to switch windows. It shuts down after 30 minutes unused and closes its programs, so save your work.`,
+        `- Only one of your screen and your computer is open at a time. computer_open closes your screen (its logins stay, open pages don't); start a browser inside your computer if you need one there. While your computer is open, screen_open is refused: finish, save and computer_close first.`,
+        `- computer_hand_over: when something on your computer needs the user (a password, a confirmation only they can give), ask them to take over your computer, then end your turn.`,
+      );
+    }
     if (thread.kind === "group") {
       lines.push(
         `- send_webhook: when the user asks, send a task to this group's webhook (${db.getWebhook(thread.id) ? "set up" : "not set up yet"}). You never see its address or secret. Success means received only: you won't learn whether the work starts or finishes, and no reply comes back.`,
@@ -201,7 +209,7 @@ function describeMessage(m: Message, self: Bot): string {
         case "question":
           return `[asked: ${p.question} Options: ${p.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join(" ")}]`;
         case "screen":
-          return `[asked the user to take over the screen: ${p.reason}]`;
+          return `[asked the user to take over the ${p.surface === "computer" ? "computer" : "screen"}: ${p.reason}]`;
         case "webhook":
           return `[sent to this group's webhook, request ${p.requestId}: ${p.state === "received" ? "received only, nothing known about the work" : p.state === "failed" ? "not delivered" : "sending"}${p.detail ? `, ${p.detail}` : ""}]`;
         case "webhook-setup":
@@ -393,10 +401,10 @@ async function executeTurn(threadId: string, botId: string, opts: TurnOptions): 
   const remaining = (activeTurns.get(botId) ?? 1) - 1;
   activeTurns.set(botId, remaining);
   const asked = parts.some((p) => p.type === "question" && p.answered === undefined);
-  const handedOver = parts.some((p) => p.type === "screen" && !p.outcome);
+  const handedOver = parts.findLast((p) => p.type === "screen" && !p.outcome);
   if (remaining <= 0) {
     if (error) setStatus(botId, { state: "error", text: clip(error, 60), threadId: null });
-    else if (handedOver) setStatus(botId, { state: "blocked", text: "Needs you on its screen", threadId });
+    else if (handedOver?.type === "screen") setStatus(botId, { state: "blocked", text: `Needs you on its ${handedOver.surface === "computer" ? "computer" : "screen"}`, threadId });
     else if (asked) setStatus(botId, { state: "blocked", text: "Waiting for your answer", threadId });
     else settle(botId);
   }

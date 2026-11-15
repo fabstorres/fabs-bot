@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useWindowEvent } from "./hooks";
-import { backToDesk, offlineReason, offlineTitle, reconnect, restoreView, showOffline, useStore } from "./store";
+import { backToDesk, offlineReason, offlineTitle, reconnect, restoreView, showOffline, shownSurface, useStore } from "./store";
 import { BotAvatar } from "./components/BotAvatar";
 import { BotEditor } from "./components/BotEditor";
 import { Chat } from "./components/Chat";
@@ -26,6 +26,7 @@ export function App() {
   const panelOpen = useStore((s) => s.panelOpen);
   const thread = useStore((s) => s.threads.find((t) => t.id === s.openThreadId));
   const screen = useStore((s) => s.screen);
+  const screenSurface = useStore((s) => (s.screen ? (s.screen.surface ?? shownSurface(s.computers, s.screen.botId)) : "browser"));
   const screenBot = useStore((s) => (s.screen && thread?.memberIds.includes(s.screen.botId) ? s.bots.find((b) => b.id === s.screen!.botId) : undefined));
   const modal = useStore((s) => s.modal);
   const settings = useStore((s) => s.settings);
@@ -68,7 +69,7 @@ export function App() {
           <NewBot />
         ) : thread && screenBot ? (
           <>
-            <ScreenView key={`screen-${screenBot.id}-${screen?.openedAt}`} bot={screenBot} thread={thread} onBack={backToDesk} />
+            <ScreenView key={`screen-${screenBot.id}-${screen?.openedAt}-${screenSurface}`} bot={screenBot} surface={screenSurface} thread={thread} onBack={backToDesk} />
             <Chat key={`chat-${thread.id}`} thread={thread} side />
           </>
         ) : thread ? (

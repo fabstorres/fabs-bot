@@ -4,7 +4,7 @@ import { mentionedBots } from "../../../shared/mentions";
 import type { Bot, Thread } from "../../../shared/types";
 import { api, isImage } from "../api";
 import { toast } from "sonner";
-import { attachFiles, enterThread, goBack, isConnected, openModal, threadTitle, togglePanel, updateAttachments, useStore, usingScreen } from "../store";
+import { attachFiles, enterThread, goBack, isConnected, openModal, shownSurface, threadTitle, togglePanel, updateAttachments, useStore, usingScreen } from "../store";
 import { useNow } from "../hooks";
 import { accentStyle, useTheme } from "../theme";
 import { AvatarStack, BotAvatar, LiveAvatar } from "./BotAvatar";
@@ -96,14 +96,17 @@ function snapToBottom(e: UIEvent<HTMLElement>) {
 function DeskButton({ members }: { members: Bot[] }) {
   const panelOpen = useStore((s) => s.panelOpen);
   const screens = useStore((s) => s.screens);
+  const computers = useStore((s) => s.computers);
   const now = useNow(5_000);
-  const busy = members.find((m) => usingScreen(screens[m.id], now));
+  const shown = (botId: string) => shownSurface(computers, botId);
+  const busy = members.find((m) => usingScreen((shown(m.id) === "computer" ? computers : screens)[m.id], now));
+  const busyOn = busy && shown(busy.id) === "computer" ? "computer" : "screen";
   return (
     <Button
       variant="ghost"
       size="icon"
       className={cn("relative rounded-full", panelOpen && "bg-accent")}
-      title={busy ? `${busy.name} is using its screen` : "Open the bot's desk and routines"}
+      title={busy ? `${busy.name} is using its ${busyOn}` : "Open the bot's desk and routines"}
       id="open-desk"
       aria-label="Open desk"
       aria-pressed={panelOpen}
@@ -111,7 +114,7 @@ function DeskButton({ members }: { members: Bot[] }) {
     >
       <Monitor className="size-5" />
       {busy && (
-        <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full ring-2 ring-background" style={{ background: busy.color }} role="img" aria-label={`${busy.name} is using its screen`} />
+        <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full ring-2 ring-background" style={{ background: busy.color }} role="img" aria-label={`${busy.name} is using its ${busyOn}`} />
       )}
     </Button>
   );

@@ -13,10 +13,11 @@ import { getStatus, publish, setStatus } from "./bus";
 import { bringInBot, directThread, kickoff, messageBot, turnsByToken, type TurnContext } from "./orchestrator";
 import { reschedule } from "./scheduler";
 import { clip } from "./providers/spawn";
+import * as computer from "./computer";
 import * as screen from "./screen";
 import { deliver, WEBHOOK_BODY_MAX } from "./webhook";
 
-type ToolOutput = string | { text: string; image?: Uint8Array };
+type ToolOutput = string | { text: string; image?: Uint8Array; imageType?: "image/png" };
 
 type ToolDef = {
   name: string;
@@ -33,6 +34,25 @@ const TARGET = {
 const target = (args: any) => ({ ref: args.ref ? String(args.ref) : undefined, selector: args.selector ? String(args.selector) : undefined });
 const onPage = (url: string) => `Done. Now on ${url}. Call screen_read to see the result.`;
 const PICKER_OPEN = "A file picker is open on this page. Call screen_upload with the file paths (no ref needed) to fill it.";
+const onComputer = (image: Uint8Array) => ({ text: "Done. This is your computer's screen now.", image, imageType: "image/png" as const });
+const ONE_AT_A_TIME = "Only one of your screen and your computer can be open at a time.";
+const switching = new Map<string, Promise<unknown>>();
+
+function oneSurfaceAtATime<T>(botId: string, open: () => Promise<T>): Promise<T> {
+  const run = (switching.get(botId) ?? Promise.resolve()).then(open);
+  switching.set(botId, run.catch(() => {}));
+  return run;
+}
+
+async function makeRoomForComputer(botId: string) {
+  if (computer.computerSupport() !== "ready" || computer.isComputerOpen(botId) || !screen.isOpen(botId)) return false;
+  if (screen.screenState(botId).controller === "user") {
+    return reject("user_has_control", `${ONE_AT_A_TIME} The user has control of your screen right now, so it stays open. Wait until they hand it back, or ask in chat.`);
+  }
+  return screen.closeForBot(botId);
+}
+const coordinate = (description: string) => ({ type: "number", description });
+const POINT = { x: coordinate("Pixels from the left edge of the screenshot"), y: coordinate("Pixels from the top edge of the screenshot") };
 
 export class ToolRejection extends Error {
   constructor(
@@ -509,7 +529,12 @@ const tools: ToolDef[] = [
       "Open a web page on your screen: your own Chromium browser on the user's PC, which the user can watch as your screen. It keeps your logins between chats. Use it when a task needs a real browser (signing in, clicking, filling forms, checking a site you built); WebFetch is fine for just reading a page.",
     inputSchema: { type: "object", properties: { url: str("Address to open, e.g. localhost:5173 or https://example.com") }, required: ["url"] },
     async run(args, ctx) {
-      const page = await screen.openPage(ctx.botId, String(args.url ?? ""));
+      const page = await oneSurfaceAtATime(ctx.botId, () => {
+        if (computer.isComputerOpen(ctx.botId)) {
+          return reject("computer_open", `${ONE_AT_A_TIME} Your computer is open: finish there, save your work and call computer_close, then screen_open again. Or use a browser inside your computer.`);
+        }
+        return screen.openPage(ctx.botId, String(args.url ?? ""));
+      });
       return `Opened ${page.url}${page.title ? ` ("${page.title}")` : ""}${page.status >= 400 ? `, HTTP ${page.status}` : ""}. Call screen_read to see the page and get element refs.`;
     },
   },
@@ -620,6 +645,96 @@ const tools: ToolDef[] = [
     },
   },
   {
+    name: "computer_open",
+    description:
+      "Start a program on your computer: your own Linux desktop on the user's PC (1280x800, no taskbar), which the user can watch as your computer. Use it for desktop apps and native dialogs outside a web page; use screen_open for web pages. Pass a shell command, e.g. kwrite notes.txt or dolphin ~/Downloads. Starts the computer if it's off, closing your browser screen first (only one can be open at a time), and returns a screenshot.",
+    inputSchema: { type: "object", properties: { command: str("Shell command that starts the program, run in your workspace folder") }, required: ["command"] },
+    async run(args, ctx) {
+      const command = String(args.command ?? "");
+      const { closedScreen, started } = await oneSurfaceAtATime(ctx.botId, async () => {
+        const closedScreen = await makeRoomForComputer(ctx.botId);
+        return { closedScreen, started: await computer.openProgram(ctx.botId, command, db.getBot(ctx.botId)?.cwd ?? "") };
+      });
+      const exited = started.exitCode === null ? "" : ` It exited with code ${started.exitCode}.${started.output ? `\n${started.output}` : ""}`;
+      const closed = closedScreen ? ` ${ONE_AT_A_TIME} Your browser screen was closed to open your computer: its logins are kept, its open pages aren't. If you need a browser now, start one inside your computer.` : "";
+      return { text: `Started ${clip(command, 80)}.${exited}${closed} This is your computer's screen now.`, image: started.image, imageType: "image/png" };
+    },
+  },
+  {
+    name: "computer_screenshot",
+    description: "See your computer's screen. Positions in it are pixels from the top-left corner of the 1280x800 screen.",
+    inputSchema: { type: "object", properties: {} },
+    async run(_args, ctx) {
+      return { text: "Your computer's screen.", image: await computer.screenshot(ctx.botId), imageType: "image/png" };
+    },
+  },
+  {
+    name: "computer_click",
+    description: "Click at a point on your computer's screen. Returns a screenshot afterwards.",
+    inputSchema: {
+      type: "object",
+      properties: { ...POINT, button: { type: "string", enum: ["left", "right", "middle"] }, double: { type: "boolean", description: "Double-click" } },
+      required: ["x", "y"],
+    },
+    async run(args, ctx) {
+      const button = args.button === "right" || args.button === "middle" ? args.button : "left";
+      return onComputer(await computer.click(ctx.botId, Number(args.x), Number(args.y), button, args.double === true));
+    },
+  },
+  {
+    name: "computer_type",
+    description: "Type text on your computer where the keyboard focus is. Only characters on a US keyboard; use computer_key for shortcuts. Returns a screenshot afterwards.",
+    inputSchema: { type: "object", properties: { text: str("Text to type") }, required: ["text"] },
+    async run(args, ctx) {
+      return onComputer(await computer.typeText(ctx.botId, String(args.text ?? "")));
+    },
+  },
+  {
+    name: "computer_key",
+    description: "Press a key or shortcut on your computer, e.g. Enter, Escape, Tab, ctrl+s, alt+tab or alt+F4. Returns a screenshot afterwards.",
+    inputSchema: { type: "object", properties: { key: str("Key or shortcut, with + between keys") }, required: ["key"] },
+    async run(args, ctx) {
+      return onComputer(await computer.pressKeys(ctx.botId, String(args.key ?? "")));
+    },
+  },
+  {
+    name: "computer_scroll",
+    description: "Scroll at a point on your computer's screen. Returns a screenshot afterwards.",
+    inputSchema: {
+      type: "object",
+      properties: { ...POINT, direction: { type: "string", enum: ["up", "down", "left", "right"] }, amount: { type: "number", description: "Wheel notches, default 5" } },
+      required: ["x", "y", "direction"],
+    },
+    async run(args, ctx) {
+      const direction = ["up", "down", "left", "right"].includes(args.direction) ? args.direction : "down";
+      const notches = Math.min(Math.max(Math.round(Number(args.amount) || 5), 1), 50);
+      return onComputer(await computer.scroll(ctx.botId, Number(args.x), Number(args.y), direction, notches));
+    },
+  },
+  {
+    name: "computer_close",
+    description: "Shut down your computer and close its programs when you're finished. Save your work first.",
+    inputSchema: { type: "object", properties: {} },
+    async run(_args, ctx) {
+      return (await computer.closeForBot(ctx.botId)) ? "Shut down." : "Your computer was already off.";
+    },
+  },
+  {
+    name: "computer_hand_over",
+    description:
+      "Ask the user to take over your computer for a step only they can do, like typing a password or confirming something. Posts a card with your reason; then end your turn. When they hand the computer back you get a message and can carry on.",
+    inputSchema: { type: "object", properties: { reason: str("What they should do, e.g. 'Unlock the wallet, then hand the computer back.'") }, required: ["reason"] },
+    run(args, ctx) {
+      if (!computer.isComputerOn(ctx.botId)) return reject("off", "Your computer is off. Start the program first with computer_open.");
+      const reason = clip(String(args.reason ?? "").trim(), 300);
+      if (!reason) return reject("no_reason", "Pass reason: what the user should do on your computer, e.g. 'Unlock the wallet, then hand the computer back.'");
+      ctx.addPart({ type: "screen", botId: ctx.botId, reason, surface: "computer" });
+      publishThread(ctx.threadId);
+      setStatus(ctx.botId, { state: "blocked", text: "Needs you on its computer", threadId: ctx.threadId });
+      return "Posted. End your turn now; you'll get a message when the user hands your computer back.";
+    },
+  },
+  {
     name: "approve",
     description: "Internal: permission prompt relay. Do not call directly.",
     inputSchema: {
@@ -636,6 +751,8 @@ const tools: ToolDef[] = [
     },
   },
 ];
+
+const offeredTools = () => (computer.computerSupport() === "ready" ? tools : tools.filter((t) => !t.name.startsWith("computer_")));
 
 type RpcRequest = { jsonrpc: "2.0"; id?: number | string; method: string; params?: any };
 
@@ -669,7 +786,7 @@ async function handleRpc(r: RpcRequest, ctx: TurnContext) {
     case "ping":
       return ok({});
     case "tools/list":
-      return ok({ tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
+      return ok({ tools: offeredTools().map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
     case "tools/call": {
       const callId = crypto.randomUUID();
       const tool = tools.find((t) => t.name === r.params?.name);
@@ -681,11 +798,11 @@ async function handleRpc(r: RpcRequest, ctx: TurnContext) {
       try {
         const out = await tool.run(r.params?.arguments ?? {}, ctx, callId);
         logTurnEvent(ctx, callId, { type: "tool.result", toolName: tool.name, outcome: "succeeded" });
-        const { text, image } = typeof out === "string" ? { text: out, image: undefined } : out;
-        const picture = image ? [{ type: "image", data: Buffer.from(image).toString("base64"), mimeType: "image/jpeg" }] : [];
+        const { text, image, imageType } = typeof out === "string" ? { text: out, image: undefined, imageType: undefined } : out;
+        const picture = image ? [{ type: "image", data: Buffer.from(image).toString("base64"), mimeType: imageType ?? "image/jpeg" }] : [];
         return ok({ content: [{ type: "text", text }, ...picture] });
       } catch (e) {
-        if (e instanceof ToolRejection || e instanceof screen.ScreenError) {
+        if (e instanceof ToolRejection || e instanceof screen.ScreenError || e instanceof computer.ComputerError) {
           console.warn(`mcp ${tool.name} rejected: ${e.code}`);
           logTurnEvent(ctx, callId, { type: "tool.result", toolName: tool.name, outcome: "rejected" });
           return ok({ content: [{ type: "text", text: e.message }], isError: true });

@@ -11,10 +11,10 @@ import {
 } from "react";
 import { ChevronLeft, Keyboard, LoaderCircle, Maximize2, MonitorOff, X } from "lucide-react";
 import { toast } from "sonner";
-import type { Bot, Message, ScreenState, Thread } from "../../../shared/types";
+import type { Bot, Message, ScreenState, ScreenSurface, Thread } from "../../../shared/types";
 import { api } from "../api";
 import { useNow } from "../hooks";
-import { closeScreen, isConnected, useStore, usingScreen } from "../store";
+import { closeScreen, isConnected, shownSurface, useStore, usingScreen } from "../store";
 import { BotAvatar, LiveAvatar } from "./BotAvatar";
 import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,9 @@ function closedState(botId: string): ScreenState {
   return { botId, status: "closed", url: "", title: "", controller: "bot", activeAt: 0, updatedAt: 0 };
 }
 
-const useScreenState = (botId: string) => useStore((s) => s.screens[botId]) ?? closedState(botId);
+const useScreenState = (botId: string, surface: ScreenSurface) => useStore((s) => (surface === "computer" ? s.computers : s.screens)[botId]) ?? closedState(botId);
+
+const noun = (surface: ScreenSurface) => (surface === "computer" ? "computer" : "screen");
 
 type Chooser = { id: number; accept: string; multiple: boolean };
 
@@ -53,7 +55,7 @@ type Stream = {
   choose(id: number, fileIds: string[]): void;
 };
 
-export function useScreenStream(botId: string, takeOnOpen = false): Stream {
+export function useScreenStream(botId: string, surface: ScreenSurface, takeOnOpen = false): Stream {
   const canvas = useRef<HTMLCanvasElement>(null);
   const socket = useRef<WebSocket | null>(null);
   const wantsControl = useRef(takeOnOpen);
@@ -67,7 +69,8 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
     let stopped = false;
     let retry: ReturnType<typeof setTimeout> | undefined;
     const connect = () => {
-      const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/screen?bot=${encodeURIComponent(botId)}`);
+      const path = surface === "computer" ? "/computer" : "/screen";
+      const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${path}?bot=${encodeURIComponent(botId)}`);
       socket.current = ws;
       ws.onopen = () => wantsControl.current && ws.send(TAKE);
       ws.onmessage = async (m) => {
@@ -108,7 +111,7 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
       socket.current?.close();
       socket.current = null;
     };
-  }, [botId]);
+  }, [botId, surface]);
 
   const send = (message: object) => {
     if (socket.current?.readyState === WebSocket.OPEN) socket.current.send(JSON.stringify(message));
@@ -138,7 +141,7 @@ export function useScreenStream(botId: string, takeOnOpen = false): Stream {
   };
 }
 
-function ScreenFrame({ bot, state, stream, dim = false }: { bot: Bot; state: ScreenState; stream: Stream; dim?: boolean }) {
+function ScreenFrame({ bot, surface, state, stream, dim = false }: { bot: Bot; surface: ScreenSurface; state: ScreenState; stream: Stream; dim?: boolean }) {
   const chromium = useStore((s) => s.chromium);
   const open = state.status !== "closed";
   const live = open && stream.hasFrame;
@@ -147,7 +150,7 @@ function ScreenFrame({ bot, state, stream, dim = false }: { bot: Bot; state: Scr
       <canvas ref={stream.canvas} className={cn("absolute inset-0 size-full bg-white", !live && "invisible", dim && "opacity-60 grayscale")} />
       {!live && (
         <span className="absolute inset-0 grid place-items-center bg-muted p-3 text-center text-[13px] text-muted-foreground">
-          {!open && !chromium ? (
+          {!open && surface === "browser" && !chromium ? (
             <span className="flex flex-col items-center gap-2">
               <MonitorOff className="size-6" />
               No Chromium browser found
@@ -160,7 +163,7 @@ function ScreenFrame({ bot, state, stream, dim = false }: { bot: Bot; state: Scr
           ) : (
             <span className="flex max-w-full min-w-0 flex-col items-center gap-2">
               <LoaderCircle className="size-5 animate-spin" />
-              <span className="max-w-full truncate">{displayUrl(state.url) || "Opening…"}</span>
+              <span className="max-w-full truncate">{surface === "computer" ? "Starting…" : displayUrl(state.url) || "Opening…"}</span>
             </span>
           )}
         </span>
@@ -177,22 +180,27 @@ function ago(ms: number) {
 }
 
 export function ScreenTile({ bot, onOpen }: { bot: Bot; onOpen(): void }) {
-  const state = useScreenState(bot.id);
-  const stream = useScreenStream(bot.id);
+  const surface = useStore((s) => shownSurface(s.computers, bot.id));
+  return <SurfaceTile key={surface} bot={bot} surface={surface} onOpen={onOpen} />;
+}
+
+function SurfaceTile({ bot, surface, onOpen }: { bot: Bot; surface: ScreenSurface; onOpen(): void }) {
+  const state = useScreenState(bot.id, surface);
+  const stream = useScreenStream(bot.id, surface);
   const online = useStore(isConnected);
   const now = useNow(30_000);
   const live = state.status !== "closed" && stream.hasFrame;
   const stale = live && !online;
   return (
-    <section className="mb-6" aria-label={`${bot.name}'s screen`}>
+    <section className="mb-6" aria-label={`${bot.name}'s ${noun(surface)}`}>
       <button
         type="button"
         disabled={!live || stale}
         onClick={onOpen}
-        aria-label={`Open ${bot.name}'s screen`}
+        aria-label={`Open ${bot.name}'s ${noun(surface)}`}
         className="group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted disabled:cursor-default"
       >
-        <ScreenFrame bot={bot} state={state} stream={stream} dim={stale} />
+        <ScreenFrame bot={bot} surface={surface} state={state} stream={stream} dim={stale} />
         {live && !stale && (
           <span className="absolute top-1/2 left-1/2 flex -translate-1/2 items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm transition-colors group-hover:bg-black/85">
             <Maximize2 className="size-3.5" />
@@ -205,24 +213,26 @@ export function ScreenTile({ bot, onOpen }: { bot: Bot; onOpen(): void }) {
           </span>
         )}
       </button>
-      <p className="mt-2 text-center text-[13px] text-muted-foreground">{bot.name}'s screen</p>
+      <p className="mt-2 text-center text-[13px] text-muted-foreground">
+        {bot.name}'s {noun(surface)}
+      </p>
     </section>
   );
 }
 
-export function ScreenThumb({ bot }: { bot: Bot }) {
-  const state = useScreenState(bot.id);
-  const stream = useScreenStream(bot.id);
+export function ScreenThumb({ bot, surface }: { bot: Bot; surface: ScreenSurface }) {
+  const state = useScreenState(bot.id, surface);
+  const stream = useScreenStream(bot.id, surface);
   return (
     <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted">
-      <ScreenFrame bot={bot} state={state} stream={stream} />
+      <ScreenFrame bot={bot} surface={surface} state={state} stream={stream} />
     </div>
   );
 }
 
-export function pendingHandOver(messages: Message[] | undefined, botId: string) {
+export function pendingHandOver(messages: Message[] | undefined, botId: string, surface: ScreenSurface) {
   for (const m of [...(messages ?? [])].reverse()) {
-    const index = m.parts.findIndex((p) => p.type === "screen" && p.botId === botId && !p.outcome);
+    const index = m.parts.findIndex((p) => p.type === "screen" && p.botId === botId && !p.outcome && (p.surface ?? "browser") === surface);
     if (index >= 0) return { messageId: m.id, index };
   }
   return null;
@@ -401,12 +411,12 @@ function FilePicker({ bot, chooser, onChoose }: { bot: Bot; chooser: Chooser; on
   );
 }
 
-export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; onBack(): void }) {
+export function ScreenView({ bot, surface, thread, onBack }: { bot: Bot; surface: ScreenSurface; thread: Thread; onBack(): void }) {
   const takeOnOpen = useStore((s) => s.screen?.take ?? false);
-  const state = useScreenState(bot.id);
+  const state = useScreenState(bot.id, surface);
   const messages = useStore((s) => s.messages[thread.id]);
   const online = useStore(isConnected);
-  const stream = useScreenStream(bot.id, takeOnOpen);
+  const stream = useScreenStream(bot.id, surface, takeOnOpen);
   const keys = useRef<HTMLTextAreaElement>(null);
   const controls = useControls(stream, keys);
   const now = useNow(5_000);
@@ -421,7 +431,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
   };
   const handBack = () => {
     stream.release();
-    const card = pendingHandOver(messages, bot.id);
+    const card = pendingHandOver(messages, bot.id, surface);
     if (card) void settleHandOver(card.messageId, card.index, "done");
   };
 
@@ -429,7 +439,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
     <section
       className="fixed inset-0 z-40 flex min-w-0 flex-col bg-background animate-in fade-in-0 md:static md:z-auto md:flex-1"
       role="region"
-      aria-label={`${bot.name}'s screen`}
+      aria-label={`${bot.name}'s ${noun(surface)}`}
     >
       <header className="window-drag max-md:traffic-lights-space flex h-14 flex-none items-center gap-2 px-3 md:px-4">
         <WindowControls className="md:hidden" />
@@ -437,12 +447,14 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
           <ChevronLeft className="size-5" />
         </Button>
         <LiveAvatar bot={bot} size={28} />
-        <h2 className="flex-none truncate text-[17px] font-semibold">{bot.name}'s screen</h2>
+        <h2 className="flex-none truncate text-[17px] font-semibold">
+          {bot.name}'s {noun(surface)}
+        </h2>
         {controlling ? (
           <p className="hidden min-w-0 flex-1 truncate text-sm md:block">You're in control. {bot.name} is waiting.</p>
         ) : (
           <span className="hidden min-w-0 flex-1 md:flex">
-            {open && (
+            {open && surface === "browser" && (
               <span className="max-w-full truncate rounded-full bg-muted px-3 py-1 text-[13px] text-muted-foreground" title={state.url} aria-label="Address">
                 {displayUrl(state.url)}
               </span>
@@ -460,7 +472,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
             Take control
           </Button>
         )}
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={closeScreen} aria-label="Close screen">
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={closeScreen} aria-label={`Close ${noun(surface)}`}>
           <X className="size-5" />
         </Button>
       </header>
@@ -471,7 +483,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
           style={{ width: "min(100cqw, 160cqh)" }}
           {...(controlling ? controls.pointer : {})}
         >
-          <ScreenFrame bot={bot} state={state} stream={stream} />
+          <ScreenFrame bot={bot} surface={surface} state={state} stream={stream} />
           {!controlling && stream.pointer && (
             <span
               key={stream.pointer.at}
@@ -487,7 +499,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
         </div>
         <textarea
           ref={keys}
-          aria-label={`Type on ${bot.name}'s screen`}
+          aria-label={`Type on ${bot.name}'s ${noun(surface)}`}
           tabIndex={controlling ? 0 : -1}
           className="pointer-events-none fixed top-0 left-0 size-px opacity-0"
           autoCapitalize="off"
@@ -497,7 +509,7 @@ export function ScreenView({ bot, thread, onBack }: { bot: Bot; thread: Thread; 
         />
       </div>
 
-      {controlling && stream.chooser && <FilePicker key={stream.chooser.id} bot={bot} chooser={stream.chooser} onChoose={stream.choose} />}
+      {controlling && surface === "browser" && stream.chooser && <FilePicker key={stream.chooser.id} bot={bot} chooser={stream.chooser} onChoose={stream.choose} />}
 
       <footer className="flex flex-none flex-col gap-3 p-4 md:hidden">
         <StatusChip bot={bot} state={state} controlling={controlling} now={now} className="self-start bg-muted" />
