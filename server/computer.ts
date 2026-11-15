@@ -66,7 +66,7 @@ type Computer = {
   busctl: string;
   setsid: string;
   input: FakeInput;
-  apps: Set<Subprocess>;
+  apps: Set<number>;
   queue: Promise<unknown>;
   typing: Promise<unknown>;
   controller: Viewer | null;
@@ -121,7 +121,9 @@ const watchdog = (serverPid: number) => `#!/bin/sh
 printf '%s\\n%s\\n' "$DISPLAY" "$DBUS_SESSION_BUS_ADDRESS" > "$XDG_RUNTIME_DIR/session"
 while kill -0 ${serverPid} 2>/dev/null; do sleep 2; done
 trap '' TERM
-(sleep 2; rm -rf "$XDG_RUNTIME_DIR") &
+apps=$(cat "$XDG_RUNTIME_DIR/apps" 2>/dev/null)
+for group in $apps; do kill -TERM -"$group" 2>/dev/null; done
+(sleep 2; for group in $apps; do kill -KILL -"$group" 2>/dev/null; done; rm -rf "$XDG_RUNTIME_DIR"; kill -KILL 0) &
 kill -TERM 0
 `;
 
@@ -152,14 +154,19 @@ const killTree = (pid: number, signal: NodeJS.Signals) => {
   } catch {}
 };
 
+function groupEmpty(pgid: number) {
+  try {
+    process.kill(-pgid, 0);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 async function groupGone(pgid: number, timeoutMs: number) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    try {
-      process.kill(-pgid, 0);
-    } catch {
-      return true;
-    }
+    if (groupEmpty(pgid)) return true;
     await Bun.sleep(100);
   }
   return false;
@@ -259,7 +266,7 @@ async function ensure(botId: string): Promise<Computer> {
 async function stop(c: Computer) {
   if (computers.get(c.botId) === c) computers.delete(c.botId);
   c.input.close();
-  const groups = [c.tree.pid, ...[...c.apps].map((app) => app.pid)];
+  const groups = [c.tree.pid, ...c.apps];
   for (const pgid of groups) killTree(pgid, "SIGTERM");
   const stopped = await Promise.all(groups.map((pgid) => groupGone(pgid, STOP_TIMEOUT_MS)));
   groups.forEach((pgid, i) => stopped[i] || killTree(pgid, "SIGKILL"));
@@ -328,6 +335,7 @@ async function stream(c: Computer) {
 }
 
 const USER_HAS_CONTROL = "The user has control of your computer right now. Wait until they hand it back, or ask in chat.";
+const USER_TOOK_CONTROL = "The user took control of your computer partway through, so the rest wasn't done. Wait until they hand it back, or ask in chat.";
 const IS_OFF = "Your computer is off. Start a program with computer_open first.";
 
 async function asBot<T>(botId: string, act: (c: Computer) => Promise<T>, opts: { start?: boolean } = {}): Promise<T> {
@@ -367,14 +375,21 @@ function pointAt(c: Computer, x: number, y: number) {
   c.input.move(x, y);
 }
 
-async function typeStrokes(c: Computer, strokes: Stroke[]) {
+async function typeStrokes(c: Computer, strokes: Stroke[], allowed: () => boolean) {
   for (const s of strokes) {
+    if (!allowed()) return false;
     if (s.shift) c.input.key(TYPING_SHIFT, true);
     c.input.key(s.code, true);
     c.input.key(s.code, false);
     if (s.shift) c.input.key(TYPING_SHIFT, false);
     await Bun.sleep(KEY_GAP_MS);
   }
+  return true;
+}
+
+function trackGroup(c: Computer, pgid: number) {
+  c.apps = new Set([...[...c.apps].filter((g) => !groupEmpty(g)), pgid]);
+  writeFileSync(join(c.runtime, "apps"), [...c.apps].join("\n"));
 }
 
 export function openProgram(botId: string, command: string, cwd: string) {
@@ -388,8 +403,7 @@ export function openProgram(botId: string, command: string, cwd: string) {
       const log = openSync(logPath, "a");
       const app = Bun.spawn([c.setsid, "sh", "-c", line], { cwd: existsSync(cwd) ? cwd : homedir(), env: c.env, stdio: ["ignore", log, log] });
       closeSync(log);
-      c.apps.add(app);
-      void app.exited.then(() => c.apps.delete(app));
+      trackGroup(c, app.pid);
       const exitCode = await Promise.race([app.exited, Bun.sleep(OPEN_SETTLE_MS).then(() => null)]);
       return { image: await look(c, 0), exitCode, output: exitCode ? logTail(logPath, from) : "" };
     },
@@ -426,7 +440,7 @@ export function typeText(botId: string, text: string) {
     return fail("cannot_type", firstLine(e));
   }
   return asBot(botId, async (c) => {
-    await typeStrokes(c, strokes);
+    if (!(await typeStrokes(c, strokes, () => !c.controller))) fail("user_has_control", USER_TOOK_CONTROL);
     return look(c, SETTLE_MS);
   });
 }
@@ -459,6 +473,7 @@ export function scroll(botId: string, x: number, y: number, direction: "up" | "d
     const axis = direction === "up" || direction === "down" ? "vertical" : "horizontal";
     const sign = direction === "up" || direction === "left" ? -1 : 1;
     for (let i = 0; i < notches; i++) {
+      if (c.controller) return fail("user_has_control", USER_TOOK_CONTROL);
       c.input.scroll(axis, sign * WHEEL_STEP);
       await Bun.sleep(30);
     }
@@ -467,6 +482,7 @@ export function scroll(botId: string, x: number, y: number, direction: "up" | "d
 }
 
 export async function closeComputer(botId: string) {
+  await starting.get(botId)?.catch(() => null);
   const c = computers.get(botId);
   if (!c) return false;
   await stop(c);
@@ -486,7 +502,7 @@ export async function forgetComputer(botId: string) {
 }
 
 export async function closeAllComputers() {
-  await Promise.all([...computers.keys()].map(closeComputer));
+  await Promise.all([...new Set([...computers.keys(), ...starting.keys()])].map(closeComputer));
 }
 
 export function releaseComputer(botId: string) {
@@ -523,7 +539,8 @@ type ViewerMessage =
 
 const inside = (n: unknown, max: number) => Math.min(Math.max(Number(n) || 0, 0), max - 1);
 
-async function drive(c: Computer, m: ViewerMessage) {
+async function drive(c: Computer, v: Viewer, m: ViewerMessage) {
+  if (c.controller !== v) return;
   const { width, height } = COMPUTER_SIZE;
   switch (m.type) {
     case "mouse": {
@@ -544,7 +561,7 @@ async function drive(c: Computer, m: ViewerMessage) {
     }
     case "text": {
       const strokes = [...String(m.text).slice(0, 10_000)].map(strokeFor).filter((s): s is Stroke => s !== null);
-      return typeStrokes(c, strokes);
+      return typeStrokes(c, strokes, () => c.controller === v);
     }
   }
 }
@@ -579,7 +596,7 @@ export function computerViewerMessage(v: Viewer, raw: string) {
   }
   if (c.controller !== v) return;
   c.usedAt = Date.now();
-  c.typing = c.typing.then(() => drive(c, m)).catch(() => {});
+  c.typing = c.typing.then(() => drive(c, v, m)).catch(() => {});
 }
 
 setInterval(() => {
