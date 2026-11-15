@@ -1,0 +1,63 @@
+{
+  "desktop/main.ts": {
+    "typescript(no-unsafe-assignment)": 4
+  },
+  "server/db.ts": {
+    "typescript(no-unsafe-assignment)": 6
+  },
+  "server/events.test.ts": {
+    "typescript(no-explicit-any)": 3
+  },
+  "server/index.ts": {
+    "typescript(no-explicit-any)": 1,
+    "typescript(no-unsafe-assignment)": 12
+  },
+  "server/mcp.ts": {
+    "typescript(no-explicit-any)": 3,
+    "typescript(no-unsafe-assignment)": 6
+  },
+  "server/oauth.ts": {
+    "typescript(no-explicit-any)": 2,
+    "typescript(no-unsafe-assignment)": 20
+  },
+  "server/providers/claude.ts": {
+    "typescript(no-explicit-any)": 3,
+    "typescript(no-unsafe-assignment)": 12
+  },
+  "server/providers/codex.ts": {
+    "typescript(no-explicit-any)": 7,
+    "typescript(no-unsafe-assignment)": 11
+  },
+  "server/providers/limits.ts": {
+    "typescript(no-explicit-any)": 11,
+    "typescript(no-unsafe-assignment)": 15
+  },
+  "server/providers/others.ts": {
+    "typescript(no-explicit-any)": 2,
+    "typescript(no-unsafe-assignment)": 16
+  },
+  "server/providers/spawn.ts": {
+    "typescript(no-explicit-any)": 3,
+    "typescript(no-unsafe-assignment)": 2
+  },
+  "server/screen.ts": {
+    "typescript(no-unsafe-assignment)": 1
+  },
+  "server/tailscale.ts": {
+    "typescript(no-explicit-any)": 2,
+    "typescript(no-unsafe-assignment)": 7
+  },
+  "web/src/api.ts": {
+    "typescript(no-unsafe-assignment)": 1
+  },
+  "web/src/components/Chat.tsx": {
+    "typescript(no-explicit-any)": 3,
+    "typescript(no-unsafe-assignment)": 2
+  },
+  "web/src/components/Screen.tsx": {
+    "typescript(no-unsafe-assignment)": 4
+  },
+  "web/src/store.ts": {
+    "typescript(no-unsafe-assignment)": 1
+  }
+}

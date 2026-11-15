@@ -51,6 +51,16 @@ To develop with hot reload: `bun run dev` (server + Vite together), then open `h
 | `FABS_HOST` | – | bind to a single address instead of loopback + tailnet |
 | `FABS_TAILSCALE_SERVE_PORT` | `8443` | HTTPS port for Tailscale HTTPS (never 443) |
 
+## Lint
+
+Run `bun run lint` before pushing. CI runs the same command alongside the compiler checks.
+
+Oxlint checks application and test TypeScript in `server`, `shared`, `web/src`, and `desktop` with two rules: `typescript/no-explicit-any` and `typescript/no-unsafe-assignment`. Prefer `unknown` for external input and narrow it before use. Type-aware linting uses `oxlint-tsgolint`, which supports the project's TypeScript 7.
+
+Existing violations are counted by file and rule in `lint-baseline.json` so adopting lint does not require a production-code cleanup. New files have no allowance. Increases fail; when you fix existing violations, reduce the matching baseline count. Do not increase counts to accept new violations. A count baseline cannot distinguish replacing one violation with another in the same file and rule, so review changed code too.
+
+Lint supplements TypeScript; it does not replace CI typechecking. To inspect all existing findings directly, run `bunx --no-install oxlint server shared web/src desktop`.
+
 ## Versions
 
 Fabs Bot is in alpha. Versions follow semver with an `alpha` pre-release, starting at `0.1.0-alpha.1`, and every release is a `v<version>` git tag. `package.json` holds the version. The server prints it on start, and *This PC* shows the version that PC is running.

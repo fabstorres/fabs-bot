@@ -15,7 +15,8 @@
     "build:desktop": "bun build desktop/main.ts desktop/preload.ts desktop/pc-preload.ts --outdir dist/desktop --entry-naming [name].cjs --target node --format cjs --external electron",
     "desktop": "bun run build && bun run build:desktop && env -u ELECTRON_RUN_AS_NODE electron .",
     "package:mac": "bun run build && bun run build:desktop && electron-builder --mac --publish never",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "node scripts/lint.mjs"
   },
   "dependencies": {
     "@fontsource-variable/figtree": "^5.3.0",
@@ -59,6 +60,8 @@
     "@vitejs/plugin-react": "^6.1.1",
     "electron": "^44.7.0",
     "electron-builder": "^26.18.0",
+    "oxlint": "1.93.0",
+    "oxlint-tsgolint": "7.0.2007",
     "typescript": "^7.0.2",
     "vite": "^8.3.2"
   }

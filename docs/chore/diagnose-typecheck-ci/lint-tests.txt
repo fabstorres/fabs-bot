@@ -1,0 +1,13 @@
+bun test v1.3.10 (30e609e0)
+
+.claude/skills/verify-fabs-bot/scripts/lint.test.ts:
+(pass) a baseline allowance cannot hide additional unsafe assignments in the same file [952.00ms]
+(pass) fixing an existing violation requires pruning its allowance [456.00ms]
+(pass) the upload inference regression is rejected even when its explicit any is already baselined [427.00ms]
+(pass) new files have no allowance for explicit any [498.00ms]
+(pass) syntax errors fail even if a baseline tries to allow unclassified diagnostics [443.00ms]
+
+ 5 pass
+ 0 fail
+ 11 expect() calls
+Ran 5 tests across 1 file. [2.80s]
