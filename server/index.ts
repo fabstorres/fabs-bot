@@ -13,7 +13,7 @@ import { closeAllComputers, computerViewerMessage, forgetComputer, listComputers
 import { handleMcp, decideApproval } from "./mcp";
 import { SignInError, configureClient, forget, signOut, startSignIn, usesConfiguredClient } from "./oauth";
 import { realPathWithin, within } from "./paths";
-import { bringInBot, directThread, editMessageParts, greet, postUserMessage, stopTurns } from "./orchestrator";
+import { bringInBot, directThread, editMessageParts, greet, postUserMessage, replyToCard, stopTurns } from "./orchestrator";
 import { isProviderId, launchFor, providerInfo, providerSettings, updateProvider } from "./providers";
 import { scanClaudeInventory } from "./providers/claude";
 import { scanCodexInventory } from "./providers/codex";
@@ -368,7 +368,7 @@ route("POST", "/api/messages/:id/answer", async (req, p) => {
     if (live?.type === "question") live.answered = option;
   });
   const letter = String.fromCharCode(65 + option);
-  await postUserMessage(m.threadId, [{ type: "text", text: `${letter}. ${part.options[option]}` }]);
+  await replyToCard(m, `${letter}. ${part.options[option]}`);
   return json({ ok: true });
 });
 route("POST", "/api/messages/:id/screen", async (req, p) => {
@@ -385,7 +385,7 @@ route("POST", "/api/messages/:id/screen", async (req, p) => {
   if (where === "computer") releaseComputer(part.botId);
   else releaseScreen(part.botId);
   const text = done ? `I'm done on your ${where}. It's yours again, carry on.` : `Skip that step on your ${where} and carry on without it.`;
-  await postUserMessage(m.threadId, [{ type: "text", text }]);
+  await replyToCard(m, text);
   return json({ ok: true });
 });
 route("POST", "/api/approvals/:id", async (req, p) => {
@@ -396,12 +396,10 @@ route("POST", "/api/approvals/:id", async (req, p) => {
 route("POST", "/api/upload", async (req) => {
   const form = await req.formData();
   const out = [];
-  const dir = join(SHARED_DIR, "uploads");
-  mkdirSync(dir, { recursive: true });
   for (const value of form.getAll("file")) {
     if (!(value instanceof File)) continue;
-    const name = basename(value.name) || "upload";
-    const dest = join(dir, `${Date.now().toString(36)}-${name}`);
+    const name = basename(value.name).replace(/^\.+$/, "") || "upload";
+    const dest = join(SHARED_DIR, "uploads", db.newId(), name);
     await Bun.write(dest, value);
     const f = db.addFile({ thread_id: null, bot_id: null, path: dest, name, size: value.size });
     out.push({ fileId: f.id, name, size: value.size });
