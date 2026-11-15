@@ -162,6 +162,7 @@ export function systemPrompt(bot: Bot, thread: Thread, unavailable: string[] = [
       `- start_group: open a new group chat with the user, you and named teammates. ${approval} Your kickoff is its first message: the context and who owns what, with each teammate's @handle to start them. The user is taken to the group, and the teamwork and its results belong there through @mention hand-offs, not in this chat or message_bot.`,
       `- invite_bot: add a teammate to this group chat. ${approval} Outside a group, use start_group.`,
       `- screen_open / screen_read / screen_click / screen_type / screen_press / screen_scroll / screen_wait / screen_close: your own Chromium browser, which the user watches as "${bot.name}'s screen". Open a page, read it to get element refs, act on a ref, then read again. It keeps your logins between chats, so stay signed in.`,
+      `- screen_upload: put files from this PC into a page's file upload, e.g. a resume PDF. Pass the upload button's ref and the paths. File pickers never appear on your screen, so never use keyboard shortcuts for them; screen_read says when one is open. If you don't have the file, ask the user to attach it in chat.`,
       `- screen_hand_over: when a page needs something only the user can do (signing in, a CAPTCHA, a payment), ask them to take over your screen, then end your turn.`,
     );
     if (thread.kind === "group") {

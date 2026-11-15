@@ -155,7 +155,7 @@ export function summarizeToolInput(name: string, input: any): string {
   if (typeof input.bot === "string" && typeof input.message === "string") return clip(`${input.bot}: ${input.message}`);
   if (/screen_type$/.test(name ?? "")) return clip(`into ${input.ref ?? input.selector ?? "the focused field"}`);
   const pick =
-    input.command ?? input.cmd ?? input.file_path ?? input.path ?? input.pattern ?? input.query ?? input.url ??
+    input.command ?? input.cmd ?? input.file_path ?? input.path ?? input.paths ?? input.pattern ?? input.query ?? input.url ??
     input.description ?? input.prompt ?? input.message ?? input.bot ?? input.title ?? input.reason ?? input.key ?? input.ref ?? input.selector;
   if (typeof pick === "string") return clip(pick);
   if (Array.isArray(pick)) return clip(pick.join(" "));
