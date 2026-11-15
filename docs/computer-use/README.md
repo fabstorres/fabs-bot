@@ -1,13 +1,19 @@
 # Computer use evidence
 
-- `desk-tiles.png` — Chief's screen and live computer tiles side by side.
-- `computer-expanded.png` — Expanded computer showing the grocery note in KWrite.
-- `control-taken.png` — User control active while editing the note.
-- `card-pending.png` — Pending hand-over card and sidebar notification.
-- `card-settled.png` — Handed-back card and Chief's response identifying the added items.
-- `kcalc-clicks.png` — KCalc displaying 42 and Chief's response.
-- `phone-desk.png` — Desk tiles on a phone viewport.
-- `phone-expanded.png` — Expanded computer on a phone viewport.
-- `kwin-not-found.png` — Computer tile when KWin is unavailable.
-- `take-over.mp4`: real-speed walkthrough (62 s). Chief opens KWrite on its computer, types and saves, then hands over. The user takes control, adds a line and hands back, and Chief reads the line from its screenshot.
-- `take-over.gif`: the same walkthrough at 1.5x speed, 960 px wide.
+All bot turns are real, with Chief on `claude-haiku-5-5`, on an isolated Fabs Bot instance.
+
+- `walkthrough.mp4`: one continuous take at real speed (87 s). Chief opens a page on its screen. Asked for a desktop app, it opens KWrite on its computer, and the expanded view switches from the screen to the computer by itself. Chief types, saves and hands over. The user takes control, adds a line and hands back, and Chief names the line from its screenshot.
+- `walkthrough.gif`: the same take at 1.5x speed, 960 px wide.
+- `desk-screen.png`: after `screen_open`, the desk's single tile shows Chief's screen.
+- `escalate.png`: after `computer_open`, the expanded view shows Chief's computer with the wallpaper behind KWrite.
+- `desk-computer.png`: the desk's single tile now shows Chief's computer.
+- `screen-open-refused.png`: `screen_open` while the computer is open fails, and Chief relays the one-at-a-time message.
+- `control-taken.png`: the user has control of the computer and typed into KWrite.
+- `card-pending.png`: the computer hand-over card with its live thumbnail. The sidebar reads "Needs you on its computer".
+- `card-settled.png`: the card reads "Handed back", and Chief names the item the user added.
+- `kcalc-clicks.png`: Chief clicked 12+30= in KCalc with `computer_click` and read 42.
+- `wallpaper-day.png`: the expanded computer with the morning wallpaper (server clock at 09:00).
+- `wallpaper-night.png`: the expanded computer with the night wallpaper (server clock at 21:00).
+- `phone-desk.png`: the phone desk's single tile while the computer is open.
+- `phone-expanded.png`: the expanded computer full screen on the phone.
+- `no-kwin-desk.png`: with no KWin, the desk shows only Chief's screen, with no computer wording.
