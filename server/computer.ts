@@ -8,7 +8,7 @@ import { publish } from "./bus";
 import { DATA_DIR } from "./config";
 import { type ButtonName, type Stroke, chordCodes, FakeInput, keyCode, strokeFor, strokesFor, TYPING_SHIFT } from "./fake-input";
 import type { Viewer } from "./screen";
-import { nightAt, renderWallpaper } from "./wallpaper";
+import { renderWallpaper, stepAt } from "./wallpaper";
 import { DesktopWindow } from "./x11-desktop";
 
 export const COMPUTER_SIZE = { width: 1280, height: 800 };
@@ -81,7 +81,7 @@ type Computer = {
   streaming: boolean;
   frameHash: number | bigint | null;
   wallpaper: DesktopWindow | null;
-  night: number;
+  wallpaperStep: number;
 };
 
 const computers = new Map<string, Computer>();
@@ -208,12 +208,12 @@ async function waitForSession(tree: Subprocess, file: string) {
   return null;
 }
 
-async function showWallpaper(display: string, night: number) {
+async function showWallpaper(display: string, step: number) {
   const { width, height } = COMPUTER_SIZE;
   const opening = DesktopWindow.open(display, width, height).catch(() => null);
   const wallpaper = await Promise.race([opening, Bun.sleep(WALLPAPER_TIMEOUT_MS).then(() => null)]);
   if (!wallpaper) void opening.then((late) => late?.close());
-  if (wallpaper) await Promise.race([wallpaper.paint(renderWallpaper(width, height, night)), Bun.sleep(WALLPAPER_TIMEOUT_MS)]);
+  if (wallpaper) await Promise.race([wallpaper.paint(renderWallpaper(width, height, step)), Bun.sleep(WALLPAPER_TIMEOUT_MS)]);
   await Bun.sleep(FRAME_EVERY_MS);
   return wallpaper;
 }
@@ -251,8 +251,8 @@ async function launch(botId: string): Promise<Computer> {
   const session = await waitForSession(tree, join(runtime, "session"));
   if (!session) return abort(logTail(logPath) || "KWin didn't open its display in time.");
   const input = await FakeInput.connect(join(runtime, "wayland-0")).catch((e) => abort(firstLine(e)));
-  const night = nightAt(new Date());
-  const wallpaper = session.display ? await showWallpaper(session.display, night) : null;
+  const wallpaperStep = stepAt(new Date());
+  const wallpaper = session.display ? await showWallpaper(session.display, wallpaperStep) : null;
   const appEnv = { ...env, DBUS_SESSION_BUS_ADDRESS: session.bus, ...(session.display ? { DISPLAY: session.display } : {}) };
   const c: Computer = {
     botId,
@@ -273,7 +273,7 @@ async function launch(botId: string): Promise<Computer> {
     streaming: false,
     frameHash: null,
     wallpaper,
-    night,
+    wallpaperStep,
   };
   computers.set(botId, c);
   void tree.exited.then(() => {
@@ -640,12 +640,12 @@ export function computerViewerMessage(v: Viewer, raw: string) {
 }
 
 setInterval(() => {
-  const night = nightAt(new Date());
+  const step = stepAt(new Date());
   for (const c of computers.values()) {
     if (!c.controller && !viewersOf(c.botId).size && Date.now() - c.usedAt > IDLE_MS) void closeComputer(c.botId);
-    else if (c.wallpaper && c.night !== night) {
-      c.night = night;
-      void c.wallpaper.paint(renderWallpaper(COMPUTER_SIZE.width, COMPUTER_SIZE.height, night));
+    else if (c.wallpaper && c.wallpaperStep !== step) {
+      c.wallpaperStep = step;
+      void c.wallpaper.paint(renderWallpaper(COMPUTER_SIZE.width, COMPUTER_SIZE.height, step));
     }
   }
 }, 60_000).unref();
