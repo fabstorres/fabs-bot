@@ -69,6 +69,8 @@ type Computer = {
   apps: Set<number>;
   queue: Promise<unknown>;
   typing: Promise<unknown>;
+  heldKeys: Set<number>;
+  heldButtons: Set<ButtonName>;
   controller: Viewer | null;
   usedAt: number;
   streaming: boolean;
@@ -172,11 +174,14 @@ async function groupGone(pgid: number, timeoutMs: number) {
   return false;
 }
 
-function removeRuntime(dir: string) {
-  try {
-    rmSync(dir, { recursive: true, force: true });
-  } catch {
-    setTimeout(() => rmSync(dir, { recursive: true, force: true }), 1_000).unref();
+async function removeRuntime(dir: string) {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch {
+      await Bun.sleep(300);
+    }
   }
 }
 
@@ -221,7 +226,7 @@ async function launch(botId: string): Promise<Computer> {
   closeSync(log);
   const abort = (detail: string): never => {
     killTree(tree.pid, "SIGKILL");
-    removeRuntime(runtime);
+    void removeRuntime(runtime);
     update(botId, { status: "closed" });
     return fail("start_failed", `Your computer didn't start: ${detail}`);
   };
@@ -241,6 +246,8 @@ async function launch(botId: string): Promise<Computer> {
     apps: new Set(),
     queue: Promise.resolve(),
     typing: Promise.resolve(),
+    heldKeys: new Set(),
+    heldButtons: new Set(),
     controller: null,
     usedAt: Date.now(),
     streaming: false,
@@ -270,10 +277,10 @@ async function stop(c: Computer) {
   for (const pgid of groups) killTree(pgid, "SIGTERM");
   const stopped = await Promise.all(groups.map((pgid) => groupGone(pgid, STOP_TIMEOUT_MS)));
   groups.forEach((pgid, i) => stopped[i] || killTree(pgid, "SIGKILL"));
-  removeRuntime(c.runtime);
+  await removeRuntime(c.runtime);
   if (c.controller) tellControl(c.controller, false);
   c.controller = null;
-  update(c.botId, { status: "closed", controller: "bot" });
+  if (!computers.has(c.botId) && !starting.has(c.botId)) update(c.botId, { status: "closed", controller: "bot" });
 }
 
 type Shot = { pixels: Uint8Array; width: number; height: number; stride: number; hash: number | bigint };
@@ -509,6 +516,10 @@ export function releaseComputer(botId: string) {
   const c = computers.get(botId);
   const owner = c?.controller;
   if (!c || !owner) return;
+  for (const button of c.heldButtons) c.input.button(button, false);
+  for (const code of c.heldKeys) c.input.key(code, false);
+  c.heldButtons.clear();
+  c.heldKeys.clear();
   c.controller = null;
   tellControl(owner, false);
   update(botId, { controller: "bot" });
@@ -546,7 +557,10 @@ async function drive(c: Computer, v: Viewer, m: ViewerMessage) {
     case "mouse": {
       c.input.move(inside(m.x, width), inside(m.y, height));
       const button = m.button === "right" || m.button === "middle" ? m.button : "left";
-      if (m.action !== "move") c.input.button(button, m.action === "down");
+      if (m.action === "move") return;
+      c.input.button(button, m.action === "down");
+      if (m.action === "down") c.heldButtons.add(button);
+      else c.heldButtons.delete(button);
       return;
     }
     case "wheel":
@@ -556,7 +570,10 @@ async function drive(c: Computer, v: Viewer, m: ViewerMessage) {
       return;
     case "key": {
       const code = keyCode(String(m.key));
-      if (code !== null) c.input.key(code, m.action === "down");
+      if (code === null) return;
+      c.input.key(code, m.action === "down");
+      if (m.action === "down") c.heldKeys.add(code);
+      else c.heldKeys.delete(code);
       return;
     }
     case "text": {
