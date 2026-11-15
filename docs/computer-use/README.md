@@ -12,8 +12,8 @@ All bot turns are real, with Chief on `claude-haiku-5-5`, on an isolated Fabs Bo
 - `card-pending.png`: the computer hand-over card with its live thumbnail. The sidebar reads "Needs you on its computer".
 - `card-settled.png`: the card reads "Handed back", and Chief names the item the user added.
 - `kcalc-clicks.png`: Chief clicked 12+30= in KCalc with `computer_click` and read 42.
-- `wallpaper-day.png`: the expanded computer with the morning wallpaper (server clock at 09:00).
-- `wallpaper-night.png`: the expanded computer with the night wallpaper (server clock at 21:00).
+- `wallpaper-day.png`: the expanded computer with the morning brushed-silver wallpaper (server clock at 07:00).
+- `wallpaper-night.png`: the expanded computer with the night brushed-silver wallpaper (server clock at 22:00).
 - `phone-desk.png`: the phone desk's single tile while the computer is open.
 - `phone-expanded.png`: the expanded computer full screen on the phone.
 - `no-kwin-desk.png`: with no KWin, the desk shows only Chief's screen, with no computer wording.
