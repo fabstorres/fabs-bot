@@ -119,3 +119,26 @@ test.skipIf(!screen.findChromium() || computer.computerSupport() !== "ready")(
   },
   60_000,
 );
+
+test.skipIf(!screen.findChromium() || computer.computerSupport() !== "ready")(
+  "opening the screen and the computer at the same moment still leaves only one of them open",
+  async () => {
+    const caller = bot("Racer");
+    const page = join(scratch, "race.html");
+    writeFileSync(page, "<title>Race</title>");
+    const url = `file://${page}`;
+    await Promise.all([call(caller, "screen_open", { url }), call(caller, "computer_open", { command: "true" })]);
+    expect(screen.isOpen(caller.id)).toBe(false);
+    expect(computer.isComputerOpen(caller.id)).toBe(true);
+    await computer.closeComputer(caller.id);
+
+    await call(caller, "screen_open", { url });
+    const [opened, refused] = await Promise.all([call(caller, "computer_open", { command: "true" }), call(caller, "screen_open", { url })]);
+    expect(opened.result.isError).toBeFalsy();
+    expect(refused.result.isError).toBe(true);
+    expect(screen.isOpen(caller.id)).toBe(false);
+    expect(computer.isComputerOpen(caller.id)).toBe(true);
+    await computer.closeComputer(caller.id);
+  },
+  90_000,
+);

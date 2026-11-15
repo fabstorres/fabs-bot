@@ -35,6 +35,13 @@ const target = (args: any) => ({ ref: args.ref ? String(args.ref) : undefined, s
 const onPage = (url: string) => `Done. Now on ${url}. Call screen_read to see the result.`;
 const onComputer = (image: Uint8Array) => ({ text: "Done. This is your computer's screen now.", image, imageType: "image/png" as const });
 const ONE_AT_A_TIME = "Only one of your screen and your computer can be open at a time.";
+const switching = new Map<string, Promise<unknown>>();
+
+function oneSurfaceAtATime<T>(botId: string, open: () => Promise<T>): Promise<T> {
+  const run = (switching.get(botId) ?? Promise.resolve()).then(open);
+  switching.set(botId, run.catch(() => {}));
+  return run;
+}
 
 async function makeRoomForComputer(botId: string) {
   if (computer.computerSupport() !== "ready" || computer.isComputerOpen(botId) || !screen.isOpen(botId)) return false;
@@ -518,10 +525,12 @@ const tools: ToolDef[] = [
       "Open a web page on your screen: your own Chromium browser on the user's PC, which the user can watch as your screen. It keeps your logins between chats. Use it when a task needs a real browser (signing in, clicking, filling forms, checking a site you built); WebFetch is fine for just reading a page.",
     inputSchema: { type: "object", properties: { url: str("Address to open, e.g. localhost:5173 or https://example.com") }, required: ["url"] },
     async run(args, ctx) {
-      if (computer.isComputerOpen(ctx.botId)) {
-        return reject("computer_open", `${ONE_AT_A_TIME} Your computer is open: finish there, save your work and call computer_close, then screen_open again. Or use a browser inside your computer.`);
-      }
-      const page = await screen.openPage(ctx.botId, String(args.url ?? ""));
+      const page = await oneSurfaceAtATime(ctx.botId, () => {
+        if (computer.isComputerOpen(ctx.botId)) {
+          return reject("computer_open", `${ONE_AT_A_TIME} Your computer is open: finish there, save your work and call computer_close, then screen_open again. Or use a browser inside your computer.`);
+        }
+        return screen.openPage(ctx.botId, String(args.url ?? ""));
+      });
       return `Opened ${page.url}${page.title ? ` ("${page.title}")` : ""}${page.status >= 400 ? `, HTTP ${page.status}` : ""}. Call screen_read to see the page and get element refs.`;
     },
   },
@@ -621,8 +630,10 @@ const tools: ToolDef[] = [
     inputSchema: { type: "object", properties: { command: str("Shell command that starts the program, run in your workspace folder") }, required: ["command"] },
     async run(args, ctx) {
       const command = String(args.command ?? "");
-      const closedScreen = await makeRoomForComputer(ctx.botId);
-      const started = await computer.openProgram(ctx.botId, command, db.getBot(ctx.botId)?.cwd ?? "");
+      const { closedScreen, started } = await oneSurfaceAtATime(ctx.botId, async () => {
+        const closedScreen = await makeRoomForComputer(ctx.botId);
+        return { closedScreen, started: await computer.openProgram(ctx.botId, command, db.getBot(ctx.botId)?.cwd ?? "") };
+      });
       const exited = started.exitCode === null ? "" : ` It exited with code ${started.exitCode}.${started.output ? `\n${started.output}` : ""}`;
       const closed = closedScreen ? ` ${ONE_AT_A_TIME} Your browser screen was closed to open your computer: its logins are kept, its open pages aren't. If you need a browser now, start one inside your computer.` : "";
       return { text: `Started ${clip(command, 80)}.${exited}${closed} This is your computer's screen now.`, image: started.image, imageType: "image/png" };
