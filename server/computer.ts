@@ -8,6 +8,8 @@ import { publish } from "./bus";
 import { DATA_DIR } from "./config";
 import { type ButtonName, type Stroke, chordCodes, FakeInput, keyCode, strokeFor, strokesFor, TYPING_SHIFT } from "./fake-input";
 import type { Viewer } from "./screen";
+import { nightAt, renderWallpaper } from "./wallpaper";
+import { DesktopWindow } from "./x11-desktop";
 
 export const COMPUTER_SIZE = { width: 1280, height: 800 };
 const IDLE_MS = 30 * 60_000;
@@ -15,6 +17,7 @@ const FRAME_EVERY_MS = 200;
 const SETTLE_MS = 700;
 const OPEN_SETTLE_MS = 2_000;
 const START_TIMEOUT_MS = 15_000;
+const WALLPAPER_TIMEOUT_MS = 5_000;
 const STOP_TIMEOUT_MS = 3_000;
 const KEY_GAP_MS = 8;
 const WHEEL_STEP = 15;
@@ -75,6 +78,8 @@ type Computer = {
   usedAt: number;
   streaming: boolean;
   frameHash: number | bigint | null;
+  wallpaper: DesktopWindow | null;
+  night: number;
 };
 
 const computers = new Map<string, Computer>();
@@ -200,6 +205,16 @@ async function waitForSession(tree: Subprocess, file: string) {
   return null;
 }
 
+async function showWallpaper(display: string, night: number) {
+  const { width, height } = COMPUTER_SIZE;
+  const opening = DesktopWindow.open(display, width, height).catch(() => null);
+  const wallpaper = await Promise.race([opening, Bun.sleep(WALLPAPER_TIMEOUT_MS).then(() => null)]);
+  if (!wallpaper) void opening.then((late) => late?.close());
+  if (wallpaper) await Promise.race([wallpaper.paint(renderWallpaper(width, height, night)), Bun.sleep(WALLPAPER_TIMEOUT_MS)]);
+  await Bun.sleep(FRAME_EVERY_MS);
+  return wallpaper;
+}
+
 async function launch(botId: string): Promise<Computer> {
   const support = computerSupport();
   if (support === "not-linux") return fail("unsupported", "Computer use only works when Fabs Bot runs on Linux.");
@@ -233,6 +248,8 @@ async function launch(botId: string): Promise<Computer> {
   const session = await waitForSession(tree, join(runtime, "session"));
   if (!session) return abort(logTail(logPath) || "KWin didn't open its display in time.");
   const input = await FakeInput.connect(join(runtime, "wayland-0")).catch((e) => abort(firstLine(e)));
+  const night = nightAt(new Date());
+  const wallpaper = session.display ? await showWallpaper(session.display, night) : null;
   const appEnv = { ...env, DBUS_SESSION_BUS_ADDRESS: session.bus, ...(session.display ? { DISPLAY: session.display } : {}) };
   const c: Computer = {
     botId,
@@ -252,6 +269,8 @@ async function launch(botId: string): Promise<Computer> {
     usedAt: Date.now(),
     streaming: false,
     frameHash: null,
+    wallpaper,
+    night,
   };
   computers.set(botId, c);
   void tree.exited.then(() => {
@@ -273,6 +292,7 @@ async function ensure(botId: string): Promise<Computer> {
 async function stop(c: Computer) {
   if (computers.get(c.botId) === c) computers.delete(c.botId);
   c.input.close();
+  c.wallpaper?.close();
   const groups = [c.tree.pid, ...c.apps];
   for (const pgid of groups) killTree(pgid, "SIGTERM");
   const stopped = await Promise.all(groups.map((pgid) => groupGone(pgid, STOP_TIMEOUT_MS)));
@@ -617,7 +637,12 @@ export function computerViewerMessage(v: Viewer, raw: string) {
 }
 
 setInterval(() => {
+  const night = nightAt(new Date());
   for (const c of computers.values()) {
     if (!c.controller && !viewersOf(c.botId).size && Date.now() - c.usedAt > IDLE_MS) void closeComputer(c.botId);
+    else if (c.wallpaper && c.night !== night) {
+      c.night = night;
+      void c.wallpaper.paint(renderWallpaper(COMPUTER_SIZE.width, COMPUTER_SIZE.height, night));
+    }
   }
 }, 60_000).unref();
